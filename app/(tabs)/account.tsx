@@ -52,7 +52,7 @@ export default function Account() {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header avec gradient */}
       <LinearGradient
-        colors={['#667eea', '#764ba2']}
+        colors={['#2F7417', '#5F934E']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
@@ -182,16 +182,7 @@ export default function Account() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Actions</Text>
           
-          {/* Bouton Debug */}
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.debugButton]} 
-            onPress={handleDebug}
-          >
-            <IconSymbol name="wrench.and.screwdriver.fill" size={20} color="#F59E0B" />
-            <Text style={[styles.actionButtonText, { color: '#F59E0B' }]}>
-              Diagnostic de connexion
-            </Text>
-          </TouchableOpacity>
+        
 
           {/* Bouton Déconnexion */}
           <TouchableOpacity 
