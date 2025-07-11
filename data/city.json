@@ -1,0 +1,24 @@
+{
+    "city": [
+        {
+            "name": "Paris",
+            "country": "France",
+            "image": "https://www.parisinfo.com/sites/default/files/styles/1920x1080_s/public/2024-03/paris-eiffel-tower-sunset-1920x1080.jpg?itok=025X77U_"
+        },
+        {
+            "name": "New York",
+            "country": "USA",
+            "image": "https://www.newyorkinfo.com/sites/default/files/styles/1920x1080_s/public/2024-03/new-york-eiffel-tower-sunset-1920x1080.jpg?itok=025X77U_"
+        },
+        {
+            "name": "Tokyo",
+            "country": "Japan",
+            "image": "https://www.tokyoinfo.com/sites/default/files/styles/1920x1080_s/public/2024-03/tokyo-eiffel-tower-sunset-1920x1080.jpg?itok=025X77U_"
+        },
+        {
+            "name": "London",
+            "country": "UK",
+            "image": "https://www.londoninfo.com/sites/default/files/styles/1920x1080_s/public/2024-03/london-eiffel-tower-sunset-1920x1080.jpg?itok=025X77U_"
+        }
+    ]
+}

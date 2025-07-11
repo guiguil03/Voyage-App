@@ -1,11 +1,10 @@
-import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useAuth } from '@/hooks/useAuth';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function Account() {
-  const { user, session, loading, signOut, getAuthStatus, isConnected } = useAuth();
+  const { user, loading, signOut, isConnected } = useAuth();
 
   // Fonction de déconnexion simple
   const handleLogout = async () => {
@@ -34,12 +33,6 @@ export default function Account() {
     }
   };
 
-  // Fonction de diagnostic (debug)
-  const handleDebug = async () => {
-    const status = await getAuthStatus();
-    Alert.alert('Diagnostic', `État: ${status}\nConnecté: ${isConnected ? 'Oui' : 'Non'}`);
-  };
-
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -49,152 +42,116 @@ export default function Account() {
   }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header avec gradient */}
-      <LinearGradient
-        colors={['#2F7417', '#5F934E']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
-      >
-        <View style={styles.profileSection}>
-          <View style={styles.avatarContainer}>
-            <IconSymbol 
-              name="person.crop.circle.fill" 
-              size={80} 
-              color="#FFFFFF" 
-            />
-          </View>
-          <Text style={styles.userName}>
-            {user?.email?.split('@')[0] || 'Utilisateur'}
-          </Text>
-          <Text style={styles.userEmail}>
-            {user?.email || 'Email non disponible'}
-          </Text>
-          
-          {/* Badge de statut */}
-          <View style={[styles.statusBadge, isConnected ? styles.connectedBadge : styles.disconnectedBadge]}>
-            <IconSymbol 
-              name={isConnected ? "checkmark.circle.fill" : "xmark.circle.fill"} 
-              size={16} 
-              color={isConnected ? "#FFFFFF" : "#FFFFFF"} 
-            />
-            <Text style={styles.statusText}>
-              {isConnected ? "Connecté" : "Déconnecté"}
-            </Text>
-          </View>
-        </View>
-      </LinearGradient>
+    <ScrollView 
+      style={styles.container} 
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.scrollContent}
+    >
+      {/* Header simple */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Mon Compte</Text>
+      </View>
 
-      {/* Contenu principal */}
-      <View style={styles.content}>
+      {/* Profil utilisateur */}
+      <View style={styles.profileSection}>
+        <View style={styles.avatarContainer}>
+          <Ionicons name="person-circle" size={80} color="#2F7417" />
+        </View>
+        <Text style={styles.userName}>
+          {user?.email?.split('@')[0] || 'Voyageur'}
+        </Text>
+        <Text style={styles.userEmail}>
+          {user?.email || 'Email non disponible'}
+        </Text>
         
-        {/* Section Informations */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Informations du compte</Text>
-          
-          <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <View style={styles.infoIconContainer}>
-                <IconSymbol name="envelope.fill" size={20} color="#667eea" />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Email</Text>
-                <Text style={styles.infoValue}>{user?.email || 'Non disponible'}</Text>
-              </View>
-            </View>
-            
-            <View style={styles.divider} />
-            
-            <View style={styles.infoRow}>
-              <View style={styles.infoIconContainer}>
-                <IconSymbol name="calendar.badge.clock" size={20} color="#667eea" />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Membre depuis</Text>
-                <Text style={styles.infoValue}>
-                  {user?.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR') : 'N/A'}
-                </Text>
-              </View>
-            </View>
-            
-            <View style={styles.divider} />
-            
-            <View style={styles.infoRow}>
-              <View style={styles.infoIconContainer}>
-                <IconSymbol name="key.fill" size={20} color="#667eea" />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>ID Utilisateur</Text>
-                <Text style={styles.infoValue}>
-                  {user?.id?.substring(0, 8) || 'N/A'}...
-                </Text>
-              </View>
-            </View>
-          </View>
+        {/* Statut de connexion */}
+        <View style={styles.statusContainer}>
+          <View style={[styles.statusDot, isConnected ? styles.connectedDot : styles.disconnectedDot]} />
+          <Text style={styles.statusText}>
+            {isConnected ? 'Connecté' : 'Déconnecté'}
+          </Text>
         </View>
+      </View>
 
-        {/* Section Paramètres */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Paramètres</Text>
-          
-          <View style={styles.menuCard}>
-            <TouchableOpacity style={styles.menuItem}>
-              <View style={styles.menuIconContainer}>
-                <IconSymbol name="bell.fill" size={22} color="#667eea" />
-              </View>
-              <View style={styles.menuContent}>
-                <Text style={styles.menuTitle}>Notifications</Text>
-                <Text style={styles.menuSubtitle}>Gérer vos notifications</Text>
-              </View>
-              <IconSymbol name="chevron.right" size={16} color="#C1C1C1" />
-            </TouchableOpacity>
-            
-            <View style={styles.divider} />
-            
-            <TouchableOpacity style={styles.menuItem}>
-              <View style={styles.menuIconContainer}>
-                <IconSymbol name="lock.fill" size={22} color="#667eea" />
-              </View>
-              <View style={styles.menuContent}>
-                <Text style={styles.menuTitle}>Confidentialité</Text>
-                <Text style={styles.menuSubtitle}>Paramètres de confidentialité</Text>
-              </View>
-              <IconSymbol name="chevron.right" size={16} color="#C1C1C1" />
-            </TouchableOpacity>
-            
-            <View style={styles.divider} />
-            
-            <TouchableOpacity style={styles.menuItem}>
-              <View style={styles.menuIconContainer}>
-                <IconSymbol name="questionmark.circle.fill" size={22} color="#667eea" />
-              </View>
-              <View style={styles.menuContent}>
-                <Text style={styles.menuTitle}>Aide & Support</Text>
-                <Text style={styles.menuSubtitle}>Obtenez de l&apos;aide</Text>
-              </View>
-              <IconSymbol name="chevron.right" size={16} color="#C1C1C1" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Section Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Actions</Text>
-          
+      {/* Informations du compte */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Informations</Text>
         
+        <View style={styles.infoCard}>
+          <View style={styles.infoRow}>
+            <Ionicons name="mail" size={20} color="#666" />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Email</Text>
+              <Text style={styles.infoValue}>{user?.email || 'Non disponible'}</Text>
+            </View>
+          </View>
+          
+          <View style={styles.divider} />
+          
+          <View style={styles.infoRow}>
+            <Ionicons name="calendar" size={20} color="#666" />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Membre depuis</Text>
+              <Text style={styles.infoValue}>
+                {user?.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR') : 'Non disponible'}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
 
-          {/* Bouton Déconnexion */}
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.logoutButton]} 
-            onPress={handleLogout}
-          >
-            <IconSymbol name="rectangle.portrait.and.arrow.right.fill" size={20} color="#FFFFFF" />
-            <Text style={[styles.actionButtonText, { color: '#FFFFFF' }]}>
-              Se déconnecter
-            </Text>
+      {/* Statistiques simples */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Mes Voyages</Text>
+        
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>12</Text>
+            <Text style={styles.statLabel}>Voyages</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>8</Text>
+            <Text style={styles.statLabel}>Pays</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>247</Text>
+            <Text style={styles.statLabel}>Photos</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Options */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Options</Text>
+        
+        <View style={styles.optionsCard}>
+          <TouchableOpacity style={styles.optionRow} onPress={() => Alert.alert('Paramètres', 'Fonctionnalité à venir')}>
+            <Ionicons name="settings" size={20} color="#666" />
+            <Text style={styles.optionText}>Paramètres</Text>
+            <Ionicons name="chevron-forward" size={16} color="#ccc" />
+          </TouchableOpacity>
+          
+          <View style={styles.divider} />
+          
+          <TouchableOpacity style={styles.optionRow} onPress={() => Alert.alert('Aide', 'Centre d\'aide à venir')}>
+            <Ionicons name="help-circle" size={20} color="#666" />
+            <Text style={styles.optionText}>Aide</Text>
+            <Ionicons name="chevron-forward" size={16} color="#ccc" />
           </TouchableOpacity>
         </View>
+      </View>
+
+      {/* Déconnexion */}
+      <View style={styles.section}>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Ionicons name="log-out" size={20} color="#FFFFFF" />
+          <Text style={styles.logoutText}>Se déconnecter</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Version */}
+      <View style={styles.versionContainer}>
+        <Text style={styles.versionText}>CityTrip v1.0.0</Text>
       </View>
     </ScrollView>
   );
@@ -203,204 +160,173 @@ export default function Account() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
   },
   loadingText: {
     fontSize: 16,
-    color: '#64748B',
+    color: '#666',
     fontWeight: '500',
   },
   header: {
+    paddingHorizontal: 20,
     paddingTop: 60,
-    paddingBottom: 40,
-    paddingHorizontal: 24,
+    paddingBottom: 20,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
   },
   profileSection: {
     alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 30,
   },
   avatarContainer: {
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
   userName: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
     marginBottom: 4,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
   },
   userEmail: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: '#666',
     marginBottom: 16,
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
-  statusBadge: {
+  statusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#f8f9fa',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
   },
-  connectedBadge: {
-    backgroundColor: 'rgba(34, 197, 94, 0.9)',
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
   },
-  disconnectedBadge: {
-    backgroundColor: 'rgba(239, 68, 68, 0.9)',
+  connectedDot: {
+    backgroundColor: '#2F7417',
+  },
+  disconnectedDot: {
+    backgroundColor: '#EF4444',
   },
   statusText: {
-    color: '#FFFFFF',
     fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 6,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 40,
+    color: '#666',
+    fontWeight: '500',
   },
   section: {
-    marginBottom: 32,
+    paddingHorizontal: 20,
+    marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1E293B',
-    marginBottom: 16,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginBottom: 12,
   },
   infoCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-  },
-  menuCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 16,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
   },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-  },
-  infoIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#F8FAFC',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  menuIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#F8FAFC',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
   infoContent: {
-    flex: 1,
-  },
-  menuContent: {
+    marginLeft: 16,
     flex: 1,
   },
   infoLabel: {
     fontSize: 12,
-    color: '#64748B',
-    fontWeight: '500',
+    color: '#999',
     marginBottom: 2,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   infoValue: {
     fontSize: 16,
-    color: '#1E293B',
-    fontWeight: '600',
-  },
-  menuTitle: {
-    fontSize: 16,
-    color: '#1E293B',
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  menuSubtitle: {
-    fontSize: 14,
-    color: '#64748B',
-    fontWeight: '400',
+    color: '#1a1a1a',
+    fontWeight: '500',
   },
   divider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
-    marginVertical: 4,
+    backgroundColor: '#e9ecef',
+    marginVertical: 8,
   },
-  actionButton: {
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  statCard: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  statNumber: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2F7417',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+  optionsCard: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 16,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  optionText: {
+    fontSize: 16,
+    color: '#1a1a1a',
+    marginLeft: 16,
+    flex: 1,
+  },
+  logoutButton: {
+    backgroundColor: '#EF4444',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
-    paddingHorizontal: 24,
     borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
   },
-  debugButton: {
-    backgroundColor: '#FEF3C7',
-    borderWidth: 1,
-    borderColor: '#F59E0B',
-  },
-  logoutButton: {
-    backgroundColor: '#DC2626',
-  },
-  actionButtonText: {
-    marginLeft: 12,
+  logoutText: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+    marginLeft: 8,
+  },
+  versionContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  versionText: {
+    fontSize: 12,
+    color: '#999',
+  },
+  scrollContent: {
+    paddingBottom: 120,
   },
 }); 

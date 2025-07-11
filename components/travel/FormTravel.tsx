@@ -1,16 +1,17 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function FormTravel() {
     return (
         <View style={styles.container}>
             <Text style={styles.title}>FormTravel</Text>
-            <TouchableOpacity style={styles.button} onPress={() => {
-                console.log('Créer un voyage');
-            }}>
-                <Text style={styles.buttonText}>Créer un voyage</Text>
-            </TouchableOpacity>
-        </View>
+            <form>
+                <TextInput
+                    placeholder="Destinatio,"
+                    style={styles.input}
+                />
+            </form>
+            </View>
     );
 }
 
@@ -40,5 +41,12 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: 'gray',
+        borderRadius: 5,
+        padding: 10,
+        marginBottom: 10,
     }
 });
