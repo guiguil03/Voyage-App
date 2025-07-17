@@ -2,22 +2,22 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 // Import des services unifié et individuels
 import { Coordinates, getIconForCategory } from '../../lib/recherche';
 import {
-    getUnifiedSearchService,
-    UnifiedPOI,
-    UnifiedSearchParams,
-    UnifiedSearchResponse
+  getUnifiedSearchService,
+  UnifiedPOI,
+  UnifiedSearchParams,
+  UnifiedSearchResponse
 } from '../../lib/recherche-unifiee';
 
 

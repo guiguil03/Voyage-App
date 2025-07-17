@@ -1,7 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { forceSignOut, getSession, signOut } from '../lib/auth-client';
+import { forceSignOut, getSession } from '../lib/auth-client';
 import { supabase } from '../lib/supabase';
 
 export function useAuth() {

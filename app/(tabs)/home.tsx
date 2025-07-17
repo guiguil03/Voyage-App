@@ -1,25 +1,28 @@
 import TripCard from '@/components/travel/TripCard';
 import city from '@/data/city.json';
-import voyage from '@/data/Voyage.json';
 import { useAuth } from '@/hooks/useAuth';
+import { getAllVoyages, getUserVoyages } from '@/lib/voyages';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 export default function HomeScreen() {
   const { user, isAuthenticated, loading } = useAuth();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [userVoyages, setUserVoyages] = useState<any[]>([]);
+  const [allVoyages, setAllVoyages] = useState<any[]>([]);
+  const [loadingVoyages, setLoadingVoyages] = useState(true);
 
   useEffect(() => {
     // Si l'utilisateur n'est pas connecté, rediriger vers la page de connexion
@@ -27,6 +30,35 @@ export default function HomeScreen() {
       router.replace('/login');
     }
   }, [isAuthenticated, loading]);
+
+  // Charger les voyages depuis Supabase
+  useEffect(() => {
+    const loadVoyages = async () => {
+      if (isAuthenticated) {
+        setLoadingVoyages(true);
+        try {
+          // Charger les voyages de l'utilisateur et tous les voyages en parallèle
+          const [userResult, allResult] = await Promise.all([
+            getUserVoyages(),
+            getAllVoyages()
+          ]);
+
+          if (userResult.data) {
+            setUserVoyages(userResult.data);
+          }
+          if (allResult.data) {
+            setAllVoyages(allResult.data);
+          }
+        } catch (error) {
+          console.error('Erreur lors du chargement des voyages:', error);
+        } finally {
+          setLoadingVoyages(false);
+        }
+      }
+    };
+
+    loadVoyages();
+  }, [isAuthenticated]);
 
   const handleTripDetail = () => {
     Alert.alert('Détails du voyage', 'Fonctionnalité des détails à venir !');
@@ -86,18 +118,42 @@ export default function HomeScreen() {
         <View style={styles.tripSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Dernier Voyage</Text>
-            <TouchableOpacity onPress={() => Alert.alert('Voir tout', 'Liste complète des voyages à venir !')}>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/voyage')}>
               <Text style={styles.seeAllText}>Voir tout</Text>
             </TouchableOpacity>
           </View>
           
-          <TripCard
-            date="21 Juillet 2024 - 1 Août 2024"
-            country="Canada"
-            flagEmoji="🇨🇦"
-            image={require('@/assets/images/mountain-background.jpg')}
-            onPress={handleTripDetail}
-          />
+          {loadingVoyages ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#2F7417" />
+              <Text style={styles.loadingText}>Chargement des voyages...</Text>
+            </View>
+          ) : userVoyages.length > 0 ? (
+            <TripCard
+              date={new Date(userVoyages[0].created_at).toLocaleDateString('fr-FR', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+              })}
+              country={userVoyages[0].destination}
+              flagEmoji={userVoyages[0].flag_emoji || '🌍'}
+              image={userVoyages[0].image_url ? 
+                { uri: userVoyages[0].image_url } : 
+                require('@/assets/images/mountain-background.jpg')
+              }
+              onPress={handleTripDetail}
+            />
+          ) : (
+            <View style={styles.noVoyageCard}>
+              <Text style={styles.noVoyageText}>Aucun voyage encore créé</Text>
+              <TouchableOpacity 
+                style={styles.addVoyageButton} 
+                onPress={() => router.push('/Memory')}
+              >
+                <Text style={styles.addVoyageButtonText}>Ajouter votre premier voyage</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* Destinations populaires */}
@@ -167,28 +223,39 @@ export default function HomeScreen() {
           </View>
           
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.friendsTripsScroll}>
-            {voyage.voyage.map((voyageItem) => (
-              <TouchableOpacity key={voyageItem.id} style={styles.friendVoyageCard}>
-                <View style={styles.friendVoyageHeader}>
-                  <Text style={styles.voyageDrapeau}>{voyageItem.drapeau}</Text>
-                  <View style={styles.friendVoyageInfo}>
-                    <Text style={styles.voyageUser}>@{voyageItem.user}</Text>
-                    <Text style={styles.voyageName}>{voyageItem.name}</Text>
+            {loadingVoyages ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#2F7417" />
+                <Text style={styles.loadingText}>Chargement...</Text>
+              </View>
+            ) : allVoyages.length > 0 ? (
+              allVoyages.map((voyageItem) => (
+                <TouchableOpacity key={voyageItem.id} style={styles.friendVoyageCard}>
+                  <View style={styles.friendVoyageHeader}>
+                    <Text style={styles.voyageDrapeau}>{voyageItem.drapeau || '🌍'}</Text>
+                    <View style={styles.friendVoyageInfo}>
+                      <Text style={styles.voyageUser}>@{voyageItem.user}</Text>
+                      <Text style={styles.voyageName}>{voyageItem.name}</Text>
+                    </View>
                   </View>
-                </View>
-                <Text style={styles.voyageDescription} numberOfLines={3}>
-                  {voyageItem.description}
-                </Text>
-                <View style={styles.friendVoyageFooter}>
-                  <View style={styles.friendVoyageStats}>
-                    <Ionicons name="heart" size={16} color="#EF4444" />
-                    <Text style={styles.friendVoyageStatsText}>24</Text>
-                    <Ionicons name="chatbubble" size={16} color="#2F7417" style={styles.statsIcon} />
-                    <Text style={styles.friendVoyageStatsText}>8</Text>
+                  <Text style={styles.voyageDescription} numberOfLines={3}>
+                    {voyageItem.description}
+                  </Text>
+                  <View style={styles.friendVoyageFooter}>
+                    <View style={styles.friendVoyageStats}>
+                      <Ionicons name="heart" size={16} color="#EF4444" />
+                      <Text style={styles.friendVoyageStatsText}>{Math.floor(Math.random() * 50) + 10}</Text>
+                      <Ionicons name="chatbubble" size={16} color="#2F7417" style={styles.statsIcon} />
+                      <Text style={styles.friendVoyageStatsText}>{Math.floor(Math.random() * 20) + 3}</Text>
+                    </View>
                   </View>
-                </View>
-              </TouchableOpacity>
-            ))}
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.noVoyageCard}>
+                <Text style={styles.noVoyageText}>Aucun voyage partagé pour le moment</Text>
+              </View>
+            )}
           </ScrollView>
         </View>
 
@@ -602,5 +669,31 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 120,
+  },
+  noVoyageCard: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    borderStyle: 'dashed',
+  },
+  noVoyageText: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  addVoyageButton: {
+    backgroundColor: '#2F7417',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  addVoyageButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 }); 

@@ -1,4 +1,3 @@
-import { useAuth } from '@/hooks/useAuth';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -11,9 +10,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import PersonalInfoForm from '../../components/profile/PersonalInfoForm';
-import SettingsForm from '../../components/profile/SettingsForm';
-import TravelPreferencesForm from '../../components/profile/TravelPreferencesForm';
+import PersonalInfoForm from '../components/profile/PersonalInfoForm';
+import SettingsForm from '../components/profile/SettingsForm';
+import TravelPreferencesForm from '../components/profile/TravelPreferencesForm';
+import { useAuth } from '../hooks/useAuth';
 import {
   getCurrentUserProfile,
   Profile,
@@ -21,12 +21,12 @@ import {
   updateNotificationSettings,
   updateTravelPreferences,
   upsertProfile,
-} from '../../lib/profiles';
+} from '../lib/profiles';
 
 type TabType = 'info' | 'preferences' | 'settings';
 
-export default function Account() {
-  const { user, loading: authLoading, signOut, isConnected } = useAuth();
+export default function ProfilScreen() {
+  const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('info');
@@ -46,40 +46,13 @@ export default function Account() {
       const { data, error } = await getCurrentUserProfile();
       if (error) {
         console.error('Erreur lors du chargement du profil:', error);
-        
-        // Gestion d'erreur plus spécifique
-        if (error.includes('relation "public.profiles" does not exist')) {
-          Alert.alert(
-            'Configuration requise', 
-            'La table des profils n\'existe pas. Veuillez exécuter le script de création de la base de données.',
-            [
-              { text: 'OK', style: 'default' }
-            ]
-          );
-        } else {
-          Alert.alert(
-            'Erreur de chargement', 
-            'Impossible de charger le profil. L\'application créera un profil automatiquement lors de la prochaine connexion.',
-            [
-              { text: 'Réessayer', onPress: loadProfile },
-              { text: 'Continuer', style: 'cancel' }
-            ]
-          );
-        }
+        Alert.alert('Erreur', 'Impossible de charger le profil');
       } else {
         setProfile(data);
-        console.log('✅ Profil chargé avec succès:', data?.full_name || data?.email);
       }
     } catch (error) {
       console.error('Erreur inattendue:', error);
-      Alert.alert(
-        'Erreur système', 
-        'Une erreur technique est survenue. Veuillez réessayer.',
-        [
-          { text: 'Réessayer', onPress: loadProfile },
-          { text: 'Continuer', style: 'cancel' }
-        ]
-      );
+      Alert.alert('Erreur', 'Une erreur inattendue est survenue');
     } finally {
       setLoading(false);
     }
@@ -136,37 +109,10 @@ export default function Account() {
     }
   };
 
-  // Fonction de déconnexion
-  const handleLogout = async () => {
-    try {
-      Alert.alert(
-        'Déconnexion',
-        'Êtes-vous sûr de vouloir vous déconnecter ?',
-        [
-          {
-            text: 'Annuler',
-            style: 'cancel',
-          },
-          {
-            text: 'Déconnecter',
-            style: 'destructive',
-            onPress: async () => {
-              console.log('🚪 Déconnexion initiée depuis account.tsx');
-              await signOut();
-            },
-          },
-        ]
-      );
-    } catch (error) {
-      console.error('❌ Erreur UI de déconnexion:', error);
-      await signOut();
-    }
-  };
-
   const tabs = [
     {
       id: 'info' as TabType,
-      title: 'Profil',
+      title: 'Informations',
       icon: 'person',
     },
     {
@@ -236,6 +182,10 @@ export default function Account() {
     <SafeAreaView style={styles.container}>
       {/* Header avec profil */}
       <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+        </TouchableOpacity>
+        
         <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>
             {profile?.avatar_url ? (
@@ -250,21 +200,7 @@ export default function Account() {
             {profile?.full_name || user.email?.split('@')[0] || 'Voyageur'}
           </Text>
           <Text style={styles.profileEmail}>{user.email}</Text>
-          
-          {/* Statut de connexion */}
-          <View style={styles.statusContainer}>
-            <View style={[styles.statusDot, isConnected ? styles.connectedDot : styles.disconnectedDot]} />
-            <Text style={styles.statusText}>
-              {isConnected ? 'Connecté' : 'Déconnecté'}
-            </Text>
-          </View>
         </View>
-
-        {/* Bouton de déconnexion */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out" size={16} color="#FFFFFF" />
-          <Text style={styles.logoutText}>Déconnexion</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Navigation par onglets */}
@@ -344,13 +280,12 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#e9ecef',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  },
+  backButton: {
+    marginBottom: 20,
   },
   profileHeader: {
     alignItems: 'center',
-    flex: 1,
   },
   avatarContainer: {
     marginBottom: 12,
@@ -377,47 +312,6 @@ const styles = StyleSheet.create({
   profileEmail: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 8,
-  },
-  statusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  connectedDot: {
-    backgroundColor: '#2F7417',
-  },
-  disconnectedDot: {
-    backgroundColor: '#EF4444',
-  },
-  statusText: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
-  },
-  logoutButton: {
-    backgroundColor: '#EF4444',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  logoutText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 4,
   },
   tabContainer: {
     flexDirection: 'row',

@@ -95,6 +95,113 @@ export type Database = {
           updated_at?: string;
         };
       };
+      voyages: {
+        Row: {
+          id: string;
+          user_id: string;
+          trip_name: string;
+          destination: string;
+          description: string | null;
+          image_url: string | null;
+          trip_type: string;
+          rating: number;
+          duration: string;
+          memory_text: string | null;
+          flag_emoji: string | null;
+          status: string;
+          is_public: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          trip_name: string;
+          destination: string;
+          description?: string | null;
+          image_url?: string | null;
+          trip_type: string;
+          rating: number;
+          duration: string;
+          memory_text?: string | null;
+          flag_emoji?: string | null;
+          status?: string;
+          is_public?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          trip_name?: string;
+          destination?: string;
+          description?: string | null;
+          image_url?: string | null;
+          trip_type?: string;
+          rating?: number;
+          duration?: string;
+          memory_text?: string | null;
+          flag_emoji?: string | null;
+          status?: string;
+          is_public?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      trip_plans: {
+        Row: {
+          id: string;
+          user_id: string;
+          destination: string;
+          start_date: string | null;
+          end_date: string | null;
+          travel_type: string;
+          interests: any[] | null;
+          activity_level: string;
+          status: string;
+          generated_itinerary: any | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          destination: string;
+          start_date?: string | null;
+          end_date?: string | null;
+          travel_type: string;
+          interests?: any[] | null;
+          activity_level: string;
+          status?: string;
+          generated_itinerary?: any | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          destination?: string;
+          start_date?: string | null;
+          end_date?: string | null;
+          travel_type?: string;
+          interests?: any[] | null;
+          activity_level?: string;
+          status?: string;
+          generated_itinerary?: any | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
   };
-}; 
+};
+
+// Type pour un voyage
+export type Voyage = Database['public']['Tables']['voyages']['Row'];
+export type VoyageInsert = Database['public']['Tables']['voyages']['Insert'];
+export type VoyageUpdate = Database['public']['Tables']['voyages']['Update'];
+
+// Types pour les planifications de voyage
+export type TripPlan = Database['public']['Tables']['trip_plans']['Row'];
+export type TripPlanInsert = Database['public']['Tables']['trip_plans']['Insert'];
+export type TripPlanUpdate = Database['public']['Tables']['trip_plans']['Update']; 

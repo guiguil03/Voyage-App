@@ -1,13 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+
 import React from 'react';
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 export default function CreateScreen() {
@@ -16,7 +17,7 @@ export default function CreateScreen() {
   };
 
   const handleCreateMemory = () => {
-    console.log('Ajouter un souvenir');
+    router.push('/Memory');
     // TODO: Navigation vers l'ajout de souvenir
   };
 
