@@ -66,7 +66,7 @@ export default function VoyageScreen() {
       
       setTrips(result.data);
       
-      // Calculer les statistiques
+    
       const totalTrips = result.data.length;
       const pendingTrips = result.data.filter((trip: TripPlan) => trip.status === 'pending').length;
       const completedTrips = result.data.filter((trip: TripPlan) => trip.status === 'completed').length;

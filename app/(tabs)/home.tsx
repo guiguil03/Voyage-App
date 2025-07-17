@@ -1,6 +1,7 @@
 import TripCard from '@/components/travel/TripCard';
 import city from '@/data/city.json';
 import { useAuth } from '@/hooks/useAuth';
+import { getUserTripPlans } from '@/lib/trip-planning';
 import { getAllVoyages, getUserVoyages } from '@/lib/voyages';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,12 +18,29 @@ import {
   View,
 } from 'react-native';
 
+interface TripPlan {
+  id: string;
+  destination: string;
+  start_date: string | null;
+  end_date: string | null;
+  travel_type: string;
+  interests: string[] | null;
+  activity_level: string;
+  status: string;
+  created_at: string;
+}
+
 export default function HomeScreen() {
   const { user, isAuthenticated, loading } = useAuth();
   const [showAddForm, setShowAddForm] = useState(false);
   const [userVoyages, setUserVoyages] = useState<any[]>([]);
   const [allVoyages, setAllVoyages] = useState<any[]>([]);
   const [loadingVoyages, setLoadingVoyages] = useState(true);
+  const [activeFilter, setActiveFilter] = useState('Tous');
+  const [trips, setTrips] = useState<any[]>([]);
+  const [nextTrip, setNextTrip] = useState<TripPlan | null>(null);
+  const [loadingNextTrip, setLoadingNextTrip] = useState(true);
+
 
   useEffect(() => {
     // Si l'utilisateur n'est pas connecté, rediriger vers la page de connexion
@@ -59,6 +77,78 @@ export default function HomeScreen() {
 
     loadVoyages();
   }, [isAuthenticated]);
+
+  // Charger le prochain voyage planifié
+  useEffect(() => {
+    const loadNextTrip = async () => {
+      if (isAuthenticated) {
+        setLoadingNextTrip(true);
+        try {
+          const result = await getUserTripPlans();
+          
+          if (result.data && result.data.length > 0) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // Filtrer les voyages avec des dates de départ futures
+            const upcomingTrips = result.data
+              .filter((trip: TripPlan) => {
+                if (!trip.start_date) return false;
+                const tripDate = new Date(trip.start_date);
+                return tripDate >= today;
+              })
+              .sort((a: TripPlan, b: TripPlan) => {
+                const dateA = new Date(a.start_date!).getTime();
+                const dateB = new Date(b.start_date!).getTime();
+                return dateA - dateB;
+              });
+            
+            // Si pas de voyage futur, prendre le voyage le plus récent
+            if (upcomingTrips.length > 0) {
+              setNextTrip(upcomingTrips[0]);
+            } else if (result.data.length > 0) {
+              // Prendre le voyage le plus récemment créé
+              const sortedByCreation = [...result.data].sort((a: TripPlan, b: TripPlan) => {
+                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+              });
+              setNextTrip(sortedByCreation[0]);
+            }
+          }
+        } catch (error) {
+          console.error('Erreur lors du chargement du prochain voyage:', error);
+        } finally {
+          setLoadingNextTrip(false);
+        }
+      }
+    };
+
+    loadNextTrip();
+  }, [isAuthenticated]);
+
+  const formatTripDate = (trip: TripPlan): string => {
+    if (trip.start_date && trip.end_date) {
+      const startDate = new Date(trip.start_date);
+      const endDate = new Date(trip.end_date);
+      return `Du ${startDate.toLocaleDateString('fr-FR')} au ${endDate.toLocaleDateString('fr-FR')}`;
+    } else if (trip.start_date) {
+      const startDate = new Date(trip.start_date);
+      return `À partir du ${startDate.toLocaleDateString('fr-FR')}`;
+    }
+    return 'Dates à définir';
+  };
+
+  const getStatusDisplay = (status: string) => {
+    switch (status) {
+      case 'pending': return { text: 'En attente', color: '#FF6B35' };
+      case 'processing': return { text: 'En cours', color: '#2F7417' };
+      case 'completed': return { text: 'Terminé', color: '#4ECDC4' };
+      case 'failed': return { text: 'Échoué', color: '#FF4757' };
+      default: return { text: status, color: '#666' };
+    }
+  };
+
+ 
+
 
   const handleTripDetail = () => {
     Alert.alert('Détails du voyage', 'Fonctionnalité des détails à venir !');
@@ -187,77 +277,97 @@ export default function HomeScreen() {
         <View style={styles.upcomingSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Voyages Planifiés</Text>
-            <TouchableOpacity onPress={handleCreateTrip}>
-              <Text style={styles.seeAllText}>Planifier</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.upcomingCard}>
-            <LinearGradient
-              colors={['#E3F2FD', '#BBDEFB']}
-              style={styles.upcomingGradient}
-            >
-              <View style={styles.upcomingContent}>
-                <Ionicons name="calendar" size={24} color="#1976D2" />
-                <View style={styles.upcomingText}>
-                  <Text style={styles.upcomingTitle}>Aucun voyage planifié</Text>
-                  <Text style={styles.upcomingSubtitle}>Commencez à planifier votre prochaine aventure !</Text>
-                </View>
-              </View>
-              
-              <TouchableOpacity style={styles.planButton} onPress={handleCreateTrip}>
-                <Text style={styles.planButtonText}>Planifier</Text>
-                <Ionicons name="arrow-forward" size={16} color="#1976D2" />
-              </TouchableOpacity>
-            </LinearGradient>
-          </View>
-        </View>
-
-        {/* Derniers Voyages de vos amis */}
-        <View style={styles.friendsTripsSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Derniers Voyages de vos amis</Text>
-            <TouchableOpacity onPress={() => Alert.alert('Voir tout', 'Liste complète des voyages à venir !')}>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/voyage')}>
               <Text style={styles.seeAllText}>Voir tout</Text>
             </TouchableOpacity>
           </View>
           
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.friendsTripsScroll}>
-            {loadingVoyages ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color="#2F7417" />
-                <Text style={styles.loadingText}>Chargement...</Text>
-              </View>
-            ) : allVoyages.length > 0 ? (
-              allVoyages.map((voyageItem) => (
-                <TouchableOpacity key={voyageItem.id} style={styles.friendVoyageCard}>
-                  <View style={styles.friendVoyageHeader}>
-                    <Text style={styles.voyageDrapeau}>{voyageItem.drapeau || '🌍'}</Text>
-                    <View style={styles.friendVoyageInfo}>
-                      <Text style={styles.voyageUser}>@{voyageItem.user}</Text>
-                      <Text style={styles.voyageName}>{voyageItem.name}</Text>
+          {loadingNextTrip ? (
+            <View style={styles.upcomingCard}>
+              <LinearGradient
+                colors={['#E3F2FD', '#BBDEFB']}
+                style={styles.upcomingGradient}
+              >
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color="#1976D2" />
+                  <Text style={styles.loadingText}>Chargement...</Text>
+                </View>
+              </LinearGradient>
+            </View>
+          ) : nextTrip ? (
+            <View style={styles.upcomingCard}>
+              <LinearGradient
+                colors={['#E8F5E8', '#D4F1D4']}
+                style={styles.upcomingGradient}
+              >
+                <View style={styles.upcomingHeader}>
+                  <View style={styles.upcomingIconContainer}>
+                    <Ionicons name="airplane" size={24} color="#2F7417" />
+                  </View>
+                  <View style={styles.upcomingInfo}>
+                    <Text style={styles.upcomingDestination}>{nextTrip.destination}</Text>
+                    <Text style={styles.upcomingDate}>{formatTripDate(nextTrip)}</Text>
+                    <View style={styles.upcomingDetails}>
+                      <View style={[styles.statusBadge, { backgroundColor: getStatusDisplay(nextTrip.status).color }]}>
+                        <Text style={styles.statusText}>{getStatusDisplay(nextTrip.status).text}</Text>
+                      </View>
+                      <Text style={styles.upcomingType}>{nextTrip.travel_type}</Text>
                     </View>
                   </View>
-                  <Text style={styles.voyageDescription} numberOfLines={3}>
-                    {voyageItem.description}
-                  </Text>
-                  <View style={styles.friendVoyageFooter}>
-                    <View style={styles.friendVoyageStats}>
-                      <Ionicons name="heart" size={16} color="#EF4444" />
-                      <Text style={styles.friendVoyageStatsText}>{Math.floor(Math.random() * 50) + 10}</Text>
-                      <Ionicons name="chatbubble" size={16} color="#2F7417" style={styles.statsIcon} />
-                      <Text style={styles.friendVoyageStatsText}>{Math.floor(Math.random() * 20) + 3}</Text>
-                    </View>
+                </View>
+                
+                <View style={styles.upcomingActions}>
+                  <TouchableOpacity 
+                    style={styles.detailButton} 
+                    onPress={() => router.push('/(tabs)/voyage')}
+                  >
+                    <Text style={styles.detailButtonText}>Voir détails</Text>
+                    <Ionicons name="arrow-forward" size={16} color="#2F7417" />
+                  </TouchableOpacity>
+                  
+                  {nextTrip.status === 'pending' && (
+                    <TouchableOpacity 
+                      style={styles.modifyButton} 
+                      onPress={() => router.push('/plan-trip')}
+                    >
+                      <Ionicons name="create" size={16} color="#666" />
+                      <Text style={styles.modifyButtonText}>Modifier</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                
+                {nextTrip.interests && nextTrip.interests.length > 0 && (
+                  <View style={styles.upcomingInterests}>
+                    <Text style={styles.interestsLabel}>Centres d&apos;intérêt:</Text>
+                    <Text style={styles.interestsText}>{nextTrip.interests.join(', ')}</Text>
                   </View>
+                )}
+              </LinearGradient>
+            </View>
+          ) : (
+            <View style={styles.upcomingCard}>
+              <LinearGradient
+                colors={['#E3F2FD', '#BBDEFB']}
+                style={styles.upcomingGradient}
+              >
+                <View style={styles.upcomingContent}>
+                  <Ionicons name="calendar" size={24} color="#1976D2" />
+                  <View style={styles.upcomingText}>
+                    <Text style={styles.upcomingTitle}>Aucun voyage planifié</Text>
+                    <Text style={styles.upcomingSubtitle}>Créez votre première aventure !</Text>
+                  </View>
+                </View>
+                  
+                <TouchableOpacity style={styles.planButton} onPress={handleCreateTrip}>
+                  <Text style={styles.planButtonText}>Planifier</Text>
+                  <Ionicons name="arrow-forward" size={16} color="#1976D2" />
                 </TouchableOpacity>
-              ))
-            ) : (
-              <View style={styles.noVoyageCard}>
-                <Text style={styles.noVoyageText}>Aucun voyage partagé pour le moment</Text>
-              </View>
-            )}
-          </ScrollView>
+              </LinearGradient>
+            </View>
+          )}
         </View>
+
+
 
         
 
@@ -546,6 +656,99 @@ const styles = StyleSheet.create({
   upcomingGradient: {
     borderRadius: 16,
     padding: 20,
+  },
+  upcomingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  upcomingIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(47, 116, 23, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  upcomingInfo: {
+    flex: 1,
+  },
+  upcomingDestination: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  upcomingDate: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  upcomingDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 8,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  upcomingType: {
+    fontSize: 14,
+    color: '#666',
+  },
+  upcomingActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  detailButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(25, 118, 210, 0.1)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  detailButtonText: {
+    color: '#1976D2',
+    fontSize: 14,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  modifyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(102, 102, 102, 0.1)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  modifyButtonText: {
+    color: '#666',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  upcomingInterests: {
+    marginTop: 12,
+  },
+  interestsLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  interestsText: {
+    fontSize: 13,
+    color: '#666',
   },
   upcomingContent: {
     flexDirection: 'row',
