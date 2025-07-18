@@ -1,11 +1,13 @@
 import { useAuth } from '@/hooks/useAuth';
 import { getUserTripPlans } from '@/lib/trip-planning';
+import { getUserVoyages } from '@/lib/voyages';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -29,6 +31,28 @@ interface TripPlan {
   updated_at: string;
 }
 
+// Type unifié pour afficher les voyages et trip plans ensemble
+interface UnifiedTrip {
+  id: string;
+  destination: string;
+  start_date: string | null;
+  end_date: string | null;
+  travel_type: string;
+  interests: string[] | null;
+  activity_level?: string;
+  status: string;
+  type: 'trip_plan' | 'voyage'; // Pour distinguer la source
+  created_at: string;
+  // Champs spécifiques aux souvenirs
+  trip_name?: string;
+  description?: string;
+  memory_text?: string;
+  rating?: number;
+  duration?: string;
+  image_url?: string; // URL de l'image principale
+  images?: string[]; // Toutes les images du voyage
+}
+
 interface TripStats {
   totalTrips: number;
   pendingTrips: number;
@@ -38,6 +62,8 @@ interface TripStats {
 export default function VoyageScreen() {
   const [activeFilter, setActiveFilter] = useState('Tous');
   const [trips, setTrips] = useState<TripPlan[]>([]);
+  const [voyages, setVoyages] = useState<any[]>([]);
+  const [unifiedTrips, setUnifiedTrips] = useState<UnifiedTrip[]>([]);
   const [stats, setStats] = useState<TripStats>({ totalTrips: 0, pendingTrips: 0, completedTrips: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,20 +84,70 @@ export default function VoyageScreen() {
       setIsLoading(true);
       setError(null);
       
-      const result = await getUserTripPlans();
+      // Charger les trip plans et les souvenirs en parallèle
+      const [tripPlansResult, voyagesResult] = await Promise.all([
+        getUserTripPlans(),
+        getUserVoyages()
+      ]);
       
-      if (result.error) {
-        throw new Error(result.error);
+      if (tripPlansResult.error) {
+        throw new Error(tripPlansResult.error);
       }
       
-      setTrips(result.data);
+      if (voyagesResult.error) {
+        console.warn('Erreur lors du chargement des souvenirs:', voyagesResult.error);
+      }
       
-    
-      const totalTrips = result.data.length;
-      const pendingTrips = result.data.filter((trip: TripPlan) => trip.status === 'pending').length;
-      const completedTrips = result.data.filter((trip: TripPlan) => trip.status === 'completed').length;
+      const tripPlansData = tripPlansResult.data || [];
+      const voyagesData = voyagesResult.data || [];
       
-      setStats({ totalTrips, pendingTrips, completedTrips });
+      setTrips(tripPlansData);
+      setVoyages(voyagesData);
+      
+      // Créer les voyages unifiés
+      const unifiedData: UnifiedTrip[] = [
+        // Trip plans
+        ...tripPlansData.map((trip: TripPlan): UnifiedTrip => ({
+          id: trip.id,
+          destination: trip.destination,
+          start_date: trip.start_date,
+          end_date: trip.end_date,
+          travel_type: trip.travel_type,
+          interests: trip.interests,
+          activity_level: trip.activity_level,
+          status: trip.status,
+          type: 'trip_plan',
+          created_at: trip.created_at
+        })),
+        // Souvenirs convertis en format unifié
+        ...voyagesData.map((voyage: any): UnifiedTrip => ({
+          id: voyage.id,
+          destination: voyage.destination,
+          start_date: null, // Les souvenirs n'ont pas forcément de dates
+          end_date: null,
+          travel_type: voyage.trip_type,
+          interests: [], // Les souvenirs utilisent un autre système
+          status: 'completed', // Les souvenirs sont toujours terminés
+          type: 'voyage',
+          created_at: voyage.created_at,
+          trip_name: voyage.trip_name,
+          description: voyage.description,
+          memory_text: voyage.memory_text,
+          rating: voyage.rating,
+          duration: voyage.duration,
+          image_url: voyage.image_url, // Image principale
+          images: voyage.images || [] // Toutes les images
+        }))
+      ];
+      
+      setUnifiedTrips(unifiedData);
+      
+      // Calculer les statistiques
+      const totalTrips = tripPlansData.length;
+      const pendingTrips = tripPlansData.filter((trip: TripPlan) => trip.status === 'pending').length;
+      const completedTrips = tripPlansData.filter((trip: TripPlan) => trip.status === 'completed').length + voyagesData.length;
+      
+      setStats({ totalTrips: totalTrips + voyagesData.length, pendingTrips, completedTrips });
       
     } catch (error) {
       console.error('Erreur lors du chargement des voyages:', error);
@@ -85,14 +161,15 @@ export default function VoyageScreen() {
     switch (status) {
       case 'pending': return { text: 'En attente', color: '#FF6B35' };
       case 'processing': return { text: 'En cours', color: '#2F7417' };
-      case 'completed': return { text: 'Terminé', color: '#4ECDC4' };
+      case 'completed': 
+      case 'Terminé': return { text: 'Terminé', color: '#4ECDC4' };
       case 'failed': return { text: 'Échoué', color: '#FF4757' };
       default: return { text: status, color: '#666' };
     }
   };
 
   const getFilteredTrips = () => {
-    if (activeFilter === 'Tous') return trips;
+    if (activeFilter === 'Tous') return unifiedTrips;
     
     const statusMap = {
       'En attente': 'pending',
@@ -101,28 +178,115 @@ export default function VoyageScreen() {
     };
     
     const statusKey = statusMap[activeFilter as keyof typeof statusMap];
-    return trips.filter(trip => trip.status === statusKey);
+    
+    // Pour "Terminé", inclure aussi les souvenirs (qui ont toujours le status 'completed')
+    if (activeFilter === 'Terminé') {
+      return unifiedTrips.filter(trip => 
+        trip.status === 'completed' || 
+        trip.status === 'Terminé' || 
+        trip.type === 'voyage'
+      );
+    }
+    
+    return unifiedTrips.filter(trip => trip.status === statusKey);
   };
 
   const filteredTrips = getFilteredTrips();
 
-  const handleTripPress = (trip: TripPlan) => {
-    const interests = trip.interests || [];
-    Alert.alert(
-      trip.destination, 
-      `Voyage ${getStatusDisplay(trip.status).text}\nType: ${trip.travel_type}\nIntérêts: ${interests.join(', ')}`
-    );
+  const handleTripPress = (trip: UnifiedTrip) => {
+    const isMemory = trip.type === 'voyage';
+    
+    if (isMemory) {
+      const details = [
+        `Destination: ${trip.destination}`,
+        `Type: ${trip.travel_type}`,
+        trip.duration ? `Durée: ${trip.duration}` : '',
+        trip.rating ? `Note: ${trip.rating}/5 ⭐` : '',
+        trip.description ? `Description: ${trip.description}` : ''
+      ].filter(Boolean).join('\n');
+      
+      Alert.alert(
+        trip.trip_name || trip.destination,
+        `✈️ Souvenir de voyage\n\n${details}`
+      );
+    } else {
+      const interests = trip.interests || [];
+      Alert.alert(
+        trip.destination, 
+        `📋 Plan de voyage - ${getStatusDisplay(trip.status).text}\nType: ${trip.travel_type}\nIntérêts: ${interests.join(', ') || 'Aucun'}\nNiveau: ${trip.activity_level}`
+      );
+    }
   };
 
   const handleAddTrip = () => {
-    router.push('/plan-trip');
+    Alert.alert(
+      'Ajouter un voyage',
+      'Que souhaitez-vous faire ?',
+      [
+        {
+          text: 'Planifier un voyage',
+          onPress: () => router.push('/plan-trip'),
+          style: 'default'
+        },
+        {
+          text: 'Ajouter un souvenir',
+          onPress: () => router.push('/Memory'),
+          style: 'default'
+        },
+        {
+          text: 'Annuler',
+          style: 'cancel'
+        }
+      ]
+    );
   };
 
-  const handleTripAction = (action: string, trip: TripPlan) => {
-    Alert.alert(action, `${action} pour ${trip.destination}`);
+  const handleTripAction = (action: string, trip: UnifiedTrip) => {
+    if (action === 'Détails') {
+      // Naviguer vers la page de détails en passant les données du voyage
+      router.push({
+        pathname: '/travel/detailMemory',
+        params: {
+          tripData: JSON.stringify(trip)
+        }
+      });
+    } else if (action === 'Supprimer le souvenir' && trip.type === 'voyage') {
+      Alert.alert(
+        'Supprimer le souvenir',
+        `Êtes-vous sûr de vouloir supprimer "${trip.trip_name || trip.destination}" ?`,
+        [
+          {
+            text: 'Annuler',
+            style: 'cancel'
+          },
+          {
+            text: 'Supprimer',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const { deleteVoyage } = await import('@/lib/voyages');
+                const result = await deleteVoyage(trip.id);
+                
+                if (result.error) {
+                  Alert.alert('Erreur', 'Impossible de supprimer: ' + result.error);
+                } else {
+                  Alert.alert('Supprimé', 'Le souvenir a été supprimé.', [
+                    { text: 'OK', onPress: () => loadUserTrips() }
+                  ]);
+                }
+              } catch (error) {
+                Alert.alert('Erreur', 'Une erreur est survenue.');
+              }
+            }
+          }
+        ]
+      );
+    } else {
+      Alert.alert(action, `${action} pour ${trip.destination}`);
+    }
   };
 
-  const formatDateRange = (trip: TripPlan): string => {
+  const formatDateRange = (trip: UnifiedTrip): string => {
     if (trip.start_date && trip.end_date) {
       const startDate = new Date(trip.start_date);
       const endDate = new Date(trip.end_date);
@@ -146,23 +310,7 @@ export default function VoyageScreen() {
     );
   }
 
-  // Affichage si pas connecté
-  if (!user) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.emptyState}>
-          <Ionicons name="person-outline" size={60} color="#ccc" />
-          <Text style={styles.emptyTitle}>Connexion requise</Text>
-          <Text style={styles.emptySubtitle}>
-            Connectez-vous pour voir vos voyages planifiés.
-          </Text>
-          <TouchableOpacity style={styles.createTripButton} onPress={() => router.push('/login')}>
-            <Text style={styles.createTripText}>Se connecter</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
+
 
   // Affichage des statistiques adaptées
   const statsDisplay = [
@@ -253,6 +401,7 @@ export default function VoyageScreen() {
           {filteredTrips.map((trip) => {
             const statusDisplay = getStatusDisplay(trip.status);
             const dateRange = formatDateRange(trip);
+            const isMemory = trip.type === 'voyage';
             
             return (
               <TouchableOpacity 
@@ -260,42 +409,88 @@ export default function VoyageScreen() {
                 style={styles.tripCard}
                 onPress={() => handleTripPress(trip)}
               >
-                {/* Image par défaut basée sur la destination */}
-                <View style={styles.tripImagePlaceholder}>
-                  <Ionicons name="location" size={40} color="#2F7417" />
-                  <Text style={styles.destinationOverlay}>{trip.destination}</Text>
-                </View>
+                {/* Image du voyage ou placeholder */}
+                {trip.image_url ? (
+                  <View style={styles.tripImageContainer}>
+                    <Image source={{ uri: trip.image_url }} style={styles.tripImage} />
+                    <View style={styles.imageOverlayGradient}>
+                      <Text style={styles.destinationOverlayOnImage}>{trip.destination}</Text>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.tripImagePlaceholder}>
+                    <Ionicons name={isMemory ? "heart" : "location"} size={40} color="#2F7417" />
+                    <Text style={styles.destinationOverlay}>{trip.destination}</Text>
+                  </View>
+                )}
                 
-                {/* Badge de statut */}
+                {/* Badge de statut avec indication du type */}
                 <View style={[styles.statusBadge, { backgroundColor: statusDisplay.color }]}>
-                  <Text style={styles.statusText}>{statusDisplay.text}</Text>
+                  <Text style={styles.statusText}>
+                    {isMemory ? 'Souvenir' : statusDisplay.text}
+                  </Text>
                 </View>
 
                 <View style={styles.tripInfo}>
                   <View style={styles.tripHeader}>
-                    <Text style={styles.tripTitle}>{trip.destination}</Text>
+                    <Text style={styles.tripTitle}>
+                      {isMemory ? trip.trip_name || trip.destination : trip.destination}
+                    </Text>
                     <View style={styles.tripType}>
                       <Text style={styles.tripTypeText}>{trip.travel_type}</Text>
                     </View>
                   </View>
 
                   <View style={styles.tripDetails}>
-                    <View style={styles.detailRow}>
-                      <Ionicons name="calendar" size={16} color="#666" />
-                      <Text style={styles.detailText}>{dateRange}</Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <Ionicons name="heart" size={16} color="#666" />
-                      <Text style={styles.detailText}>{trip.interests?.join(', ')}</Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <Ionicons name="fitness" size={16} color="#666" />
-                      <Text style={styles.detailText}>Niveau: {trip.activity_level}</Text>
-                    </View>
+                    {/* Affichage adapté selon le type */}
+                    {isMemory ? (
+                      <>
+                        {/* Pour les souvenirs */}
+                        <View style={styles.detailRow}>
+                          <Ionicons name="location" size={16} color="#666" />
+                          <Text style={styles.detailText}>{trip.destination}</Text>
+                        </View>
+                        {trip.duration && (
+                          <View style={styles.detailRow}>
+                            <Ionicons name="time" size={16} color="#666" />
+                            <Text style={styles.detailText}>{trip.duration}</Text>
+                          </View>
+                        )}
+                        {trip.rating && (
+                          <View style={styles.detailRow}>
+                            <Ionicons name="star" size={16} color="#FFD700" />
+                            <Text style={styles.detailText}>{trip.rating}/5</Text>
+                          </View>
+                        )}
+                        {trip.memory_text && (
+                          <View style={styles.memoryTextContainer}>
+                            <Text style={styles.memoryText} numberOfLines={2}>
+                              {trip.memory_text}
+                            </Text>
+                          </View>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {/* Pour les trip plans */}
+                        <View style={styles.detailRow}>
+                          <Ionicons name="calendar" size={16} color="#666" />
+                          <Text style={styles.detailText}>{dateRange}</Text>
+                        </View>
+                        <View style={styles.detailRow}>
+                          <Ionicons name="heart" size={16} color="#666" />
+                          <Text style={styles.detailText}>{trip.interests?.join(', ') || 'Aucun thème'}</Text>
+                        </View>
+                        <View style={styles.detailRow}>
+                          <Ionicons name="fitness" size={16} color="#666" />
+                          <Text style={styles.detailText}>Niveau: {trip.activity_level}</Text>
+                        </View>
+                      </>
+                    )}
                   </View>
 
-                  {/* Barre de progression basée sur le statut */}
-                  {trip.status !== 'completed' && (
+                  {/* Barre de progression uniquement pour les trip plans non terminés */}
+                  {!isMemory && trip.status !== 'completed' && (
                     <View style={styles.progressSection}>
                       <View style={styles.progressHeader}>
                         <Text style={styles.progressLabel}>Statut</Text>
@@ -315,7 +510,7 @@ export default function VoyageScreen() {
                     </View>
                   )}
 
-                  {/* Actions */}
+                  {/* Actions adaptées selon le type */}
                   <View style={styles.tripActions}>
                     <TouchableOpacity 
                       style={styles.actionButton}
@@ -324,20 +519,41 @@ export default function VoyageScreen() {
                       <Ionicons name="document-text" size={16} color="#2F7417" />
                       <Text style={styles.actionText}>Détails</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={styles.actionButton}
-                      onPress={() => handleTripAction('Modifier', trip)}
-                    >
-                      <Ionicons name="create" size={16} color="#2F7417" />
-                      <Text style={styles.actionText}>Modifier</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={styles.actionButton}
-                      onPress={() => handleTripAction('Partager', trip)}
-                    >
-                      <Ionicons name="share" size={16} color="#2F7417" />
-                      <Text style={styles.actionText}>Partager</Text>
-                    </TouchableOpacity>
+                    {isMemory ? (
+                      <>
+                        <TouchableOpacity 
+                          style={styles.actionButton}
+                          onPress={() => handleTripAction('Supprimer le souvenir', trip)}
+                        >
+                          <Ionicons name="trash" size={16} color="#FF4757" />
+                          <Text style={[styles.actionText, { color: '#FF4757' }]}>Supprimer</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          style={styles.actionButton}
+                          onPress={() => handleTripAction('Voir photos', trip)}
+                        >
+                          <Ionicons name="images" size={16} color="#2F7417" />
+                          <Text style={styles.actionText}>Photos</Text>
+                        </TouchableOpacity>
+                      </>
+                    ) : (
+                      <>
+                        <TouchableOpacity 
+                          style={styles.actionButton}
+                          onPress={() => handleTripAction('Modifier', trip)}
+                        >
+                          <Ionicons name="create" size={16} color="#2F7417" />
+                          <Text style={styles.actionText}>Modifier</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          style={styles.actionButton}
+                          onPress={() => handleTripAction('Partager', trip)}
+                        >
+                          <Ionicons name="share" size={16} color="#2F7417" />
+                          <Text style={styles.actionText}>Partager</Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
                   </View>
                 </View>
               </TouchableOpacity>
@@ -613,6 +829,17 @@ const styles = StyleSheet.create({
     color: '#666',
     marginLeft: 8,
   },
+  memoryTextContainer: {
+    marginTop: 8,
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+  },
+  memoryText: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+  },
   progressSection: {
     marginBottom: 16,
   },
@@ -690,5 +917,37 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 120,
+  },
+  // Nouveaux styles pour les images
+  tripImageContainer: {
+    height: 120,
+    backgroundColor: '#f0f0f0',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  tripImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  imageOverlayGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 60,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  destinationOverlayOnImage: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    textAlign: 'left',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
 }); 

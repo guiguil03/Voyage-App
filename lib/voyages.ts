@@ -56,6 +56,7 @@ export async function createVoyage(voyageData: {
   destination: string;
   description?: string;
   imageUrl?: string;
+  images?: string[]; // Nouveau champ pour les images multiples
   tripType: string;
   rating: number;
   duration: string;
@@ -82,6 +83,7 @@ export async function createVoyage(voyageData: {
       destination: voyageData.destination,
       description: voyageData.description || null,
       image_url: voyageData.imageUrl || null,
+      images: voyageData.images || [], // Stocker les images multiples en JSON
       trip_type: voyageData.tripType,
       rating: voyageData.rating,
       duration: voyageData.duration,
@@ -187,17 +189,26 @@ export async function getAllVoyages(): Promise<{ data: any[] | null; error: stri
   }
 }
 
-// Supprimer un voyage
+// Supprimer un voyage/souvenir (version sécurisée)
 export async function deleteVoyage(voyageId: string): Promise<{ error: string | null }> {
   if (!supabase) {
     return { error: 'Supabase non configuré' };
   }
 
   try {
+    // Obtenir l'utilisateur connecté
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !userData.user) {
+      return { error: 'Utilisateur non connecté' };
+    }
+
+    // Supprimer le voyage (avec vérification que l'utilisateur est propriétaire)
     const { error } = await supabase
       .from('voyages')
       .delete()
-      .eq('id', voyageId);
+      .eq('id', voyageId)
+      .eq('user_id', userData.user.id); // Sécurité : seul le propriétaire peut supprimer
 
     if (error) {
       console.error('Erreur lors de la suppression du voyage:', error);

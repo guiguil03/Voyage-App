@@ -151,7 +151,37 @@ export default function HomeScreen() {
 
 
   const handleTripDetail = () => {
-    Alert.alert('Détails du voyage', 'Fonctionnalité des détails à venir !');
+    if (userVoyages.length > 0) {
+      const lastVoyage = userVoyages[0];
+      // Créer un objet compatible avec le type UnifiedTrip
+      const tripData = {
+        id: lastVoyage.id,
+        destination: lastVoyage.destination,
+        start_date: null,
+        end_date: null,
+        travel_type: lastVoyage.trip_type,
+        interests: [],
+        status: 'completed',
+        type: 'voyage',
+        created_at: lastVoyage.created_at,
+        trip_name: lastVoyage.trip_name,
+        description: lastVoyage.description,
+        memory_text: lastVoyage.memory_text,
+        rating: lastVoyage.rating,
+        duration: lastVoyage.duration,
+        image_url: lastVoyage.image_url,
+        images: lastVoyage.images || []
+      };
+      
+      router.push({
+        pathname: '/travel/detailMemory',
+        params: {
+          tripData: JSON.stringify(tripData)
+        }
+      });
+    } else {
+      Alert.alert('Aucun voyage', 'Aucun voyage à afficher.');
+    }
   };
 
   const handleCreateTrip = () => {
@@ -319,7 +349,29 @@ export default function HomeScreen() {
                 <View style={styles.upcomingActions}>
                   <TouchableOpacity 
                     style={styles.detailButton} 
-                    onPress={() => router.push('/(tabs)/voyage')}
+                    onPress={() => {
+                      if (nextTrip) {
+                        const tripData = {
+                          id: nextTrip.id,
+                          destination: nextTrip.destination,
+                          start_date: nextTrip.start_date,
+                          end_date: nextTrip.end_date,
+                          travel_type: nextTrip.travel_type,
+                          interests: nextTrip.interests || [],
+                          activity_level: nextTrip.activity_level,
+                          status: nextTrip.status,
+                          type: 'trip_plan',
+                          created_at: nextTrip.created_at
+                        };
+                        
+                        router.push({
+                          pathname: '/travel/detailMemory',
+                          params: {
+                            tripData: JSON.stringify(tripData)
+                          }
+                        });
+                      }
+                    }}
                   >
                     <Text style={styles.detailButtonText}>Voir détails</Text>
                     <Ionicons name="arrow-forward" size={16} color="#2F7417" />

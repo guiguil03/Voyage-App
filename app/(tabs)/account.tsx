@@ -261,6 +261,12 @@ export default function Account() {
         </View>
 
         {/* Bouton de déconnexion */}
+
+       
+
+      </View>
+
+      <View style={styles.logoutButton}>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out" size={16} color="#FFFFFF" />
           <Text style={styles.logoutText}>Déconnexion</Text>
@@ -290,11 +296,14 @@ export default function Account() {
         ))}
       </View>
 
+      
+
       {/* Contenu de l'onglet actif */}
       <View style={styles.content}>
         {renderContent()}
       </View>
     </SafeAreaView>
+    
   );
 }
 
@@ -411,6 +420,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 8,
     paddingHorizontal: 12,
+    width: 200,
+    marginBottom: 10,
+    marg
     borderRadius: 8,
   },
   logoutText: {

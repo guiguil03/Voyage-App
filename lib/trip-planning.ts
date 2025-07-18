@@ -1,3 +1,4 @@
+import { getCurrentUserProfile } from './profiles';
 import { supabase, TripPlan, TripPlanInsert } from './supabase';
 
 /**
@@ -57,6 +58,19 @@ export async function createTripPlan(data: CreateTripPlanData) {
       throw new Error('Utilisateur non authentifié');
     }
 
+    // S'assurer qu'un profil utilisateur existe (le créer automatiquement si nécessaire)
+    const { data: profile, error: profileError } = await getCurrentUserProfile();
+    
+    if (profileError) {
+      throw new Error(`Erreur lors de la création/récupération du profil: ${profileError}`);
+    }
+
+    if (!profile) {
+      throw new Error('Impossible de créer ou récupérer le profil utilisateur');
+    }
+
+    console.log('✅ Profil utilisateur confirmé:', profile.email);
+
     // Préparer les données pour insertion
     const tripPlanData: TripPlanInsert = {
       user_id: user.id,
@@ -92,10 +106,14 @@ export async function createTripPlan(data: CreateTripPlanData) {
 }
 
 /**
- * Obtenir toutes les planifications de l'utilisateur connecté
+ * Récupérer toutes les planifications de voyage d'un utilisateur
  */
 export async function getUserTripPlans() {
   try {
+    if (!supabase) {
+      throw new Error('Supabase client non initialisé');
+    }
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {
@@ -124,21 +142,18 @@ export async function getUserTripPlans() {
 }
 
 /**
- * Obtenir une planification spécifique par ID
+ * Récupérer une planification spécifique par ID
  */
-export async function getTripPlanById(id: string) {
+export async function getTripPlan(id: string) {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !user) {
-      throw new Error('Utilisateur non authentifié');
+    if (!supabase) {
+      throw new Error('Supabase client non initialisé');
     }
 
     const { data: tripPlan, error } = await supabase
       .from('trip_plans')
       .select('*')
       .eq('id', id)
-      .eq('user_id', user.id)
       .single();
 
     if (error) {
@@ -148,7 +163,7 @@ export async function getTripPlanById(id: string) {
 
     return { data: tripPlan, error: null };
   } catch (error) {
-    console.error('Erreur dans getTripPlanById:', error);
+    console.error('Erreur dans getTripPlan:', error);
     return { 
       data: null, 
       error: error instanceof Error ? error.message : 'Erreur inconnue' 
@@ -159,19 +174,16 @@ export async function getTripPlanById(id: string) {
 /**
  * Mettre à jour le statut d'une planification
  */
-export async function updateTripPlanStatus(id: string, status: 'pending' | 'processing' | 'completed' | 'failed') {
+export async function updateTripPlanStatus(id: string, status: TripPlan['status']) {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !user) {
-      throw new Error('Utilisateur non authentifié');
+    if (!supabase) {
+      throw new Error('Supabase client non initialisé');
     }
 
-    const { data: tripPlan, error } = await supabase
+    const { data, error } = await supabase
       .from('trip_plans')
-      .update({ status })
+      .update({ status, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .eq('user_id', user.id)
       .select()
       .single();
 
@@ -180,7 +192,7 @@ export async function updateTripPlanStatus(id: string, status: 'pending' | 'proc
       throw new Error(`Erreur lors de la mise à jour: ${error.message}`);
     }
 
-    return { data: tripPlan, error: null };
+    return { data, error: null };
   } catch (error) {
     console.error('Erreur dans updateTripPlanStatus:', error);
     return { 
@@ -191,24 +203,22 @@ export async function updateTripPlanStatus(id: string, status: 'pending' | 'proc
 }
 
 /**
- * Sauvegarder l'itinéraire généré par l'IA
+ * Sauvegarder l'itinéraire généré pour une planification
  */
-export async function saveTripPlanItinerary(id: string, itinerary: GeneratedItinerary) {
+export async function saveGeneratedItinerary(tripPlanId: string, itinerary: GeneratedItinerary) {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !user) {
-      throw new Error('Utilisateur non authentifié');
+    if (!supabase) {
+      throw new Error('Supabase client non initialisé');
     }
 
-    const { data: tripPlan, error } = await supabase
+    const { data, error } = await supabase
       .from('trip_plans')
       .update({ 
         generated_itinerary: itinerary,
-        status: 'completed'
+        status: 'completed',
+        updated_at: new Date().toISOString()
       })
-      .eq('id', id)
-      .eq('user_id', user.id)
+      .eq('id', tripPlanId)
       .select()
       .single();
 
@@ -217,9 +227,9 @@ export async function saveTripPlanItinerary(id: string, itinerary: GeneratedItin
       throw new Error(`Erreur lors de la sauvegarde: ${error.message}`);
     }
 
-    return { data: tripPlan, error: null };
+    return { data, error: null };
   } catch (error) {
-    console.error('Erreur dans saveTripPlanItinerary:', error);
+    console.error('Erreur dans saveGeneratedItinerary:', error);
     return { 
       data: null, 
       error: error instanceof Error ? error.message : 'Erreur inconnue' 
@@ -228,24 +238,21 @@ export async function saveTripPlanItinerary(id: string, itinerary: GeneratedItin
 }
 
 /**
- * Supprimer une planification de voyage
+ * Supprimer une planification
  */
 export async function deleteTripPlan(id: string) {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !user) {
-      throw new Error('Utilisateur non authentifié');
+    if (!supabase) {
+      throw new Error('Supabase client non initialisé');
     }
 
     const { error } = await supabase
       .from('trip_plans')
       .delete()
-      .eq('id', id)
-      .eq('user_id', user.id);
+      .eq('id', id);
 
     if (error) {
-      console.error('Erreur lors de la suppression de la planification:', error);
+      console.error('Erreur lors de la suppression:', error);
       throw new Error(`Erreur lors de la suppression: ${error.message}`);
     }
 

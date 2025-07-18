@@ -103,6 +103,7 @@ export type Database = {
           destination: string;
           description: string | null;
           image_url: string | null;
+          images: string[] | null;
           trip_type: string;
           rating: number;
           duration: string;
@@ -120,6 +121,7 @@ export type Database = {
           destination: string;
           description?: string | null;
           image_url?: string | null;
+          images?: string[] | null;
           trip_type: string;
           rating: number;
           duration: string;
@@ -137,6 +139,7 @@ export type Database = {
           destination?: string;
           description?: string | null;
           image_url?: string | null;
+          images?: string[] | null;
           trip_type?: string;
           rating?: number;
           duration?: string;

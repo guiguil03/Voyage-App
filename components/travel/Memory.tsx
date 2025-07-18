@@ -2,18 +2,19 @@ import InputField from '@/components/planning/InputField';
 import SelectionButton from '@/components/planning/SelectionButton';
 import { createVoyage } from '@/lib/voyages';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 export default function CreateMemoryScreen() {
@@ -21,6 +22,8 @@ export default function CreateMemoryScreen() {
   const [destination, setDestination] = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [selectedImages, setSelectedImages] = useState<string[]>([]); // Tableau d'images
+  const [imageSource, setImageSource] = useState<'url' | 'gallery'>('url');
   const [selectedTripType, setSelectedTripType] = useState('Solo');
   const [selectedRating, setSelectedRating] = useState('5');
   const [selectedDuration, setSelectedDuration] = useState('1-3 jours');
@@ -30,6 +33,116 @@ export default function CreateMemoryScreen() {
   const ratings = ['1', '2', '3', '4', '5'];
   const durations = ['1-3 jours', '4-7 jours', '1-2 semaines', '2+ semaines'];
 
+  // Fonction pour sélectionner une image depuis la galerie
+  const pickImageFromGallery = async () => {
+    try {
+      // Demander la permission d'accès à la galerie
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        Alert.alert(
+          'Permission requise',
+          'L\'accès à la galerie photo est nécessaire pour sélectionner une image.'
+        );
+        return;
+      }
+
+      // Ouvrir la galerie avec sélection multiple
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: true, // Permettre la sélection multiple
+        quality: 0.8,
+        selectionLimit: 10, // Limiter à 10 images max
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        // Ajouter toutes les images sélectionnées
+        const newImages = result.assets.map(asset => asset.uri);
+        setSelectedImages(prev => [...prev, ...newImages]);
+        setImageSource('gallery');
+        setImageUrl(''); // Effacer l'URL si des images de galerie sont sélectionnées
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sélection d\'image:', error);
+      Alert.alert('Erreur', 'Impossible de sélectionner l\'image');
+    }
+  };
+
+  // Fonction pour prendre une photo avec l'appareil photo
+  const takePhotoWithCamera = async () => {
+    try {
+      // Demander la permission d'accès à l'appareil photo
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        Alert.alert(
+          'Permission requise',
+          'L\'accès à l\'appareil photo est nécessaire pour prendre une photo.'
+        );
+        return;
+      }
+
+      // Ouvrir l'appareil photo
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setSelectedImages(prev => [...prev, result.assets[0].uri]);
+        setImageSource('gallery');
+        setImageUrl(''); // Effacer l'URL si une photo est prise
+      }
+    } catch (error) {
+      console.error('Erreur lors de la prise de photo:', error);
+      Alert.alert('Erreur', 'Impossible de prendre la photo');
+    }
+  };
+
+  // Fonction pour choisir le type d'image
+  const chooseImageSource = () => {
+    Alert.alert(
+      'Ajouter des images',
+      'Comment souhaitez-vous ajouter des images ?',
+      [
+        {
+          text: 'Galerie (multiple)',
+          onPress: pickImageFromGallery,
+          style: 'default'
+        },
+        {
+          text: 'Prendre une photo',
+          onPress: takePhotoWithCamera,
+          style: 'default'
+        },
+        {
+          text: 'URL d\'image',
+          onPress: () => {
+            setImageSource('url');
+            // Pas besoin de vider selectedImages ici
+          },
+          style: 'default'
+        },
+        {
+          text: 'Annuler',
+          style: 'cancel'
+        }
+      ]
+    );
+  };
+
+  // Fonction pour supprimer une image spécifique
+  const removeImage = (imageToRemove: string) => {
+    setSelectedImages(prev => prev.filter(img => img !== imageToRemove));
+  };
+
+  // Fonction pour supprimer toutes les images
+  const removeAllImages = () => {
+    setSelectedImages([]);
+    setImageUrl('');
+  };
+
   const handleSaveMemory = async () => {
     if (!tripName.trim() || !destination.trim()) {
       Alert.alert('Champs requis', 'Veuillez renseigner au moins le nom du voyage et la destination');
@@ -37,12 +150,19 @@ export default function CreateMemoryScreen() {
     }
     
     try {
+      // Créer un tableau avec toutes les images (galerie + URL si renseignée)
+      const allImages = [...selectedImages];
+      if (imageUrl.trim()) {
+        allImages.push(imageUrl.trim());
+      }
+      
       // Sauvegarder le souvenir dans la base de données
       const { data, error } = await createVoyage({
         tripName,
         destination,
         description,
-        imageUrl,
+        imageUrl: allImages[0] || '', // Image principale (première)
+        images: allImages, // Toutes les images
         tripType: selectedTripType,
         rating: parseInt(selectedRating),
         duration: selectedDuration,
@@ -74,6 +194,7 @@ export default function CreateMemoryScreen() {
               setDestination('');
               setDescription('');
               setImageUrl('');
+              setSelectedImages([]);
               setMemoryText('');
               setSelectedTripType('Solo');
               setSelectedRating('5');
@@ -151,22 +272,65 @@ export default function CreateMemoryScreen() {
               />
             </View>
 
-            <InputField
-              label="URL de l'image (optionnel)"
-              placeholder="https://exemple.com/image.jpg"
-              value={imageUrl}
-              onChangeText={setImageUrl}
-              iconName="image"
-            />
+            {/* Section Image avec options multiples */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Image du voyage</Text>
+              <Text style={styles.sublabel}>Ajoutez une photo pour illustrer votre souvenir</Text>
+              
+              {/* Bouton principal pour choisir une image */}
+              <TouchableOpacity style={styles.imagePickerButton} onPress={chooseImageSource}>
+                <Ionicons name="camera" size={32} color="#2F7417" />
+                <Text style={styles.imagePickerText}>Ajouter des images</Text>
+                <Text style={styles.imagePickerSubtext}>Sélection multiple depuis la galerie</Text>
+              </TouchableOpacity>
 
-            {imageUrl ? (
-              <View style={styles.imagePreview}>
-                <Image source={{ uri: imageUrl }} style={styles.previewImage} />
-                <View style={styles.imageOverlay}>
-                  <Ionicons name="checkmark-circle" size={24} color="#2F7417" />
+              {/* Affichage de toutes les images sélectionnées */}
+              {selectedImages.length > 0 && (
+                <View style={styles.imagesGrid}>
+                  {selectedImages.map((imageUri, index) => (
+                    <View key={index} style={styles.imagePreview}>
+                      <Image source={{ uri: imageUri }} style={styles.previewImage} />
+                      <View style={styles.imageOverlay}>
+                        <Text style={styles.imageNumber}>{index + 1}</Text>
+                      </View>
+                      <TouchableOpacity 
+                        style={styles.removeImageButton} 
+                        onPress={() => removeImage(imageUri)}
+                      >
+                        <Ionicons name="close-circle" size={24} color="#FF4757" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
                 </View>
-              </View>
-            ) : null}
+              )}
+
+              {/* Affichage de l'image URL si renseignée */}
+              {imageUrl.trim() && (
+                <View style={styles.imagePreview}>
+                  <Image source={{ uri: imageUrl }} style={styles.previewImage} />
+                  <View style={styles.imageOverlay}>
+                    <Text style={styles.imageLabel}>URL</Text>
+                  </View>
+                  <TouchableOpacity 
+                    style={styles.removeImageButton} 
+                    onPress={() => setImageUrl('')}
+                  >
+                    <Ionicons name="close-circle" size={24} color="#FF4757" />
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* Champ URL uniquement si on est en mode URL */}
+              {imageSource === 'url' && (
+                <InputField
+                  label="URL de l'image"
+                  placeholder="https://exemple.com/image.jpg"
+                  value={imageUrl}
+                  onChangeText={setImageUrl}
+                  iconName="link"
+                />
+              )}
+            </View>
           </View>
         </View>
 
@@ -484,6 +648,98 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // Nouveaux styles pour la sélection d'image
+  sublabel: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 12,
+    fontStyle: 'italic',
+  },
+  imagePickerButton: {
+    borderWidth: 2,
+    borderColor: '#2F7417',
+    borderStyle: 'dashed',
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F8FFF8',
+    marginTop: 8,
+  },
+  imagePickerText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2F7417',
+    marginTop: 8,
+  },
+  imagePickerSubtext: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 4,
+  },
+  imageActions: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    right: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  imageActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  imageActionText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#2F7417',
+    marginLeft: 4,
+  },
+  // Nouveaux styles pour la galerie multiple
+  imagesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 12,
+  },
+  imageNumber: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#fff',
+    backgroundColor: 'rgba(47, 116, 23, 0.8)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  imageLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#fff',
+    backgroundColor: 'rgba(47, 116, 23, 0.8)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },

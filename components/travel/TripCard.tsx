@@ -1,11 +1,12 @@
+import { router } from 'expo-router';
 import React from 'react';
 import {
-    Image,
-    ImageSourcePropType,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  ImageSourcePropType,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 interface TripCardProps {
@@ -51,7 +52,10 @@ export default function TripCard({
           style={styles.detailButton}
           onPress={onPress}
         >
-          <Text style={styles.detailButtonText}>{buttonText}</Text>
+          <Text style={styles.detailButtonText}
+          onPress={()=> router.push('/travel/detailMemory')} 
+          >{buttonText}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
