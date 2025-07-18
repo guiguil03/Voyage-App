@@ -11,19 +11,13 @@ import {
   View,
 } from 'react-native';
 
-// Import des services unifié et individuels
-import { Coordinates, getIconForCategory } from '../../lib/recherche';
-import {
-  getUnifiedSearchService,
-  UnifiedPOI,
-  UnifiedSearchParams,
-  UnifiedSearchResponse
-} from '../../lib/recherche-unifiee';
-
+// Import du nouveau service OpenTripMap
+import { Coordinates } from '../../lib/recherche';
+import { getRechercheService, type RechercheResult } from '../../service/recherche';
 
 interface RechercheActivitesProps {
   coordinates?: Coordinates;
-  onSelectPOI?: (poi: UnifiedPOI) => void;
+  onSelectPOI?: (poi: RechercheResult) => void;
 }
 
 type SearchMode = 'nearby' | 'category' | 'discover' | 'city';
@@ -32,7 +26,7 @@ export default function RechercheActivites({
   coordinates, 
   onSelectPOI, 
 }: RechercheActivitesProps) {
-  const [pois, setPois] = useState<UnifiedPOI[]>([]);
+  const [pois, setPois] = useState<RechercheResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchMode, setSearchMode] = useState<SearchMode>('nearby');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -40,7 +34,7 @@ export default function RechercheActivites({
   const [currentCoordinates, setCurrentCoordinates] = useState<Coordinates | null>(coordinates || null);
   const [lastSearchInfo, setLastSearchInfo] = useState<string>('');
 
-  const unifiedSearchService = getUnifiedSearchService();
+  const rechercheService = getRechercheService();
 
   // Obtenir la localisation si pas fournie en props
   useEffect(() => {
@@ -69,8 +63,8 @@ export default function RechercheActivites({
     }
   };
 
-  // Recherche unifiée (remplace searchPOI)
-  const searchUnified = async (params: Partial<UnifiedSearchParams> = {}) => {
+  // Recherche par coordonnées
+  const searchNearby = async () => {
     if (!currentCoordinates) {
       console.log('Aucune coordonnée disponible');
       return;
@@ -78,22 +72,18 @@ export default function RechercheActivites({
 
     setLoading(true);
     try {
-      const searchParams: UnifiedSearchParams = {
+      console.log('🔍 Recherche à proximité:', currentCoordinates);
+      
+      const result = await rechercheService.rechercherActivites({
         coordinates: currentCoordinates,
         radius: 5000,
         limit: 15,
-        includeOpenTripMap: true,
-        includeFoursquare: true,
-        ...params,
-      };
+        category: selectedCategory || undefined,
+      });
 
-      console.log('🔍 Recherche unifiée avec params:', searchParams);
-      
-      const result: UnifiedSearchResponse = await unifiedSearchService.searchPlaces(searchParams);
-
-      if (result.success && result.data) {
+      if (result.success) {
         setPois(result.data);
-        setLastSearchInfo(`${result.message} (OpenTripMap: ${result.sources.opentripmap.count}, Foursquare: ${result.sources.foursquare.count})`);
+        setLastSearchInfo(`${result.total} activités trouvées via OpenTripMap`);
         console.log('✅ Recherche terminée:', result.data.length, 'POIs');
       } else {
         console.error('❌ Erreur recherche:', result.error);
@@ -101,7 +91,7 @@ export default function RechercheActivites({
         setLastSearchInfo(result.error || 'Erreur de recherche');
       }
     } catch (error) {
-      console.error('❌ Erreur recherche unifiée:', error);
+      console.error('❌ Erreur recherche:', error);
       setPois([]);
       setLastSearchInfo('Erreur de connexion');
     } finally {
@@ -109,7 +99,7 @@ export default function RechercheActivites({
     }
   };
 
-  // Recherche par ville avec géocodage
+  // Recherche par ville
   const searchByCity = async () => {
     if (!cityName.trim()) return;
 
@@ -117,32 +107,28 @@ export default function RechercheActivites({
     try {
       console.log('🏙️ Recherche par ville:', cityName);
       
-      // Géocodage avec l'API gratuite Nominatim
-      const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityName)}&limit=1`;
-      const geocodeResponse = await fetch(geocodeUrl);
-      const geocodeData = await geocodeResponse.json();
+      const result = await rechercheService.rechercherParVille(cityName, {
+        category: selectedCategory || undefined,
+        radius: 15000,
+        limit: 20
+      });
 
-      if (geocodeData && geocodeData.length > 0) {
-        const cityCoords: Coordinates = {
-          lat: parseFloat(geocodeData[0].lat),
-          lng: parseFloat(geocodeData[0].lon),
-        };
-
-        console.log('📍 Coordonnées trouvées pour', cityName, ':', cityCoords);
-        setCurrentCoordinates(cityCoords);
-
-        // Recherche avec les nouvelles coordonnées
-        await searchUnified({
-          coordinates: cityCoords,
-          category: selectedCategory || undefined,
-        });
+      if (result.success) {
+        setPois(result.data);
+        if (result.coordinates) {
+          setCurrentCoordinates(result.coordinates);
+        }
+        setLastSearchInfo(`${result.data.length} activités trouvées à ${cityName}`);
+        console.log('✅ Recherche ville terminée:', result.data.length, 'POIs');
       } else {
-        console.log('❌ Ville non trouvée');
-        setLastSearchInfo('Ville non trouvée');
+        console.error('❌ Erreur recherche ville:', result.error);
+        setPois([]);
+        setLastSearchInfo(result.error || `Ville "${cityName}" non trouvée`);
       }
     } catch (error) {
-      console.error('❌ Erreur géocodage:', error);
-      setLastSearchInfo('Erreur de géocodage');
+      console.error('❌ Erreur recherche ville:', error);
+      setLastSearchInfo('Erreur de recherche');
+      setPois([]);
     } finally {
       setLoading(false);
     }
@@ -150,43 +136,93 @@ export default function RechercheActivites({
 
   // Recherche par catégorie
   const searchByCategory = async (category: string) => {
-    await searchUnified({
-      category: category,
-      limit: 20,
-    });
+    if (!currentCoordinates) {
+      console.log('Aucune coordonnée disponible pour la recherche par catégorie');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await rechercheService.rechercherActivites({
+        coordinates: currentCoordinates,
+        radius: 10000,
+        limit: 20,
+        category: category,
+      });
+
+      if (result.success) {
+        setPois(result.data);
+        setLastSearchInfo(`${result.total} activités trouvées dans la catégorie`);
+      } else {
+        setPois([]);
+        setLastSearchInfo(result.error || 'Erreur de recherche par catégorie');
+      }
+    } catch (error) {
+      console.error('❌ Erreur recherche catégorie:', error);
+      setPois([]);
+      setLastSearchInfo('Erreur de recherche');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Découverte automatique
+  // Découverte automatique avec filtres
   const discoverNearby = async () => {
-    await searchUnified({
-      limit: 15,
-      minRating: 3,
-    });
+    if (!currentCoordinates) return;
+
+    setLoading(true);
+    try {
+      const result = await rechercheService.rechercherActivites({
+        coordinates: currentCoordinates,
+        radius: 8000,
+        limit: 15,
+        minRating: 3,
+      });
+
+      if (result.success) {
+        // Trier par note si disponible
+        const sortedResults = rechercheService.filtrerResultats(result.data, {
+          minRating: 3,
+          sortBy: 'rating'
+        });
+        setPois(sortedResults);
+        setLastSearchInfo(`${sortedResults.length} lieux recommandés découverts`);
+      } else {
+        setPois([]);
+        setLastSearchInfo(result.error || 'Erreur de découverte');
+      }
+    } catch (error) {
+      console.error('❌ Erreur découverte:', error);
+      setPois([]);
+      setLastSearchInfo('Erreur de découverte');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Catégories disponibles
+  // Catégories disponibles basées sur OpenTripMap
   const categories = [
     { key: '', label: 'Tous', icon: 'apps' },
     { key: 'museums', label: 'Musées', icon: 'library' },
-    { key: 'restaurants', label: 'Restaurants', icon: 'restaurant' },
-    { key: 'parks', label: 'Parcs', icon: 'leaf' },
-    { key: 'hotels', label: 'Hôtels', icon: 'bed' },
-    { key: 'entertainment', label: 'Loisirs', icon: 'game-controller' },
-    { key: 'shopping', label: 'Shopping', icon: 'storefront' },
     { key: 'historic', label: 'Historique', icon: 'time' },
+    { key: 'cultural', label: 'Culture', icon: 'color-palette' },
+    { key: 'natural', label: 'Nature', icon: 'leaf' },
+    { key: 'entertainment', label: 'Loisirs', icon: 'game-controller' },
+    { key: 'sport', label: 'Sport', icon: 'fitness' },
+    { key: 'religion', label: 'Religion', icon: 'business' },
   ];
 
   // Fonction de recherche selon le mode
   const handleSearch = () => {
     switch (searchMode) {
       case 'nearby':
-        searchUnified();
+        searchNearby();
         break;
       case 'category':
         if (selectedCategory) {
           searchByCategory(selectedCategory);
         } else {
-          searchUnified();
+          searchNearby();
         }
         break;
       case 'discover':
@@ -198,20 +234,9 @@ export default function RechercheActivites({
     }
   };
 
-  // Obtenir la description d'un POI unifié
-  const getPoiDescription = (poi: UnifiedPOI): string => {
-    if (poi.categories && poi.categories.length > 0) {
-      return poi.categories.slice(0, 2).join(', ');
-    }
-    return poi.description || 'Point d\'intérêt';
-  };
-
-  // Obtenir l'icône d'un POI unifié
-  const getPoiIcon = (poi: UnifiedPOI): string => {
-    if (poi.categories && poi.categories.length > 0) {
-      return getIconForCategory(poi.categories.join(','));
-    }
-    return 'location';
+  // Obtenir la description d'un POI
+  const getPoiDescription = (poi: RechercheResult): string => {
+    return poi.description || poi.type || 'Point d\'intérêt';
   };
 
   return (
@@ -342,7 +367,7 @@ export default function RechercheActivites({
 
       {/* Informations sur la dernière recherche */}
       {lastSearchInfo && (
-        <View style={styles.searchInfo}>
+        <View style={styles.searchInfoContainer}>
           <Text style={styles.searchInfoText}>{lastSearchInfo}</Text>
         </View>
       )}
@@ -360,28 +385,17 @@ export default function RechercheActivites({
               >
                 <View style={styles.poiHeader}>
                   <View style={styles.poiTitleContainer}>
-                    <Ionicons 
-                      name={getPoiIcon(poi) as any} 
-                      size={20} 
-                      color="#2F7417" 
-                    />
+                    <Text style={styles.poiIcon}>{poi.icon}</Text>
                     <Text style={styles.poiName}>{poi.name}</Text>
-                    {poi.source === 'foursquare' && (
-                      <View style={styles.sourceBadge}>
-                        <Text style={styles.sourceBadgeText}>4SQ</Text>
-                      </View>
-                    )}
-                    {poi.source === 'opentripmap' && (
-                      <View style={[styles.sourceBadge, { backgroundColor: '#FF6B35' }]}>
-                        <Text style={styles.sourceBadgeText}>OTM</Text>
-                      </View>
-                    )}
+                    <View style={styles.sourceBadge}>
+                      <Text style={styles.sourceBadgeText}>OTM</Text>
+                    </View>
                   </View>
                   {poi.rating && (
                     <View style={styles.ratingContainer}>
                       <Ionicons name="star" size={16} color="#FFD700" />
                       <Text style={styles.ratingText}>
-                        {poi.source === 'foursquare' ? `${poi.rating}/10` : `${poi.rating}/7`}
+                        {poi.rating.toFixed(1)}/7
                       </Text>
                     </View>
                   )}
@@ -394,17 +408,12 @@ export default function RechercheActivites({
                 <View style={styles.poiFooter}>
                   <View style={styles.categoryBadge}>
                     <Text style={styles.categoryBadgeText}>
-                      {poi.categories?.[0] || 'POI'}
+                      {poi.type || 'POI'}
                     </Text>
                   </View>
                   {poi.distance && (
                     <Text style={styles.distanceText}>
-                      📍 {Math.round(poi.distance)}m
-                    </Text>
-                  )}
-                  {poi.price && (
-                    <Text style={styles.priceText}>
-                      {'€'.repeat(poi.price)}
+                      📍 {rechercheService.formaterDistance(poi.distance)}
                     </Text>
                   )}
                 </View>
@@ -413,14 +422,6 @@ export default function RechercheActivites({
                   <Text style={styles.addressText} numberOfLines={1}>
                     📍 {poi.address}
                   </Text>
-                )}
-
-                {poi.isOpen !== undefined && (
-                  <View style={[styles.statusBadge, { backgroundColor: poi.isOpen ? '#4CAF50' : '#F44336' }]}>
-                    <Text style={styles.statusText}>
-                      {poi.isOpen ? '🟢 Ouvert' : '🔴 Fermé'}
-                    </Text>
-                  </View>
                 )}
               </TouchableOpacity>
             ))}
@@ -607,11 +608,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
+  poiIcon: {
+    fontSize: 20,
+    marginRight: 8,
+  },
   poiName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#1a1a1a',
-    marginLeft: 8,
     flex: 1,
   },
   ratingContainer: {
@@ -650,54 +654,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
   },
-  additionalInfo: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  infoText: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 4,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 40,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-  },
-  apiInfo: {
-    alignItems: 'center',
-    paddingVertical: 20,
-    marginTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#e9ecef',
-  },
-  apiInfoText: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 4,
-  },
-  apiInfoSubtext: {
-    fontSize: 10,
-    color: '#ccc',
-  },
   searchInfo: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+  searchInfoContainer: {
     paddingHorizontal: 20,
     paddingVertical: 10,
     backgroundColor: '#f8f9fa',
@@ -750,25 +712,9 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
-  priceText: {
-    fontSize: 14,
-    color: '#2F7417',
-    fontWeight: 'bold',
-  },
   addressText: {
     fontSize: 12,
     color: '#666',
     marginTop: 4,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  statusText: {
-    fontSize: 12,
-    color: '#fff',
-    fontWeight: 'bold',
   },
 }); 

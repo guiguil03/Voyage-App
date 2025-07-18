@@ -22,8 +22,7 @@ export default function CreateScreen() {
   };
 
   const handleCreateItinerary = () => {
-    console.log('Créer un itinéraire');
-    // TODO: Navigation vers la création d'itinéraire
+    router.push('/search-activities');
   };
 
   return (
