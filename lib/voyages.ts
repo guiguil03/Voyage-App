@@ -157,7 +157,7 @@ export async function getAllVoyages(): Promise<{ data: any[] | null; error: stri
       .from('voyages')
       .select(`
         *,
-        profiles:user_id (
+        profiles!user_id (
           full_name,
           email
         )

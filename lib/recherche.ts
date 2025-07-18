@@ -22,6 +22,7 @@ export interface SearchParams {
   query?: string;
   category?: string;
   minRating?: number;
+  kinds?: string[]; // Types spécifiques d'attractions
 }
 
 export interface SearchResponse {

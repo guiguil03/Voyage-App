@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     width: 200,
     marginBottom: 10,
-    marg
+
     borderRadius: 8,
   },
   logoutText: {
