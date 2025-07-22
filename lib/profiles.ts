@@ -295,3 +295,23 @@ export async function checkUsernameAvailability(username: string): Promise<{ ava
     return { available: false, error: 'Une erreur inattendue est survenue' };
   }
 } 
+
+// Récupérer tous les profils utilisateurs publics et actifs
+export async function getAllPublicProfiles(): Promise<{ data: Profile[] | null; error: string | null }> {
+  if (!supabase) {
+    return { data: null, error: 'Supabase non configuré' };
+  }
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('is_active', true)
+      .eq('privacy_level', 'public');
+    if (error) {
+      return { data: null, error: error.message };
+    }
+    return { data: data || [], error: null };
+  } catch (error) {
+    return { data: null, error: 'Erreur inattendue' };
+  }
+} 

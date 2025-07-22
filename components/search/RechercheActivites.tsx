@@ -2,16 +2,17 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 // Import du nouveau service OpenTripMap
+import { useRouter } from 'expo-router';
 import { Coordinates } from '../../lib/recherche';
 import { getRechercheService, type RechercheResult } from '../../service/recherche';
 
@@ -35,6 +36,7 @@ export default function RechercheActivites({
   const [lastSearchInfo, setLastSearchInfo] = useState<string>('');
 
   const rechercheService = getRechercheService();
+  const router = useRouter();
 
   // Obtenir la localisation si pas fournie en props
   useEffect(() => {
@@ -239,6 +241,35 @@ export default function RechercheActivites({
     return poi.description || poi.type || 'Point d\'intérêt';
   };
 
+  // Fonction pour naviguer vers la page de détails
+  const navigateToDetails = (poi: RechercheResult) => {
+    router.push({
+      pathname: '/activity-details',
+      params: {
+        id: poi.id,
+        name: poi.name,
+        description: poi.description || '',
+        type: poi.type,
+        rating: poi.rating?.toString() || '',
+        distance: poi.distance?.toString() || '',
+        address: poi.address || '',
+        photos: JSON.stringify(poi.photos || []),
+        coordinates: JSON.stringify(poi.coordinates),
+        icon: poi.icon,
+        isPopular: poi.isPopular?.toString() || 'false'
+      }
+    });
+  };
+
+  // Fonction pour gérer la sélection d'un POI
+  const handlePOISelect = (poi: RechercheResult) => {
+    if (onSelectPOI) {
+      onSelectPOI(poi);
+    } else {
+      navigateToDetails(poi);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -381,7 +412,7 @@ export default function RechercheActivites({
               <TouchableOpacity
                 key={poi.id}
                 style={styles.poiCard}
-                onPress={() => onSelectPOI?.(poi)}
+                onPress={() => handlePOISelect(poi)}
               >
                 <View style={styles.poiHeader}>
                   <View style={styles.poiTitleContainer}>

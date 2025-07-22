@@ -147,8 +147,27 @@ export default function SearchAdvancedScreen() {
     performSearch(true);
   };
 
+  const navigateToDetails = (item: RechercheResult) => {
+    router.push({
+      pathname: '/activity-details',
+      params: {
+        id: item.id,
+        name: item.name,
+        description: item.description || '',
+        type: item.type,
+        rating: item.rating?.toString() || '',
+        distance: item.distance?.toString() || '',
+        address: item.address || '',
+        photos: JSON.stringify(item.photos || []),
+        coordinates: JSON.stringify(item.coordinates),
+        icon: item.icon,
+        isPopular: item.isPopular?.toString() || 'false'
+      }
+    });
+  };
+
   const renderResultItem = ({ item }: { item: RechercheResult }) => (
-    <View style={styles.resultCard}>
+    <TouchableOpacity style={styles.resultCard} onPress={() => navigateToDetails(item)}>
       <View style={styles.resultHeader}>
         <Text style={styles.resultIcon}>{item.icon}</Text>
         <View style={styles.resultInfo}>
@@ -159,7 +178,10 @@ export default function SearchAdvancedScreen() {
         </View>
         <TouchableOpacity
           style={styles.mapButton}
-          onPress={() => openInMaps(item)}
+          onPress={(e) => {
+            e.stopPropagation();
+            openInMaps(item);
+          }}
         >
           <Ionicons name="map-outline" size={20} color="#007AFF" />
         </TouchableOpacity>
@@ -201,7 +223,7 @@ export default function SearchAdvancedScreen() {
           {item.address}
         </Text>
       )}
-    </View>
+    </TouchableOpacity>
   );
 
   const renderFiltersModal = () => (
@@ -379,7 +401,7 @@ export default function SearchAdvancedScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
+        <TouchableOpacity 
           style={styles.backButton}
           onPress={() => router.back()}
         >

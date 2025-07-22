@@ -72,7 +72,7 @@ export default function SearchActivitiesScreen() {
     try {
       let searchResult;
 
-      if (location && searchQuery.toLowerCase().includes('proche') || searchQuery.toLowerCase().includes('ici')) {
+      if (location && (searchQuery.toLowerCase().includes('proche') || searchQuery.toLowerCase().includes('ici'))) {
         // Recherche autour de la position actuelle
         searchResult = await rechercheService.rechercherActivites({
           coordinates: location,
@@ -109,8 +109,27 @@ export default function SearchActivitiesScreen() {
     setSelectedCategory(selectedCategory === categoryId ? null : categoryId);
   };
 
+  const navigateToDetails = (item: RechercheResult) => {
+    router.push({
+      pathname: '/activity-details',
+      params: {
+        id: item.id,
+        name: item.name,
+        description: item.description || '',
+        type: item.type,
+        rating: item.rating?.toString() || '',
+        distance: item.distance?.toString() || '',
+        address: item.address || '',
+        photos: JSON.stringify(item.photos || []),
+        coordinates: JSON.stringify(item.coordinates),
+        icon: item.icon,
+        isPopular: item.isPopular?.toString() || 'false'
+      }
+    });
+  };
+
   const renderActivity = ({ item }: { item: RechercheResult }) => (
-    <TouchableOpacity style={styles.activityCard}>
+    <TouchableOpacity style={styles.activityCard} onPress={() => navigateToDetails(item)}>
       <View style={styles.activityHeader}>
         <Text style={styles.activityIcon}>{item.icon}</Text>
         <View style={styles.activityInfo}>
@@ -179,7 +198,7 @@ export default function SearchActivitiesScreen() {
           <Ionicons name="arrow-back" size={24} color="#2F7417" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={styles.title}>Suggestions d'activités</Text>
+          <Text style={styles.title}>Suggestions d&apos;activités</Text>
           <Text style={styles.subtitle}>Découvrez les meilleures attractions</Text>
         </View>
       </View>

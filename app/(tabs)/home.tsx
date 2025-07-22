@@ -1,6 +1,7 @@
 import TripCard from '@/components/travel/TripCard';
 import city from '@/data/city.json';
 import { useAuth } from '@/hooks/useAuth';
+import { getFriendsVoyages, getMyFriends } from '@/lib/friends';
 import { getUserTripPlans } from '@/lib/trip-planning';
 import { getAllVoyages, getUserVoyages } from '@/lib/voyages';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +11,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -40,7 +42,8 @@ export default function HomeScreen() {
   const [trips, setTrips] = useState<any[]>([]);
   const [nextTrip, setNextTrip] = useState<TripPlan | null>(null);
   const [loadingNextTrip, setLoadingNextTrip] = useState(true);
-
+  const [friends, setFriends] = useState<any[]>([]);
+  const [friendsVoyages, setFriendsVoyages] = useState<any[]>([]);
 
   useEffect(() => {
     // Si l'utilisateur n'est pas connecté, rediriger vers la page de connexion
@@ -124,6 +127,22 @@ export default function HomeScreen() {
 
     loadNextTrip();
   }, [isAuthenticated]);
+
+  // Charger les amis et leur voyages
+  useEffect(() => {
+    const loadFriends = async () => {
+      const { data, error } = await getMyFriends()
+      const { data: voyages, error: voyagesError } = await getFriendsVoyages(data);
+      if (error) {
+        console.error('Erreur lors du chargement des amis:', error);
+      } else {
+        setFriends(data);
+        setFriendsVoyages(voyages);
+      }
+    };
+    loadFriends();
+  }, [isAuthenticated]);
+
 
   const formatTripDate = (trip: TripPlan): string => {
     if (trip.start_date && trip.end_date) {
@@ -219,6 +238,12 @@ export default function HomeScreen() {
       </View>
     );
   }
+
+  // Grouper les voyages par ami (dans HomeScreen, juste avant le return)
+  const voyagesByFriend = friends.reduce((acc: Record<string, any[]>, friend) => {
+    acc[friend.id] = friendsVoyages.filter(v => v.user_id === friend.id);
+    return acc;
+  }, {});
 
   return (
     <SafeAreaView style={styles.container}>
@@ -419,11 +444,47 @@ export default function HomeScreen() {
           )}
         </View>
 
-
-
-        
-
-
+        {/* Amis */}
+        <View style={styles.friendsSection}>
+  <Text style={styles.sectionTitle}>Amis & leurs voyages</Text>
+  {friends.length === 0 ? (
+    <Text style={{ color: '#888', fontStyle: 'italic', marginBottom: 12 }}>Aucun ami pour l&apos;instant.</Text>
+  ) : (
+    friends.map((friend) => (
+      <View key={friend.id} style={styles.friendBlock}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+          <View style={styles.friendAvatarCircle}>
+            <Ionicons name="person" size={28} color="#2F7417" />
+          </View>
+          <Text style={styles.friendNameBig}>{friend.full_name || friend.username || friend.email}</Text>
+        </View>
+        {voyagesByFriend[friend.id] && voyagesByFriend[friend.id].length > 0 ? (
+          <FlatList
+            data={voyagesByFriend[friend.id]}
+            renderItem={({ item }) => (
+              <View style={styles.friendVoyageCard}>
+                <View style={styles.friendVoyageHeader}>
+                  <Text style={styles.voyageDrapeau}>{item.flag_emoji || '🌍'}</Text>
+                  <View style={styles.friendVoyageInfo}>
+                    <Text style={styles.voyageName}>{item.trip_name}</Text>
+                    <Text style={styles.voyageDestination}>{item.destination}</Text>
+                  </View>
+                </View>
+                <Text style={styles.voyageDate}>{item.created_at ? new Date(item.created_at).toLocaleDateString('fr-FR') : ''}</Text>
+              </View>
+            )}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.friendsList}
+          />
+        ) : (
+          <Text style={{ color: '#bbb', fontSize: 13, fontStyle: 'italic', marginLeft: 10 }}>Aucun voyage</Text>
+        )}
+      </View>
+    ))
+  )}
+</View>
       </ScrollView>
 
       {/* Bouton flottant pour ajouter un voyage */}
@@ -448,6 +509,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+  friendsSection: {
+    paddingHorizontal: 20,
+    marginBottom: 25,
+  },
+  friendsList: {
+    paddingHorizontal: 20,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -462,64 +530,8 @@ const styles = StyleSheet.create({
   friendsTripsScroll: {
     paddingRight: 20,
   },
-  friendVoyageCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 16,
-    padding: 16,
-    marginRight: 12,
-    width: 280,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  friendVoyageHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  voyageDrapeau: {
-    fontSize: 32,
-    marginRight: 12,
-  },
-  friendVoyageInfo: {
-    flex: 1,
-  },
-  voyageUser: {
-    fontSize: 12,
-    color: '#2F7417',
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  voyageName: {
-    fontSize: 16,
-    color: '#1a1a1a',
-    fontWeight: 'bold',
-  },
-  voyageDescription: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  friendVoyageFooter: {
-    borderTopWidth: 1,
-    borderTopColor: '#e9ecef',
-    paddingTop: 12,
-  },
-  friendVoyageStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  friendVoyageStatsText: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 4,
-    marginRight: 12,
-  },
+ 
+  
   statsIcon: {
     marginLeft: 8,
   },
@@ -618,6 +630,75 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
+  },
+  friendCard: {
+    alignItems: 'center',
+    marginRight: 18,
+    width: 70,
+  },
+  friendAvatarCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#e0ffe0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+    borderWidth: 2,
+    borderColor: '#2F7417',
+  },
+  friendName: {
+    fontSize: 12,
+    color: '#2F7417',
+    fontWeight: '600',
+    textAlign: 'center',
+    maxWidth: 70,
+  },
+  friendVoyageCard: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 16,
+    padding: 12,
+    marginRight: 14,
+    width: 200,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  friendVoyageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  voyageDrapeau: {
+    fontSize: 28,
+    marginRight: 8,
+  },
+  friendVoyageInfo: {
+    flex: 1,
+  },
+  voyageUser: {
+    fontSize: 12,
+    color: '#2F7417',
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  voyageName: {
+    fontSize: 14,
+    color: '#1a1a1a',
+    fontWeight: 'bold',
+  },
+  voyageDestination: {
+    fontSize: 12,
+    color: '#888',
+  },
+  voyageDate: {
+    fontSize: 11,
+    color: '#888',
+    marginTop: 2,
   },
   actionButton: {
     alignItems: 'center',
@@ -950,5 +1031,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
+  },
+  friendBlock: {
+    marginBottom: 24,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  friendNameBig: {
+    fontSize: 16,
+    color: '#2F7417',
+    fontWeight: '700',
   },
 }); 
