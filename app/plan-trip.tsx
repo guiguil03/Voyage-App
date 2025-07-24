@@ -1,6 +1,7 @@
 import InputField from '@/components/planning/InputField';
 import SelectionButton from '@/components/planning/SelectionButton';
 import { useAuth } from '@/hooks/useAuth';
+import { getOpenTripMapService } from '@/lib/opentripmap';
 import { createTripPlan } from '@/lib/trip-planning';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -76,15 +77,45 @@ export default function PlanTripScreen() {
         activityLevel: selectedActivityLevel as 'Relax' | 'Balanced' | 'Intense',
       };
 
-      const newTripPlan = await createTripPlan(tripPlanData);
+      // Enregistrer le voyage dans la base de données
+      const { data: tripPlan, error: saveError } = await createTripPlan(tripPlanData);
+      if (saveError || !tripPlan) {
+        Alert.alert('Erreur', 'Impossible d\'enregistrer le voyage. Veuillez réessayer.');
+        setIsLoading(false);
+        return;
+      }
 
-      const dateRange = startDate && endDate 
-        ? `Du ${startDate.toLocaleDateString('fr-FR')} au ${endDate.toLocaleDateString('fr-FR')}`
-        : 'Dates non spécifiées';
+      // Appel OpenTripMap pour générer un planning personnalisé
+      const otm = getOpenTripMapService();
+      const otmResult = await otm.searchByCity(destination.trim(), {
+        kinds: selectedThemes.map(theme => theme.toLowerCase()),
+        limit: 200, // plus de lieux
+        radius: 15000,
+        minRate: 3
+      });
+
+      let planningMessage = '';
+      if (otmResult.success && otmResult.data && otmResult.data.places.length > 0) {
+        // Aller vers la page planning avec le planning et les infos du voyage
+        router.push({
+          pathname: '/planning',
+          params: {
+            planning: JSON.stringify(otmResult.data.places),
+            trip: JSON.stringify({
+              destination: destination.trim(),
+              startDate: startDate ? startDate.toISOString() : '',
+              endDate: endDate ? endDate.toISOString() : ''
+            })
+          }
+        });
+        return;
+      } else {
+        planningMessage = `Aucune activité trouvée pour ${destination} avec vos critères.`;
+      }
 
       Alert.alert(
-        'Demande enregistrée !',
-        `Votre demande de planification pour ${destination} a été enregistrée. Nous générerons votre itinéraire prochainement.`,
+        'Itinéraire généré !',
+        planningMessage,
         [
           {
             text: 'Voir mes voyages',

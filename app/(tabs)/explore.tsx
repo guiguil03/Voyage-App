@@ -1,16 +1,17 @@
+import { getOpenTripMapService } from '@/lib/opentripmap';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 const categories = [
@@ -22,45 +23,90 @@ const categories = [
   { id: 6, name: 'Gastronomie', icon: 'restaurant' },
 ];
 
-const destinations = [
+const popularDestinations = [
   {
-    id: 1,
-    name: 'Bali, Indonésie',
+    name: 'Paris',
+    country: 'France',
     image: require('@/assets/images/temple-bali-sunset.jpg'),
-    price: '€890',
-    rating: 4.8,
-    category: 'Plage',
-    reviews: 324,
   },
   {
-    id: 2,
-    name: 'Tokyo, Japon',
+    name: 'Rome',
+    country: 'Italie',
     image: require('@/assets/images/temple-water-sunset.jpg'),
-    price: '€1250',
-    rating: 4.9,
-    category: 'Ville',
-    reviews: 198,
   },
   {
-    id: 3,
-    name: 'Patagonie, Argentine',
+    name: 'Tokyo',
+    country: 'Japon',
     image: require('@/assets/images/mountain-background.jpg'),
-    price: '€1150',
-    rating: 4.7,
-    category: 'Aventure',
-    reviews: 156,
+  },
+  {
+    name: 'New York',
+    country: 'États-Unis',
+    image: require('@/assets/images/temple-bali-sunset.jpg'),
+  },
+  {
+    name: 'Bali',
+    country: 'Indonésie',
+    image: require('@/assets/images/temple-bali-sunset.jpg'),
+  },
+  {
+    name: 'Le Cap',
+    country: 'Afrique du Sud',
+    image: require('@/assets/images/temple-water-sunset.jpg'),
   },
 ];
+
+function getFallbackImageForKind(kind: string) {
+  if (!kind) return require('@/assets/images/mountain-background.jpg');
+  const k = kind.toLowerCase();
+  if (k.includes('museum')) return require('@/assets/images/temple-bali-sunset.jpg');
+  if (k.includes('historic') || k.includes('monument')) return require('@/assets/images/temple-water-sunset.jpg');
+  if (k.includes('nature') || k.includes('park') || k.includes('forest')) return require('@/assets/images/mountain-background.jpg');
+  if (k.includes('beach')) return require('@/assets/images/temple-bali-sunset.jpg');
+  if (k.includes('square')) return require('@/assets/images/temple-water-sunset.jpg');
+  if (k.includes('church') || k.includes('religion')) return require('@/assets/images/temple-bali-sunset.jpg');
+  return require('@/assets/images/mountain-background.jpg');
+}
 
 export default function ExploreScreen() {
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCity, setSelectedCity] = useState<any | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [destinations, setDestinations] = useState<any[]>([]);
 
-  const filteredDestinations = destinations.filter(dest => {
-    const matchesSearch = dest.name.toLowerCase().includes(searchText.toLowerCase());
-    const matchesCategory = !selectedCategory || dest.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Charger les lieux d'une ville sélectionnée
+  useEffect(() => {
+    if (!selectedCity) return;
+    const fetchDestinations = async () => {
+      setLoading(true);
+      try {
+        const otm = getOpenTripMapService();
+        const result = await otm.searchByCity(selectedCity.name, {
+          kinds: selectedCategory ? [selectedCategory.toLowerCase()] : undefined,
+          limit: 12,
+          radius: 15000,
+          minRate: 3
+        });
+        if (result.success && result.data && result.data.places) {
+          setDestinations(result.data.places);
+        } else {
+          setDestinations([]);
+        }
+      } catch (e) {
+        setDestinations([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDestinations();
+  }, [selectedCity, selectedCategory]);
+
+  // Filtrer les villes selon la recherche
+  const filteredCities = popularDestinations.filter(city =>
+    city.name.toLowerCase().includes(searchText.toLowerCase()) ||
+    city.country.toLowerCase().includes(searchText.toLowerCase())
+  );
 
   const handleDestinationPress = (destination: any) => {
     Alert.alert(destination.name, `Découvrir ${destination.name} pour ${destination.price}`);
@@ -97,7 +143,7 @@ export default function ExploreScreen() {
 
         {/* Barre de recherche */}
         <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+          <Ionicons name="search" size={20} color={styles.searchIcon.color} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Rechercher une destination..."
@@ -118,7 +164,7 @@ export default function ExploreScreen() {
                   styles.categoryCard,
                   selectedCategory === category.name && styles.selectedCategoryCard
                 ]}
-                onPress={() => handleCategoryPress(category.name)}
+                onPress={() => setSelectedCategory(selectedCategory === category.name ? null : category.name)}
               >
                 <View style={[
                   styles.categoryIconContainer,
@@ -141,64 +187,105 @@ export default function ExploreScreen() {
           </ScrollView>
         </View>
 
-        {/* Destinations populaires */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Destinations populaires</Text>
-            <TouchableOpacity onPress={handleSeeAllPress}>
-              <Text style={styles.seeAllText}>Voir tout</Text>
-            </TouchableOpacity>
-          </View>
-
-          {filteredDestinations.map((destination) => (
-            <TouchableOpacity 
-              key={destination.id} 
-              style={styles.destinationCard}
-              onPress={() => handleDestinationPress(destination)}
-            >
-              <Image source={destination.image} style={styles.destinationImage} />
-              <View style={styles.destinationInfo}>
-                <View style={styles.destinationHeader}>
-                  <Text style={styles.destinationName}>{destination.name}</Text>
-                  <Text style={styles.destinationPrice}>{destination.price}</Text>
-                </View>
-                <View style={styles.destinationDetails}>
-                  <View style={styles.ratingContainer}>
-                    <Ionicons name="star" size={16} color="#FFD700" />
-                    <Text style={styles.ratingText}>{destination.rating}</Text>
-                    <Text style={styles.reviewsText}>({destination.reviews} avis)</Text>
-                  </View>
-                  <View style={styles.categoryTag}>
-                    <Text style={styles.categoryTagText}>{destination.category}</Text>
-                  </View>
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Section OpenTripMap */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recherche Avancée</Text>
-          <TouchableOpacity style={styles.plannerCard} onPress={handleAdvancedSearch}>
-            <View style={styles.plannerContent}>
-              <View style={styles.plannerIconContainer}>
-                <Ionicons name="telescope" size={28} color="#2F7417" />
-              </View>
-              <View style={styles.plannerText}>
-                <Text style={styles.plannerTitle}>OpenTripMap Search</Text>
-                <Text style={styles.plannerSubtitle}>
-                  Découvrez des lieux d&apos;intérêt et points touristiques gratuits avec OpenTripMap
-                </Text>
-              </View>
+        {/* Destinations populaires (villes) */}
+        {!selectedCity && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Destinations populaires</Text>
             </View>
-          </TouchableOpacity>
-        </View>
+            {filteredCities.length > 0 ? (
+              filteredCities.map((city, idx) => (
+                <TouchableOpacity key={city.name + idx} style={styles.destinationCard} onPress={() => setSelectedCity(city)}>
+                  <Image source={city.image} style={styles.destinationImage} />
+                  <View style={styles.destinationInfo}>
+                    <View style={styles.destinationHeader}>
+                      <Text style={styles.destinationName}>{city.name}</Text>
+                      <Text style={styles.destinationPrice}>{city.country}</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <Text style={{ textAlign: 'center', color: '#888', marginVertical: 20 }}>Aucune destination trouvée</Text>
+            )}
+          </View>
+        )}
 
+        {/* Lieux de la ville sélectionnée */}
+        {selectedCity && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <TouchableOpacity onPress={() => setSelectedCity(null)}>
+                <Ionicons name="arrow-back" size={22} color="#2F7417" />
+              </TouchableOpacity>
+              <Text style={styles.sectionTitle}>À {selectedCity.name}</Text>
+            </View>
+            {loading ? (
+              <Text style={{ textAlign: 'center', color: '#666', marginVertical: 20 }}>Chargement...</Text>
+            ) : destinations.length > 0 ? (
+              destinations.map((destination) => {
+                const hasImage = !!(destination.preview?.source || destination.image);
+                return hasImage ? (
+                  <TouchableOpacity 
+                    key={destination.xid || destination.id} 
+                    style={styles.destinationCard}
+                    onPress={() => handleDestinationPress(destination)}
+                  >
+                    <Image source={{ uri: destination.preview?.source || destination.image }} style={styles.destinationImage} />
+                    <View style={styles.destinationInfo}>
+                      <View style={styles.destinationHeader}>
+                        <Text style={styles.destinationName}>{destination.name}</Text>
+                        {destination.rate && <Text style={styles.destinationPrice}>★ {destination.rate}</Text>}
+                      </View>
+                      <View style={styles.destinationDetails}>
+                        <View style={styles.ratingContainer}>
+                          {destination.kinds && <Text style={styles.categoryTagText}>{destination.kinds.split(',')[0]}</Text>}
+                        </View>
+                        {destination.address?.country && (
+                          <View style={styles.categoryTag}>
+                            <Text style={styles.categoryTagText}>{destination.address.country}</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    key={destination.xid || destination.id}
+                    style={{
+                      backgroundColor: '#fff',
+                      borderRadius: 18,
+                      marginBottom: 12,
+                      marginHorizontal: 20,
+                      padding: 16,
+                      shadowColor: '#2F7417',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.06,
+                      shadowRadius: 8,
+                      elevation: 2,
+                      borderWidth: 1,
+                      borderColor: '#E9ECEF',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                    }}
+                    onPress={() => handleDestinationPress(destination)}
+                  >
+                    <Text style={{ fontWeight: 'bold', color: '#2F7417', fontSize: 16, marginBottom: 2 }}>{destination.name}</Text>
+                    {destination.kinds && <Text style={{ color: '#2F7417', fontSize: 13, marginBottom: 2 }}>{destination.kinds.split(',')[0]}</Text>}
+                    {destination.address?.country && <Text style={{ color: '#666', fontSize: 12 }}>{destination.address.country}</Text>}
+                    {destination.rate && <Text style={{ color: '#2F7417', fontWeight: 'bold', fontSize: 13, marginTop: 2 }}>★ {destination.rate}</Text>}
+                  </TouchableOpacity>
+                );
+              })
+            ) : (
+              <Text style={{ textAlign: 'center', color: '#888', marginVertical: 20 }}>Aucun lieu trouvé</Text>
+            )}
+          </View>
+        )}
         {/* Section planificateur */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Besoin d&apos;aide ?</Text>
-          <TouchableOpacity style={styles.plannerCard} onPress={handlePlannerPress}>
+          <TouchableOpacity style={styles.plannerCard} onPress={() => router.push('/plan-trip')}>
             <View style={styles.plannerContent}>
               <View style={styles.plannerIconContainer}>
                 <Ionicons name="bulb-outline" size={28} color="#2F7417" />
@@ -214,7 +301,7 @@ export default function ExploreScreen() {
         </View>
 
         {/* États vides */}
-        {filteredDestinations.length === 0 && (
+        {filteredCities.length === 0 && (
           <View style={styles.emptyState}>
             <Ionicons name="search" size={60} color="#ccc" />
             <Text style={styles.emptyTitle}>Aucune destination trouvée</Text>
@@ -237,10 +324,15 @@ export default function ExploreScreen() {
   );
 }
 
+const GREEN = '#2F7417';
+const BG = '#F8F9FA';
+const BORDER = '#E9ECEF';
+const GREEN_LIGHT = '#F0F9F0';
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: BG,
   },
   scrollView: {
     flex: 1,
@@ -253,27 +345,35 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1a1a1a',
+    color: GREEN,
     marginBottom: 8,
+    letterSpacing: 0.2,
   },
   subtitle: {
     fontSize: 16,
     color: '#666',
+    marginBottom: 10,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    backgroundColor: BG,
+    borderRadius: 18,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     marginHorizontal: 20,
     marginBottom: 30,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: BORDER,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   searchIcon: {
     marginRight: 12,
+    color: GREEN,
   },
   searchInput: {
     flex: 1,
@@ -286,7 +386,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1a1a1a',
+    color: GREEN,
     marginBottom: 16,
     paddingHorizontal: 20,
   },
@@ -299,7 +399,7 @@ const styles = StyleSheet.create({
   },
   seeAllText: {
     fontSize: 14,
-    color: '#2F7417',
+    color: GREEN,
     fontWeight: '600',
   },
   categoriesScroll: {
@@ -308,32 +408,39 @@ const styles = StyleSheet.create({
   categoryCard: {
     alignItems: 'center',
     marginRight: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    backgroundColor: BG,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: BORDER,
     minWidth: 80,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   selectedCategoryCard: {
-    backgroundColor: '#2F7417',
-    borderColor: '#2F7417',
+    backgroundColor: GREEN,
+    borderColor: GREEN,
   },
   categoryIconContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#F0F9F0',
+    backgroundColor: BG,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: BORDER,
   },
   selectedCategoryIcon: {
-    backgroundColor: '#4B8B3B',
+    backgroundColor: GREEN,
   },
   categoryText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: '#1a1a1a',
     textAlign: 'center',
@@ -342,17 +449,17 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   destinationCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 16,
-    marginBottom: 16,
+    backgroundColor: '#fff',
+    borderRadius: 22,
+    marginBottom: 18,
     marginHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 4,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: BORDER,
     overflow: 'hidden',
   },
   destinationImage: {
@@ -370,14 +477,14 @@ const styles = StyleSheet.create({
   },
   destinationName: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontWeight: 'bold',
+    color: GREEN,
     flex: 1,
   },
   destinationPrice: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2F7417',
+    color: GREEN,
   },
   destinationDetails: {
     flexDirection: 'row',
@@ -400,28 +507,28 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   categoryTag: {
-    backgroundColor: '#F0F9F0',
+    backgroundColor: GREEN_LIGHT,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
   },
   categoryTagText: {
     fontSize: 12,
-    color: '#2F7417',
+    color: GREEN,
     fontWeight: '500',
   },
   plannerCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: '#fff',
+    borderRadius: 22,
+    padding: 24,
     marginHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 4,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: BORDER,
   },
   plannerContent: {
     flexDirection: 'row',
@@ -431,18 +538,20 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#F0F9F0',
+    backgroundColor: BG,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    borderWidth: 1,
+    borderColor: BORDER,
   },
   plannerText: {
     flex: 1,
   },
   plannerTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontWeight: 'bold',
+    color: GREEN,
     marginBottom: 4,
   },
   plannerSubtitle: {
@@ -458,7 +567,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1a1a1a',
+    color: GREEN,
     marginTop: 16,
     marginBottom: 8,
   },
@@ -469,10 +578,16 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   resetButton: {
-    backgroundColor: '#2F7417',
+    backgroundColor: GREEN,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 20,
+    marginTop: 10,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 2,
   },
   resetButtonText: {
     fontSize: 16,

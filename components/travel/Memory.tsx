@@ -306,9 +306,9 @@ export default function CreateMemoryScreen() {
 
               {/* Affichage de l'image URL si renseignée */}
               {imageUrl.trim() && (
-                <View style={styles.imagePreview}>
-                  <Image source={{ uri: imageUrl }} style={styles.previewImage} />
-                  <View style={styles.imageOverlay}>
+              <View style={styles.imagePreview}>
+                <Image source={{ uri: imageUrl }} style={styles.previewImage} />
+                <View style={styles.imageOverlay}>
                     <Text style={styles.imageLabel}>URL</Text>
                   </View>
                   <TouchableOpacity 
@@ -330,7 +330,7 @@ export default function CreateMemoryScreen() {
                   iconName="link"
                 />
               )}
-            </View>
+              </View>
           </View>
         </View>
 

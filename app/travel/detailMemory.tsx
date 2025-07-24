@@ -3,15 +3,34 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import {
-    Alert,
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
+
+function groupActivitiesByDay(activities: any[], startDate: string, endDate: string) {
+  if (!startDate || !endDate) return { 'Jour 1': activities.slice(0, 5) };
+  const days: string[] = [];
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const nbDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+  for (let i = 0; i < nbDays; i++) {
+    days.push(`Jour ${i + 1}`);
+  }
+  const MAX_PER_DAY = 5;
+  const planning: Record<string, any[]> = {};
+  let idx = 0;
+  days.forEach((day) => {
+    planning[day] = activities.slice(idx, idx + MAX_PER_DAY);
+    idx += MAX_PER_DAY;
+  });
+  return planning;
+}
 
 export default function DetailMemoryScreen() {
   // Récupérer les paramètres passés lors de la navigation
@@ -245,12 +264,6 @@ export default function DetailMemoryScreen() {
           </View>
         )}
 
-        {/* Informations de création */}
-        <View style={styles.metaCard}>
-          <Text style={styles.metaText}>
-            Créé le {new Date(tripData.created_at).toLocaleDateString('fr-FR')} à {new Date(tripData.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-          </Text>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );

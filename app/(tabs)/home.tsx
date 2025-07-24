@@ -219,6 +219,32 @@ export default function HomeScreen() {
     Alert.alert(`${cityName}`, `Découvrir ${cityName}, ${country}`);
   };
 
+  const handleFriendVoyageDetail = (voyage: any) => {
+    const tripData = {
+      id: voyage.id,
+      destination: voyage.destination,
+      start_date: voyage.start_date || null,
+      end_date: voyage.end_date || null,
+      travel_type: voyage.trip_type,
+      interests: voyage.interests || [],
+      status: voyage.status || 'completed',
+      type: 'voyage',
+      created_at: voyage.created_at,
+      trip_name: voyage.trip_name,
+      description: voyage.description,
+      memory_text: voyage.memory_text,
+      rating: voyage.rating,
+      duration: voyage.duration,
+      image_url: voyage.image_url,
+      images: voyage.images || [],
+      user: voyage.user, // pour afficher le nom de l'ami si besoin
+    };
+    router.push({
+      pathname: '/travel/detailMemory',
+      params: { tripData: JSON.stringify(tripData) }
+    });
+  };
+
   // Afficher un loader pendant la vérification de l'authentification
   if (loading) {
     return (
@@ -245,26 +271,30 @@ export default function HomeScreen() {
     return acc;
   }, {});
 
+  // Palette verte premium
+  const GREEN = '#2F7417';
+  const GREEN_LIGHT = '#F0F9F0';
+  const DARK = '#1a1a1a';
+  const BG = '#F8F9FA';
+  const BORDER = '#E9ECEF';
+
   return (
-    <SafeAreaView style={styles.container}>
-     
-
-      <ScrollView 
-        style={styles.scrollView} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
+    <SafeAreaView style={{ flex: 1, backgroundColor: BG }}>
+      <View style={{ backgroundColor: GREEN, paddingTop: 38, paddingBottom: 18, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomLeftRadius: 18, borderBottomRightRadius: 18, marginBottom: 6 }}>
+        <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 22, letterSpacing: 0.5 }}>Tripflow</Text>
+        <Ionicons name="planet" size={30} color="#fff" />
+      </View>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Actions rapides */}
-        <View style={styles.quickActionsContainer}>
-          <Text style={styles.sectionTitle}>Bonjour {user.email?.split('@')[0]}</Text>
+        <View style={[styles.quickActionsContainer, { marginTop: 8 }]}> 
+          <Text style={[styles.sectionTitle, { color: GREEN, fontWeight: 'bold', fontSize: 20 }]}>Bonjour {user.email?.split('@')[0]}</Text>
         </View>
-
         {/* Dernier voyage */}
-        <View style={styles.tripSection}>
+        <View style={{ backgroundColor: '#fff', borderRadius: 24, marginHorizontal: 18, marginBottom: 18, padding: 20, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 24, elevation: 4, borderWidth: 1, borderColor: BORDER }}> 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Dernier Voyage</Text>
+            <Text style={[styles.sectionTitle, { color: DARK, fontWeight: 'bold', fontSize: 18 }]}>Dernier Voyage</Text>
             <TouchableOpacity onPress={() => router.push('/(tabs)/voyage')}>
-              <Text style={styles.seeAllText}>Voir tout</Text>
+              <Text style={[styles.seeAllText, { color: GREEN, fontWeight: 'bold' }]}>Voir tout</Text>
             </TouchableOpacity>
           </View>
           
@@ -300,40 +330,28 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
-
         {/* Destinations populaires */}
-        <View style={styles.destinationsContainer}>
-          <Text style={styles.sectionTitle}>Destinations Populaires</Text>
-          
+        <View style={{ backgroundColor: '#fff', borderRadius: 24, marginHorizontal: 18, marginBottom: 18, padding: 20, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 24, elevation: 4, borderWidth: 1, borderColor: BORDER }}> 
+          <Text style={[styles.sectionTitle, { color: DARK, fontWeight: 'bold', fontSize: 18 }]}>Destinations Populaires</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.destinationsScroll}>
             {city.city.slice(0, 6).map((cityItem, index) => (
-              <TouchableOpacity 
-                key={index} 
-                style={styles.destinationCard}
-                onPress={() => handleCityPress(cityItem.name, cityItem.country)}
-              >
-                <LinearGradient
-                  colors={['#F8F9FA', '#E9ECEF']}
-                  style={styles.destinationGradient}
-                >
-                  <View style={styles.destinationIconContainer}>
-                    <Ionicons name="location" size={28} color="#2F7417" />
-                  </View>
-                  <Text style={styles.destinationName}>{cityItem.name}</Text>
-                  <Text style={styles.destinationCountry}>{cityItem.country}</Text>
-                  <Text style={styles.destinationCount}>{Math.floor(Math.random() * 200) + 50} voyages</Text>
-                </LinearGradient>
+              <TouchableOpacity key={index} style={{ backgroundColor: GREEN_LIGHT, borderRadius: 18, marginRight: 14, width: 140, alignItems: 'center', borderWidth: 1, borderColor: BORDER, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2, padding: 14 }} onPress={() => handleCityPress(cityItem.name, cityItem.country)}>
+                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginBottom: 8, borderWidth: 1, borderColor: GREEN }}>
+                  <Ionicons name="location" size={28} color={GREEN} />
+                </View>
+                <Text style={{ fontSize: 15, fontWeight: 'bold', color: DARK, marginBottom: 2 }}>{cityItem.name}</Text>
+                <Text style={{ fontSize: 12, color: '#666', marginBottom: 2 }}>{cityItem.country}</Text>
+                <Text style={{ fontSize: 11, color: GREEN }}>{Math.floor(Math.random() * 200) + 50} voyages</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
         </View>
-
         {/* Prochains voyages planifiés */}
-        <View style={styles.upcomingSection}>
+        <View style={{ backgroundColor: '#fff', borderRadius: 24, marginHorizontal: 18, marginBottom: 18, padding: 20, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 24, elevation: 4, borderWidth: 1, borderColor: BORDER }}> 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Voyages Planifiés</Text>
+            <Text style={[styles.sectionTitle, { color: DARK, fontWeight: 'bold', fontSize: 18 }]}>Voyages Planifiés</Text>
             <TouchableOpacity onPress={() => router.push('/(tabs)/voyage')}>
-              <Text style={styles.seeAllText}>Voir tout</Text>
+              <Text style={[styles.seeAllText, { color: GREEN, fontWeight: 'bold' }]}>Voir tout</Text>
             </TouchableOpacity>
           </View>
           
@@ -443,63 +461,49 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
-
         {/* Amis */}
-        <View style={styles.friendsSection}>
-  <Text style={styles.sectionTitle}>Amis & leurs voyages</Text>
-  {friends.length === 0 ? (
-    <Text style={{ color: '#888', fontStyle: 'italic', marginBottom: 12 }}>Aucun ami pour l&apos;instant.</Text>
-  ) : (
-    friends.map((friend) => (
-      <View key={friend.id} style={styles.friendBlock}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-          <View style={styles.friendAvatarCircle}>
-            <Ionicons name="person" size={28} color="#2F7417" />
-          </View>
-          <Text style={styles.friendNameBig}>{friend.full_name || friend.username || friend.email}</Text>
-        </View>
-        {voyagesByFriend[friend.id] && voyagesByFriend[friend.id].length > 0 ? (
-          <FlatList
-            data={voyagesByFriend[friend.id]}
-            renderItem={({ item }) => (
-              <View style={styles.friendVoyageCard}>
-                <View style={styles.friendVoyageHeader}>
-                  <Text style={styles.voyageDrapeau}>{item.flag_emoji || '🌍'}</Text>
-                  <View style={styles.friendVoyageInfo}>
-                    <Text style={styles.voyageName}>{item.trip_name}</Text>
-                    <Text style={styles.voyageDestination}>{item.destination}</Text>
+        <View style={{ backgroundColor: '#fff', borderRadius: 24, marginHorizontal: 18, marginBottom: 18, padding: 20, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 24, elevation: 4, borderWidth: 1, borderColor: BORDER }}> 
+          <Text style={[styles.sectionTitle, { color: DARK, fontWeight: 'bold', fontSize: 18 }]}>Amis & leurs voyages</Text>
+          {friends.length === 0 ? (
+            <Text style={{ color: '#888', fontStyle: 'italic', marginBottom: 12 }}>Aucun ami pour l&apos;instant.</Text>
+          ) : (
+            friends.map((friend) => (
+              <View key={friend.id} style={styles.friendBlock}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                  <View style={styles.friendAvatarCircle}>
+                    <Ionicons name="person" size={28} color="#2F7417" />
                   </View>
+                  <Text style={styles.friendNameBig}>{friend.full_name || friend.username || friend.email}</Text>
                 </View>
-                <Text style={styles.voyageDate}>{item.created_at ? new Date(item.created_at).toLocaleDateString('fr-FR') : ''}</Text>
+                {voyagesByFriend[friend.id] && voyagesByFriend[friend.id].length > 0 ? (
+                  <FlatList
+                    data={voyagesByFriend[friend.id]}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity style={styles.friendVoyageCard} onPress={() => handleFriendVoyageDetail(item)}>
+                        <View style={styles.friendVoyageHeader}>
+                          <Text style={styles.voyageDrapeau}>{item.flag_emoji || '🌍'}</Text>
+                          <View style={styles.friendVoyageInfo}>
+                            <Text style={styles.voyageName}>{item.trip_name}</Text>
+                            <Text style={styles.voyageDestination}>{item.destination}</Text>
+                          </View>
+                        </View>
+                        <Text style={styles.voyageDate}>{item.created_at ? new Date(item.created_at).toLocaleDateString('fr-FR') : ''}</Text>
+                      </TouchableOpacity>
+                    )}
+                    keyExtractor={(item) => item.id}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.friendsList}
+                  />
+                ) : (
+                  <Text style={{ color: '#bbb', fontSize: 13, fontStyle: 'italic', marginLeft: 10 }}>Aucun voyage</Text>
+                )}
               </View>
-            )}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.friendsList}
-          />
-        ) : (
-          <Text style={{ color: '#bbb', fontSize: 13, fontStyle: 'italic', marginLeft: 10 }}>Aucun voyage</Text>
-        )}
-      </View>
-    ))
-  )}
-</View>
+            ))
+          )}
+        </View>
       </ScrollView>
-
-      {/* Bouton flottant pour ajouter un voyage */}
-      <TouchableOpacity style={styles.fab} onPress={handleAddTrip}>
-        <LinearGradient
-          colors={['#2F7417', '#4B8B3B']}
-          style={styles.fabGradient}
-        >
-          <Ionicons 
-            name={showAddForm ? "close" : "add"} 
-            size={28} 
-            color="#FFFFFF" 
-          />
-        </LinearGradient>
-      </TouchableOpacity>
+      
     </SafeAreaView>
   );
 }

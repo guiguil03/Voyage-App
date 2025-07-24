@@ -1,19 +1,19 @@
 import { useAuth } from '@/hooks/useAuth';
-import { getUserTripPlans } from '@/lib/trip-planning';
+import { deleteTripPlan, getUserTripPlans } from '@/lib/trip-planning';
 import { getUserVoyages } from '@/lib/voyages';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Image,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 interface TripPlan {
@@ -271,6 +271,35 @@ export default function VoyageScreen() {
                   Alert.alert('Erreur', 'Impossible de supprimer: ' + result.error);
                 } else {
                   Alert.alert('Supprimé', 'Le souvenir a été supprimé.', [
+                    { text: 'OK', onPress: () => loadUserTrips() }
+                  ]);
+                }
+              } catch (error) {
+                Alert.alert('Erreur', 'Une erreur est survenue.');
+              }
+            }
+          }
+        ]
+      );
+    } else if (action === 'Supprimer' && trip.type === 'trip_plan') {
+      Alert.alert(
+        'Supprimer le voyage',
+        `Êtes-vous sûr de vouloir supprimer ce voyage planifié à "${trip.destination}" ?`,
+        [
+          {
+            text: 'Annuler',
+            style: 'cancel'
+          },
+          {
+            text: 'Supprimer',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const result = await deleteTripPlan(trip.id);
+                if (result.error) {
+                  Alert.alert('Erreur', 'Impossible de supprimer: ' + result.error);
+                } else {
+                  Alert.alert('Supprimé', 'Le voyage a été supprimé.', [
                     { text: 'OK', onPress: () => loadUserTrips() }
                   ]);
                 }
@@ -552,6 +581,14 @@ export default function VoyageScreen() {
                           <Ionicons name="share" size={16} color="#2F7417" />
                           <Text style={styles.actionText}>Partager</Text>
                         </TouchableOpacity>
+                        {/* Ajout du bouton supprimer pour les trip plans */}
+                        <TouchableOpacity 
+                          style={styles.actionButton}
+                          onPress={() => handleTripAction('Supprimer', trip)}
+                        >
+                          <Ionicons name="trash" size={16} color="#FF4757" />
+                          <Text style={[styles.actionText, { color: '#FF4757' }]}>Supprimer</Text>
+                        </TouchableOpacity>
                       </>
                     )}
                   </View>
@@ -582,10 +619,16 @@ export default function VoyageScreen() {
   );
 }
 
+const GREEN = '#2F7417';
+const GREEN_LIGHT = '#E0F2F7';
+const DARK = '#1a1a1a';
+const BG = '#F8F9FA';
+const BORDER = '#E9ECEF';
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: BG,
   },
   scrollView: {
     flex: 1,
@@ -598,25 +641,32 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1a1a1a',
+    color: GREEN,
     marginBottom: 8,
+    letterSpacing: 0.2,
   },
   subtitle: {
     fontSize: 16,
     color: '#666',
+    marginBottom: 10,
   },
   refreshButton: {
     position: 'absolute',
     top: 10,
     right: 20,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: BG,
     borderRadius: 20,
     width: 40,
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: BORDER,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   loadingContainer: {
     flex: 1,
@@ -634,9 +684,11 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 20,
     backgroundColor: '#ffebee',
-    borderRadius: 10,
+    borderRadius: 12,
     marginBottom: 20,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: BORDER,
   },
   errorText: {
     color: '#d32f2f',
@@ -645,10 +697,16 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   retryButton: {
-    backgroundColor: '#2F7417',
+    backgroundColor: GREEN,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
+    marginTop: 8,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 2,
   },
   retryText: {
     color: '#fff',
@@ -663,23 +721,23 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 16,
+    backgroundColor: BG,
+    borderRadius: 18,
     padding: 16,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: GREEN,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
-    elevation: 3,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: BORDER,
   },
   statIconContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F0F9F0',
+    backgroundColor: GREEN_LIGHT,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
@@ -687,7 +745,7 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1a1a1a',
+    color: DARK,
     marginBottom: 4,
   },
   statLabel: {
@@ -702,17 +760,22 @@ const styles = StyleSheet.create({
     paddingLeft: 20,
   },
   filterButton: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: BG,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 16,
+    borderRadius: 18,
     marginRight: 12,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: BORDER,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   activeFilterButton: {
-    backgroundColor: '#2F7417',
-    borderColor: '#2F7417',
+    backgroundColor: GREEN,
+    borderColor: GREEN,
   },
   filterText: {
     fontSize: 14,
@@ -732,30 +795,35 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1a1a1a',
+    color: GREEN,
   },
   addButton: {
-    backgroundColor: '#2F7417',
+    backgroundColor: GREEN,
     width: 36,
     height: 36,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 2,
   },
   tripsContainer: {
     paddingHorizontal: 20,
   },
   tripCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    backgroundColor: BG,
+    borderRadius: 22,
+    marginBottom: 18,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 4,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: BORDER,
     overflow: 'hidden',
   },
   tripImagePlaceholder: {
@@ -801,19 +869,19 @@ const styles = StyleSheet.create({
   },
   tripTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontWeight: 'bold',
+    color: DARK,
     flex: 1,
   },
   tripType: {
-    backgroundColor: '#e0f2f7',
+    backgroundColor: GREEN_LIGHT,
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
   tripTypeText: {
     fontSize: 12,
-    color: '#2F7417',
+    color: GREEN,
     fontWeight: '500',
   },
   tripDetails: {
@@ -856,11 +924,11 @@ const styles = StyleSheet.create({
   progressPercent: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#1a1a1a',
+    color: DARK,
   },
   progressBar: {
     height: 6,
-    backgroundColor: '#e9ecef',
+    backgroundColor: BORDER,
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -872,7 +940,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     borderTopWidth: 1,
-    borderTopColor: '#e9ecef',
+    borderTopColor: BORDER,
     paddingTop: 16,
   },
   actionButton: {
@@ -881,7 +949,7 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 14,
-    color: '#2F7417',
+    color: GREEN,
     marginLeft: 6,
     fontWeight: '500',
   },
@@ -893,7 +961,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1a1a1a',
+    color: GREEN,
     marginTop: 16,
     marginBottom: 8,
   },
@@ -905,10 +973,16 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   createTripButton: {
-    backgroundColor: '#2F7417',
+    backgroundColor: GREEN,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 20,
+    marginTop: 10,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 2,
   },
   createTripText: {
     fontSize: 16,

@@ -48,6 +48,7 @@ export default function TabLayout() {
         name="voyage"
         options={{
           title: 'Vos voyages',
+          headerShown: false,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="airplane" color={color} />,
         }}
       />
@@ -55,6 +56,7 @@ export default function TabLayout() {
         name="amis"
         options={{
           title: 'Amis',
+          headerShown: false,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.2.fill" color={color} />,
         }}
       />
@@ -62,6 +64,7 @@ export default function TabLayout() {
         name="account"
         options={{
           title: 'Compte',
+          headerShown: false,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
         }}
       />

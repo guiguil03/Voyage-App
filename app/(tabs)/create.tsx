@@ -11,6 +11,10 @@ import {
   View,
 } from 'react-native';
 
+const GREEN = '#2F7417';
+const BG = '#F8F9FA';
+const BORDER = '#E9ECEF';
+
 export default function CreateScreen() {
   const handleCreateTrip = () => {
     router.push('/plan-trip');
@@ -40,7 +44,7 @@ export default function CreateScreen() {
         <View style={styles.optionsContainer}>
           <TouchableOpacity style={styles.optionCard} onPress={handleCreateTrip}>
             <View style={styles.iconContainer}>
-              <Ionicons name="airplane" size={32} color="#2F7417" />
+              <Ionicons name="airplane" size={32} color={GREEN} />
             </View>
             <Text style={styles.optionTitle}>Planifier un Voyage</Text>
             <Text style={styles.optionDescription}>
@@ -50,7 +54,7 @@ export default function CreateScreen() {
 
           <TouchableOpacity style={styles.optionCard} onPress={handleCreateMemory}>
             <View style={styles.iconContainer}>
-              <Ionicons name="camera" size={32} color="#2F7417" />
+              <Ionicons name="camera" size={32} color={GREEN} />
             </View>
             <Text style={styles.optionTitle}>Ajouter un Souvenir</Text>
             <Text style={styles.optionDescription}>
@@ -60,7 +64,7 @@ export default function CreateScreen() {
 
           <TouchableOpacity style={styles.optionCard} onPress={handleCreateItinerary}>
             <View style={styles.iconContainer}>
-              <Ionicons name="map" size={32} color="#2F7417" />
+              <Ionicons name="map" size={32} color={GREEN} />
             </View>
             <Text style={styles.optionTitle}>Suggestion d&apos;activités</Text>
             <Text style={styles.optionDescription}>
@@ -76,7 +80,7 @@ export default function CreateScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: BG,
   },
   scrollView: {
     flex: 1,
@@ -89,43 +93,49 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1a1a1a',
+    color: GREEN,
     marginBottom: 8,
+    letterSpacing: 0.2,
   },
   subtitle: {
     fontSize: 16,
     color: '#666',
+    marginBottom: 10,
   },
   optionsContainer: {
     paddingHorizontal: 20,
-    gap: 16,
+    gap: 18,
   },
   optionCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    backgroundColor: '#fff',
+    borderRadius: 22,
+    padding: 24,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 4,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: BORDER,
+    marginBottom: 2,
   },
   iconContainer: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#F0F9F0',
+    backgroundColor: BG,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: BORDER,
   },
   optionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontSize: 19,
+    fontWeight: 'bold',
+    color: GREEN,
     marginBottom: 8,
+    letterSpacing: 0.1,
   },
   optionDescription: {
     fontSize: 14,
