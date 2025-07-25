@@ -1,50 +1,107 @@
-# Welcome to your Expo app 👋
+# CityTrip - Application de Voyage
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Une magnifique application de voyage avec authentification sociale et par email construite avec React Native, Expo et Better Auth.
 
-## Get started
+## Fonctionnalités
 
-1. Install dependencies
+- 🔐 Authentification par email et mot de passe
+- 🍎 Connexion avec Apple
+- 📘 Connexion avec Facebook
+- 🌐 Connexion avec Google
+- 📱 Interface utilisateur moderne et responsive
+- 🎨 Design élégant avec image de fond de temple
 
-   ```bash
-   npm install
-   ```
+## Installation
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
+1. Clonez le repository :
 ```bash
-npm run reset-project
+git clone <votre-repo>
+cd Voyage-App
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. Installez les dépendances :
+```bash
+npm install
+```
 
-## Learn more
+3. Configurez les variables d'environnement :
+   - Ouvrez le fichier `env.config.js`
+   - Remplacez les valeurs par vos vraies clés API OAuth
 
-To learn more about developing your project with Expo, look at the following resources:
+4. Lancez l'application :
+```bash
+npm start
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Configuration OAuth
 
-## Join the community
+Pour activer l'authentification sociale, vous devez configurer les providers OAuth :
 
-Join our community of developers creating universal apps.
+### Apple Sign In
+1. Créez un App ID dans Apple Developer Portal
+2. Activez Sign In with Apple
+3. Ajoutez votre `APPLE_CLIENT_ID` et `APPLE_CLIENT_SECRET`
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### Facebook Login
+1. Créez une application Facebook
+2. Configurez Facebook Login
+3. Ajoutez votre `FACEBOOK_CLIENT_ID` et `FACEBOOK_CLIENT_SECRET`
+
+### Google Sign In
+1. Créez un projet Google Cloud
+2. Activez Google Sign-In API
+3. Ajoutez votre `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET`
+
+## Structure du Projet
+
+```
+Voyage-App/
+├── app/
+│   ├── (tabs)/
+│   │   └── index.tsx        # Page de connexion
+│   └── register.tsx         # Page d'inscription
+├── lib/
+│   ├── auth.ts             # Configuration Better Auth
+│   └── auth-client.ts      # Client d'authentification
+├── assets/
+│   └── images/
+│       └── temple-background.jpg  # Image de fond
+├── api/
+│   └── auth/
+│       └── [...all].ts     # Point d'entrée API
+└── env.config.js           # Configuration d'environnement
+```
+
+## Utilisation
+
+1. **Connexion** : Utilisez votre email et mot de passe ou l'un des providers sociaux
+2. **Inscription** : Créez un nouveau compte avec email et mot de passe
+3. **Navigation** : Basculez entre les pages de connexion et d'inscription
+
+## Technologies Utilisées
+
+- React Native
+- Expo
+- Better Auth
+- TypeScript
+- React Navigation
+
+## Développement
+
+Pour développer cette application :
+
+1. Assurez-vous d'avoir Expo CLI installé
+2. Utilisez `npm start` pour lancer le serveur de développement
+3. Utilisez l'application Expo Go sur votre téléphone pour tester
+
+## Déploiement
+
+Pour déployer l'application :
+
+1. Configurez vos variables d'environnement de production
+2. Construisez l'application avec `expo build`
+3. Déployez sur les stores d'applications
+
+---
+
+Créé avec ❤️ pour les amoureux de voyage
