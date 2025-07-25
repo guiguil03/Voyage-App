@@ -1,5 +1,6 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -14,6 +15,7 @@ import {
 import PersonalInfoForm from '../../components/profile/PersonalInfoForm';
 import SettingsForm from '../../components/profile/SettingsForm';
 import TravelPreferencesForm from '../../components/profile/TravelPreferencesForm';
+import { BG, BORDER, DARK, GREEN, GREEN_LIGHT } from '../../constants/Colors';
 import {
   getCurrentUserProfile,
   Profile,
@@ -139,24 +141,7 @@ export default function Account() {
   // Fonction de déconnexion
   const handleLogout = async () => {
     try {
-      Alert.alert(
-        'Déconnexion',
-        'Êtes-vous sûr de vouloir vous déconnecter ?',
-        [
-          {
-            text: 'Annuler',
-            style: 'cancel',
-          },
-          {
-            text: 'Déconnecter',
-            style: 'destructive',
-            onPress: async () => {
-              console.log('🚪 Déconnexion initiée depuis account.tsx');
-              await signOut();
-            },
-          },
-        ]
-      );
+      await signOut();
     } catch (error) {
       console.error('❌ Erreur UI de déconnexion:', error);
       await signOut();
@@ -233,77 +218,73 @@ export default function Account() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: BG }]}> 
+      {/* Dégradé premium en haut */}
+      <LinearGradient
+        colors={[GREEN_LIGHT, BG]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 220, zIndex: 0 }}
+      />
       {/* Header avec profil */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: 'transparent', borderBottomWidth: 0, marginTop: 10, marginBottom: 18, zIndex: 1 }]}> 
         <View style={styles.profileHeader}>
-          <View style={styles.avatarContainer}>
-            {profile?.avatar_url ? (
-              <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Ionicons name="person" size={40} color="#2F7417" />
-              </View>
-            )}
+          <View style={{ alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
+            <View style={{ width: 110, height: 110, borderRadius: 55, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 8, borderWidth: 3, borderColor: GREEN_LIGHT }}>
+              {profile?.avatar_url ? (
+                <Image source={{ uri: profile.avatar_url }} style={{ width: 100, height: 100, borderRadius: 50 }} />
+              ) : (
+                <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: '#F0F9F0', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="person" size={54} color="#2F7417" />
+                </View>
+              )}
+            </View>
           </View>
-          <Text style={styles.profileName}>
-            {profile?.full_name || user.email?.split('@')[0] || 'Voyageur'}
-          </Text>
-          <Text style={styles.profileEmail}>{user.email}</Text>
-          
+          <Text style={{ fontSize: 26, fontWeight: 'bold', color: DARK, marginBottom: 2 }}>{profile?.full_name || user.email?.split('@')[0] || 'Voyageur'}</Text>
+          <Text style={{ fontSize: 15, color: '#666', marginBottom: 10 }}>{user.email}</Text>
           {/* Statut de connexion */}
-          <View style={styles.statusContainer}>
-            <View style={[styles.statusDot, isConnected ? styles.connectedDot : styles.disconnectedDot]} />
-            <Text style={styles.statusText}>
-              {isConnected ? 'Connecté' : 'Déconnecté'}
-            </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: GREEN_LIGHT, paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20, marginBottom: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}>
+            <Ionicons name="ellipse" size={14} color={GREEN} style={{ marginRight: 7 }} />
+            <Text style={{ fontSize: 14, color: GREEN, fontWeight: '600' }}>{isConnected ? 'Connecté' : 'Déconnecté'}</Text>
           </View>
         </View>
-
-        {/* Bouton de déconnexion */}
-
-       
-
       </View>
-
-      <View style={styles.logoutButton}>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out" size={16} color="#FFFFFF" />
-          <Text style={styles.logoutText}>Déconnexion</Text>
+      {/* Bouton de déconnexion modernisé */}
+      <View style={{ alignItems: 'center', marginBottom: 18 }}>
+        <TouchableOpacity style={{ backgroundColor: '#EF4444', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 18, shadowColor: '#EF4444', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.13, shadowRadius: 18, elevation: 6, width: 240 }} activeOpacity={0.85} onPress={handleLogout}>
+          <Ionicons name="log-out" size={20} color="#FFFFFF" style={{ marginRight: 10 }} />
+          <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>Déconnexion</Text>
         </TouchableOpacity>
       </View>
-
-      {/* Navigation par onglets */}
-      <View style={styles.tabContainer}>
+      {/* Navigation par onglets modernisée */}
+      <View style={[styles.tabContainer, { marginBottom: 10, borderRadius: 16, overflow: 'hidden', backgroundColor: GREEN_LIGHT, padding: 6 }]}> 
         {tabs.map(tab => (
           <TouchableOpacity
             key={tab.id}
-            style={[styles.tab, activeTab === tab.id && styles.tabActive]}
+            style={[styles.tab, activeTab === tab.id && { backgroundColor: '#fff', shadowColor: GREEN, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 4, borderRadius: 12 }]} 
             onPress={() => setActiveTab(tab.id)}
+            activeOpacity={0.85}
           >
             <Ionicons
               name={tab.icon as any}
-              size={20}
-              color={activeTab === tab.id ? '#2F7417' : '#666'}
+              size={24}
+              color={activeTab === tab.id ? GREEN : '#bbb'}
             />
             <Text style={[
               styles.tabText,
-              activeTab === tab.id && styles.tabTextActive
+              activeTab === tab.id && styles.tabTextActive,
+              { fontSize: 15 }
             ]}>
               {tab.title}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
-
-      
-
       {/* Contenu de l'onglet actif */}
-      <View style={styles.content}>
+      <View style={[styles.content, { padding: 10, marginTop: 8 }]}> 
         {renderContent()}
       </View>
     </SafeAreaView>
-    
   );
 }
 
@@ -337,7 +318,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   loginButton: {
-    backgroundColor: '#2F7417',
+    backgroundColor: GREEN,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -352,7 +333,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
+    borderBottomColor: BORDER,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',

@@ -2,18 +2,20 @@ import { useAuth } from '@/hooks/useAuth';
 import { deleteTripPlan, getUserTripPlans } from '@/lib/trip-planning';
 import { getUserVoyages } from '@/lib/voyages';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 interface TripPlan {
@@ -350,17 +352,22 @@ export default function VoyageScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Dégradé premium en haut */}
+      <LinearGradient
+        colors={["#E8F5E8", "#F8F9FA"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 220, zIndex: 0 }}
+      />
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Mes Voyages</Text>
-          <Text style={styles.subtitle}>Gérez vos aventures</Text>
-          
-          {/* Bouton de rechargement */}
+        <View style={[styles.header, { backgroundColor: 'transparent', borderBottomWidth: 0, marginTop: 10, marginBottom: 18, zIndex: 1 }]}> 
+          <Text style={[styles.title, { fontSize: 30 }]}>Mes Voyages</Text>
+          <Text style={[styles.subtitle, { fontSize: 17 }]}>Gérez vos aventures</Text>
           <TouchableOpacity 
             style={styles.refreshButton} 
             onPress={loadUserTrips}
@@ -368,240 +375,238 @@ export default function VoyageScreen() {
             <Ionicons name="refresh" size={20} color="#2F7417" />
           </TouchableOpacity>
         </View>
-
-        {/* Affichage des erreurs */}
-        {error && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={loadUserTrips}>
-              <Text style={styles.retryText}>Réessayer</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
         {/* Statistiques */}
-        <View style={styles.statsContainer}>
+        <View style={{ flexDirection: 'row', paddingHorizontal: 20, marginBottom: 30, gap: 16 }}>
           {statsDisplay.map((stat, index) => (
-            <View key={index} style={styles.statCard}>
-              <View style={styles.statIconContainer}>
-                <Ionicons name={stat.icon as any} size={24} color="#2F7417" />
+            <BlurView key={stat.label} intensity={30} tint="light" style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 22, padding: 18, alignItems: 'center', shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.13, shadowRadius: 18, elevation: 6, marginRight: index < statsDisplay.length - 1 ? 8 : 0 }}> 
+              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#E8F5E8', justifyContent: 'center', alignItems: 'center', marginBottom: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}>
+                <Ionicons name={stat.icon as any} size={26} color={GREEN} />
               </View>
-              <Text style={styles.statNumber}>{stat.value}</Text>
-              <Text style={styles.statLabel}>{stat.label}</Text>
-            </View>
+              <Text style={{ fontSize: 22, fontWeight: 'bold', color: DARK, marginBottom: 2 }}>{stat.value}</Text>
+              <Text style={{ fontSize: 13, color: '#666', fontWeight: '500' }}>{stat.label}</Text>
+            </BlurView>
           ))}
         </View>
-
         {/* Filtres */}
-        <View style={styles.filtersContainer}>
+        <View style={{ marginBottom: 20 }}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
             {filters.map((filter) => (
               <TouchableOpacity
                 key={filter}
-                style={[
-                  styles.filterButton,
-                  activeFilter === filter && styles.activeFilterButton
-                ]}
+                style={[{
+                  backgroundColor: activeFilter === filter ? GREEN : 'rgba(255,255,255,0.7)',
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
+                  borderRadius: 22,
+                  marginRight: 14,
+                  shadowColor: GREEN,
+                  shadowOffset: { width: 0, height: activeFilter === filter ? 8 : 2 },
+                  shadowOpacity: activeFilter === filter ? 0.13 : 0.06,
+                  shadowRadius: activeFilter === filter ? 18 : 8,
+                  elevation: activeFilter === filter ? 6 : 2,
+                  borderWidth: 0,
+                }]}
                 onPress={() => setActiveFilter(filter)}
               >
-                <Text style={[
-                  styles.filterText,
-                  activeFilter === filter && styles.activeFilterText
-                ]}>
-                  {filter}
-                </Text>
+                <Text style={{ fontSize: 15, color: activeFilter === filter ? '#fff' : GREEN, fontWeight: 'bold' }}>{filter}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
         </View>
-
         {/* Header des voyages */}
         <View style={styles.tripsHeader}>
           <Text style={styles.sectionTitle}>
             {activeFilter === 'Tous' ? 'Tous mes voyages' : `Voyages ${activeFilter.toLowerCase()}`}
           </Text>
-          <TouchableOpacity style={styles.addButton} onPress={handleAddTrip}>
-            <Ionicons name="add" size={20} color="#fff" />
+          <TouchableOpacity style={[styles.addButton, { shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.13, shadowRadius: 18, elevation: 6 }]} onPress={handleAddTrip}>
+            <Ionicons name="add" size={22} color="#fff" />
           </TouchableOpacity>
         </View>
-
         {/* Liste des voyages */}
         <View style={styles.tripsContainer}>
           {filteredTrips.map((trip) => {
             const statusDisplay = getStatusDisplay(trip.status);
             const dateRange = formatDateRange(trip);
             const isMemory = trip.type === 'voyage';
-            
+            // Affichage de l'image principale (image_url ou images[0])
+            const mainImage = trip.image_url || (trip.images && trip.images[0]);
             return (
-              <TouchableOpacity 
-                key={trip.id} 
-                style={styles.tripCard}
-                onPress={() => handleTripPress(trip)}
-              >
-                {/* Image du voyage ou placeholder */}
-                {trip.image_url ? (
-                  <View style={styles.tripImageContainer}>
-                    <Image source={{ uri: trip.image_url }} style={styles.tripImage} />
-                    <View style={styles.imageOverlayGradient}>
-                      <Text style={styles.destinationOverlayOnImage}>{trip.destination}</Text>
+              <BlurView intensity={30} tint="light" style={{ backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 26, marginBottom: 22, shadowColor: GREEN, shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 8, overflow: 'hidden' }}>
+                <TouchableOpacity 
+                  key={trip.id} 
+                  style={{ flex: 1 }}
+                  onPress={() => handleTripPress(trip)}
+                  activeOpacity={0.88}
+                >
+                  {/* Image du voyage ou placeholder */}
+                  {mainImage ? (
+                    <View style={{ height: 140, backgroundColor: '#f0f0f0', position: 'relative', overflow: 'hidden', borderTopLeftRadius: 26, borderTopRightRadius: 26 }}>
+                      <Image source={{ uri: mainImage }} style={{ width: '100%', height: '100%', resizeMode: 'cover' }} />
+                      <LinearGradient
+                        colors={["rgba(0,0,0,0.0)", "rgba(0,0,0,0.45)"]}
+                        style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 70, justifyContent: 'flex-end', paddingHorizontal: 18, paddingVertical: 14 }}
+                      >
+                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#fff', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 }}>{trip.destination}</Text>
+                      </LinearGradient>
                     </View>
+                  ) : (
+                    <LinearGradient
+                      colors={["#E8F5E8", "#F8F9FA"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={{ width: '100%', height: 140, justifyContent: 'center', alignItems: 'center', borderTopLeftRadius: 26, borderTopRightRadius: 26 }}
+                    >
+                      <Ionicons name={isMemory ? "heart" : "location"} size={44} color={GREEN} style={{ marginBottom: 8 }} />
+                      <Text style={{ fontSize: 18, fontWeight: 'bold', color: GREEN, marginTop: 6 }}>{trip.destination}</Text>
+                    </LinearGradient>
+                  )}
+                  {/* Badge de statut avec indication du type */}
+                  <View style={{ position: 'absolute', top: 18, right: 18, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: statusDisplay.color, shadowColor: statusDisplay.color, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 4 }}>
+                    <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#fff' }}>{isMemory ? 'Souvenir' : statusDisplay.text}</Text>
                   </View>
-                ) : (
-                  <View style={styles.tripImagePlaceholder}>
-                    <Ionicons name={isMemory ? "heart" : "location"} size={40} color="#2F7417" />
-                    <Text style={styles.destinationOverlay}>{trip.destination}</Text>
-                  </View>
-                )}
-                
-                {/* Badge de statut avec indication du type */}
-                <View style={[styles.statusBadge, { backgroundColor: statusDisplay.color }]}>
-                  <Text style={styles.statusText}>
-                    {isMemory ? 'Souvenir' : statusDisplay.text}
-                  </Text>
-                </View>
-
-                <View style={styles.tripInfo}>
-                  <View style={styles.tripHeader}>
-                    <Text style={styles.tripTitle}>
-                      {isMemory ? trip.trip_name || trip.destination : trip.destination}
-                    </Text>
-                    <View style={styles.tripType}>
-                      <Text style={styles.tripTypeText}>{trip.travel_type}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.tripDetails}>
-                    {/* Affichage adapté selon le type */}
-                    {isMemory ? (
-                      <>
-                        {/* Pour les souvenirs */}
-                        <View style={styles.detailRow}>
-                          <Ionicons name="location" size={16} color="#666" />
-                          <Text style={styles.detailText}>{trip.destination}</Text>
-                        </View>
-                        {trip.duration && (
-                          <View style={styles.detailRow}>
-                            <Ionicons name="time" size={16} color="#666" />
-                            <Text style={styles.detailText}>{trip.duration}</Text>
-                          </View>
-                        )}
-                        {trip.rating && (
-                          <View style={styles.detailRow}>
-                            <Ionicons name="star" size={16} color="#FFD700" />
-                            <Text style={styles.detailText}>{trip.rating}/5</Text>
-                          </View>
-                        )}
-                        {trip.memory_text && (
-                          <View style={styles.memoryTextContainer}>
-                            <Text style={styles.memoryText} numberOfLines={2}>
-                              {trip.memory_text}
-                            </Text>
-                          </View>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        {/* Pour les trip plans */}
-                        <View style={styles.detailRow}>
-                          <Ionicons name="calendar" size={16} color="#666" />
-                          <Text style={styles.detailText}>{dateRange}</Text>
-                        </View>
-                        <View style={styles.detailRow}>
-                          <Ionicons name="heart" size={16} color="#666" />
-                          <Text style={styles.detailText}>{trip.interests?.join(', ') || 'Aucun thème'}</Text>
-                        </View>
-                        <View style={styles.detailRow}>
-                          <Ionicons name="fitness" size={16} color="#666" />
-                          <Text style={styles.detailText}>Niveau: {trip.activity_level}</Text>
-                        </View>
-                      </>
-                    )}
-                  </View>
-
-                  {/* Barre de progression uniquement pour les trip plans non terminés */}
-                  {!isMemory && trip.status !== 'completed' && (
-                    <View style={styles.progressSection}>
-                      <View style={styles.progressHeader}>
-                        <Text style={styles.progressLabel}>Statut</Text>
-                        <Text style={styles.progressPercent}>{statusDisplay.text}</Text>
+                  <View style={{ padding: 18 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                      <Text style={{ fontSize: 20, fontWeight: 'bold', color: DARK, flex: 1 }}>{isMemory ? trip.trip_name || trip.destination : trip.destination}</Text>
+                      <View style={{ backgroundColor: '#E8F5E8', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5, marginLeft: 10 }}>
+                        <Text style={{ fontSize: 13, color: GREEN, fontWeight: '600' }}>{trip.travel_type}</Text>
                       </View>
-                      <View style={styles.progressBar}>
-                        <View 
-                          style={[
-                            styles.progressFill, 
-                            { 
+                    </View>
+                    <View style={{ marginBottom: 18 }}>
+                      {/* Affichage adapté selon le type */}
+                      {isMemory ? (
+                        <>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 7 }}>
+                            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#E8F5E8', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                              <Ionicons name="location" size={16} color={GREEN} />
+                            </View>
+                            <Text style={{ fontSize: 15, color: '#666' }}>{trip.destination}</Text>
+                          </View>
+                          {trip.duration && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 7 }}>
+                              <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#E8F5E8', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                                <Ionicons name="time" size={16} color={GREEN} />
+                              </View>
+                              <Text style={{ fontSize: 15, color: '#666' }}>{trip.duration}</Text>
+                            </View>
+                          )}
+                          {trip.rating && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 7 }}>
+                              <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#E8F5E8', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                                <Ionicons name="star" size={16} color="#FFD700" />
+                              </View>
+                              <Text style={{ fontSize: 15, color: '#666' }}>{trip.rating}/5</Text>
+                            </View>
+                          )}
+                          {trip.memory_text && (
+                            <View key={trip.id + '-memory'} style={{ marginTop: 8, padding: 12, backgroundColor: '#f0f0f0', borderRadius: 10 }}>
+                              <Text style={{ fontSize: 15, color: '#333', lineHeight: 20 }} numberOfLines={2}>{trip.memory_text}</Text>
+                            </View>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 7 }}>
+                            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#E8F5E8', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                              <Ionicons name="calendar" size={16} color={GREEN} />
+                            </View>
+                            <Text style={{ fontSize: 15, color: '#666' }}>{dateRange}</Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 7 }}>
+                            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#E8F5E8', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                              <Ionicons name="heart" size={16} color={GREEN} />
+                            </View>
+                            <Text style={{ fontSize: 15, color: '#666' }}>{trip.interests?.join(', ') || 'Aucun thème'}</Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 7 }}>
+                            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#E8F5E8', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                              <Ionicons name="fitness" size={16} color={GREEN} />
+                            </View>
+                            <Text style={{ fontSize: 15, color: '#666' }}>Niveau: {trip.activity_level}</Text>
+                          </View>
+                        </>
+                      )}
+                    </View>
+                    {/* Barre de progression uniquement pour les trip plans non terminés */}
+                    {!isMemory && trip.status !== 'completed' && (
+                      <View style={{ marginBottom: 16 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                          <Text style={{ fontSize: 14, color: '#666', fontWeight: '500' }}>Statut</Text>
+                          <Text style={{ fontSize: 14, fontWeight: 'bold', color: DARK }}>{statusDisplay.text}</Text>
+                        </View>
+                        <View style={{ height: 7, backgroundColor: BORDER, borderRadius: 4, overflow: 'hidden' }}>
+                          <View 
+                            style={{
+                              height: '100%',
+                              borderRadius: 4,
                               width: trip.status === 'pending' ? '25%' : trip.status === 'processing' ? '75%' : '100%',
                               backgroundColor: statusDisplay.color
-                            }
-                          ]} 
-                        />
+                            }}
+                          />
+                        </View>
                       </View>
-                    </View>
-                  )}
-
-                  {/* Actions adaptées selon le type */}
-                  <View style={styles.tripActions}>
-                    <TouchableOpacity 
-                      style={styles.actionButton}
-                      onPress={() => handleTripAction('Détails', trip)}
-                    >
-                      <Ionicons name="document-text" size={16} color="#2F7417" />
-                      <Text style={styles.actionText}>Détails</Text>
-                    </TouchableOpacity>
-                    {isMemory ? (
-                      <>
-                        <TouchableOpacity 
-                          style={styles.actionButton}
-                          onPress={() => handleTripAction('Supprimer le souvenir', trip)}
-                        >
-                          <Ionicons name="trash" size={16} color="#FF4757" />
-                          <Text style={[styles.actionText, { color: '#FF4757' }]}>Supprimer</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                          style={styles.actionButton}
-                          onPress={() => handleTripAction('Voir photos', trip)}
-                        >
-                          <Ionicons name="images" size={16} color="#2F7417" />
-                          <Text style={styles.actionText}>Photos</Text>
-                        </TouchableOpacity>
-                      </>
-                    ) : (
-                      <>
-                        <TouchableOpacity 
-                          style={styles.actionButton}
-                          onPress={() => handleTripAction('Modifier', trip)}
-                        >
-                          <Ionicons name="create" size={16} color="#2F7417" />
-                          <Text style={styles.actionText}>Modifier</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                          style={styles.actionButton}
-                          onPress={() => handleTripAction('Partager', trip)}
-                        >
-                          <Ionicons name="share" size={16} color="#2F7417" />
-                          <Text style={styles.actionText}>Partager</Text>
-                        </TouchableOpacity>
-                        {/* Ajout du bouton supprimer pour les trip plans */}
-                        <TouchableOpacity 
-                          style={styles.actionButton}
-                          onPress={() => handleTripAction('Supprimer', trip)}
-                        >
-                          <Ionicons name="trash" size={16} color="#FF4757" />
-                          <Text style={[styles.actionText, { color: '#FF4757' }]}>Supprimer</Text>
-                        </TouchableOpacity>
-                      </>
                     )}
+                    {/* Actions */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-around', borderTopWidth: 1, borderTopColor: BORDER, paddingTop: 16 }}>
+                      <TouchableOpacity 
+                        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5E8', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}
+                        onPress={() => handleTripAction('Détails', trip)}
+                      >
+                        <Ionicons name="document-text" size={16} color={GREEN} />
+                        <Text style={{ color: GREEN, fontWeight: 'bold', fontSize: 15, marginLeft: 6 }}>Détails</Text>
+                      </TouchableOpacity>
+                      {isMemory ? (
+                        <>
+                          <TouchableOpacity 
+                            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: '#FF4757', marginLeft: 8, shadowColor: '#FF4757', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}
+                            onPress={() => handleTripAction('Supprimer le souvenir', trip)}
+                          >
+                            <Ionicons name="trash" size={16} color="#FF4757" />
+                            <Text style={{ color: '#FF4757', fontWeight: 'bold', fontSize: 15, marginLeft: 6 }}>Supprimer</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity 
+                            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: GREEN, marginLeft: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}
+                            onPress={() => handleTripAction('Voir photos', trip)}
+                          >
+                            <Ionicons name="images" size={16} color={GREEN} />
+                            <Text style={{ color: GREEN, fontWeight: 'bold', fontSize: 15, marginLeft: 6 }}>Photos</Text>
+                          </TouchableOpacity>
+                        </>
+                      ) : (
+                        <>
+                          <TouchableOpacity 
+                            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: GREEN, marginLeft: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}
+                            onPress={() => router.push({ pathname: '/plan-trip', params: { tripData: JSON.stringify(trip) } })}
+                          >
+                            <Ionicons name="create" size={16} color={GREEN} />
+                            <Text style={{ color: GREEN, fontWeight: 'bold', fontSize: 15, marginLeft: 6 }}>Modifier</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity 
+                            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: GREEN, marginLeft: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}
+                            onPress={() => handleTripAction('Partager', trip)}
+                          >
+                            <Ionicons name="share" size={16} color={GREEN} />
+                            <Text style={{ color: GREEN, fontWeight: 'bold', fontSize: 15, marginLeft: 6 }}>Partager</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity 
+                            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: '#FF4757', marginLeft: 8, shadowColor: '#FF4757', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}
+                            onPress={() => handleTripAction('Supprimer', trip)}
+                          >
+                            <Ionicons name="trash" size={16} color="#FF4757" />
+                            <Text style={{ color: '#FF4757', fontWeight: 'bold', fontSize: 15, marginLeft: 6 }}>Supprimer</Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
+                    </View>
                   </View>
-                </View>
-              </TouchableOpacity>
+                </TouchableOpacity>
+              </BlurView>
             );
           })}
         </View>
-
         {/* État vide */}
         {filteredTrips.length === 0 && !isLoading && (
           <View style={styles.emptyState}>
-            <Ionicons name="airplane-outline" size={60} color="#ccc" />
+            <Ionicons name="airplane-outline" size={60} color="#2F7417" style={{ opacity: 0.18 }} />
             <Text style={styles.emptyTitle}>Aucun voyage trouvé</Text>
             <Text style={styles.emptySubtitle}>
               {activeFilter === 'Tous' 
@@ -609,7 +614,7 @@ export default function VoyageScreen() {
                 : `Aucun voyage ${activeFilter.toLowerCase()} pour le moment.`
               }
             </Text>
-            <TouchableOpacity style={styles.createTripButton} onPress={handleAddTrip}>
+            <TouchableOpacity style={[styles.createTripButton, { shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.13, shadowRadius: 18, elevation: 6 }]} onPress={handleAddTrip}>
               <Text style={styles.createTripText}>Créer un voyage</Text>
             </TouchableOpacity>
           </View>

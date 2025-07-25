@@ -1,32 +1,35 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  Image,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import PersonalInfoForm from '../components/profile/PersonalInfoForm';
 import SettingsForm from '../components/profile/SettingsForm';
 import TravelPreferencesForm from '../components/profile/TravelPreferencesForm';
 import { useAuth } from '../hooks/useAuth';
 import {
-  getCurrentUserProfile,
-  Profile,
-  ProfileUpdate,
-  updateNotificationSettings,
-  updateTravelPreferences,
-  upsertProfile,
+    getCurrentUserProfile,
+    getProfileById,
+    Profile,
+    ProfileUpdate,
+    updateNotificationSettings,
+    updateTravelPreferences,
+    upsertProfile,
 } from '../lib/profiles';
 
 type TabType = 'info' | 'preferences' | 'settings';
 
 export default function ProfilScreen() {
   const { user, loading: authLoading } = useAuth();
+  const params = useLocalSearchParams();
+  const userIdParam = params.userId as string | undefined;
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('info');
@@ -34,26 +37,42 @@ export default function ProfilScreen() {
   // Charger le profil au montage
   useEffect(() => {
     loadProfile();
-  }, [user]);
+  }, [user, userIdParam]);
 
   const loadProfile = async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const { data, error } = await getCurrentUserProfile();
-      if (error) {
-        console.error('Erreur lors du chargement du profil:', error);
-        Alert.alert('Erreur', 'Impossible de charger le profil');
-      } else {
-        setProfile(data);
+    if (userIdParam) {
+      // Afficher le profil d'un autre utilisateur
+      try {
+        const { data, error } = await getProfileById(userIdParam);
+        if (error) {
+          console.error('Erreur lors du chargement du profil:', error);
+          Alert.alert('Erreur', 'Impossible de charger le profil');
+        } else {
+          setProfile(data);
+        }
+      } catch (error) {
+        console.error('Erreur inattendue:', error);
+        Alert.alert('Erreur', 'Une erreur inattendue est survenue');
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Erreur inattendue:', error);
-      Alert.alert('Erreur', 'Une erreur inattendue est survenue');
-    } finally {
+    } else if (user) {
+      // Afficher le profil connecté
+      try {
+        const { data, error } = await getCurrentUserProfile();
+        if (error) {
+          console.error('Erreur lors du chargement du profil:', error);
+          Alert.alert('Erreur', 'Impossible de charger le profil');
+        } else {
+          setProfile(data);
+        }
+      } catch (error) {
+        console.error('Erreur inattendue:', error);
+        Alert.alert('Erreur', 'Une erreur inattendue est survenue');
+      } finally {
+        setLoading(false);
+      }
+    } else {
       setLoading(false);
     }
   };
@@ -146,6 +165,8 @@ export default function ProfilScreen() {
     );
   }
 
+  // Désactive la modification si ce n'est pas le profil connecté
+  const isOwnProfile = !userIdParam || (user && userIdParam === user.id);
   const renderContent = () => {
     switch (activeTab) {
       case 'info':
@@ -165,13 +186,15 @@ export default function ProfilScreen() {
           />
         );
       case 'settings':
-        return (
+        return isOwnProfile ? (
           <SettingsForm
             profile={profile}
             onSaveNotifications={handleSaveNotificationSettings}
             onSavePrivacy={handleSavePrivacySettings}
             loading={loading}
           />
+        ) : (
+          <Text style={{ textAlign: 'center', color: '#888', marginTop: 30 }}>Paramètres non accessibles pour ce profil.</Text>
         );
       default:
         return null;
@@ -199,7 +222,7 @@ export default function ProfilScreen() {
           <Text style={styles.profileName}>
             {profile?.full_name || user.email?.split('@')[0] || 'Voyageur'}
           </Text>
-          <Text style={styles.profileEmail}>{user.email}</Text>
+          <Text style={styles.profileEmail}>{profile?.email || user.email}</Text>
         </View>
       </View>
 

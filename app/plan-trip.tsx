@@ -2,9 +2,9 @@ import InputField from '@/components/planning/InputField';
 import SelectionButton from '@/components/planning/SelectionButton';
 import { useAuth } from '@/hooks/useAuth';
 import { getOpenTripMapService } from '@/lib/opentripmap';
-import { createTripPlan } from '@/lib/trip-planning';
+import { createTripPlan, deleteTripPlan } from '@/lib/trip-planning';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -19,12 +19,15 @@ import {
 } from 'react-native';
 
 export default function PlanTripScreen() {
-  const [destination, setDestination] = useState('');
-  const [selectedTravelType, setSelectedTravelType] = useState('Solo');
-  const [selectedThemes, setSelectedThemes] = useState<string[]>(['Culture']);
-  const [selectedActivityLevel, setSelectedActivityLevel] = useState('Balanced');
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
+  const params = useLocalSearchParams();
+  const initialTrip = params.tripData ? JSON.parse(params.tripData as string) : null;
+
+  const [destination, setDestination] = useState(initialTrip?.destination || '');
+  const [selectedTravelType, setSelectedTravelType] = useState(initialTrip?.travel_type || 'Solo');
+  const [selectedThemes, setSelectedThemes] = useState<string[]>(initialTrip?.interests && initialTrip.interests.length > 0 ? initialTrip.interests : ['Culture']);
+  const [selectedActivityLevel, setSelectedActivityLevel] = useState(initialTrip?.activity_level || 'Balanced');
+  const [startDate, setStartDate] = useState<Date | null>(initialTrip?.start_date ? new Date(initialTrip.start_date) : null);
+  const [endDate, setEndDate] = useState<Date | null>(initialTrip?.end_date ? new Date(initialTrip.end_date) : null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [datePickerType, setDatePickerType] = useState<'start' | 'end'>('start');
   const [isLoading, setIsLoading] = useState(false);
@@ -490,19 +493,66 @@ export default function PlanTripScreen() {
               />
             </View>
           </TouchableOpacity>
-          
-          {!destination.trim() && !isLoading && (
-            <Text style={styles.generateHint}>
-              Veuillez renseigner une destination pour continuer
-            </Text>
-          )}
-          
-          {isLoading && (
-            <Text style={styles.generateHint}>
-              Enregistrement de votre demande en cours...
-            </Text>
+          {/* Bouton de suppression si modification */}
+          {initialTrip && (
+            <TouchableOpacity
+              style={{
+                marginTop: 24,
+                backgroundColor: '#FF4757',
+                borderRadius: 16,
+                paddingVertical: 16,
+                alignItems: 'center',
+                shadowColor: '#FF4757',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.12,
+                shadowRadius: 8,
+                elevation: 2,
+              }}
+              onPress={() => {
+                Alert.alert(
+                  'Supprimer le voyage',
+                  'Êtes-vous sûr de vouloir supprimer ce voyage ?',
+                  [
+                    { text: 'Annuler', style: 'cancel' },
+                    {
+                      text: 'Supprimer',
+                      style: 'destructive',
+                      onPress: async () => {
+                        try {
+                          const result = await deleteTripPlan(initialTrip.id);
+                          if (result.error) {
+                            Alert.alert('Erreur', 'Impossible de supprimer: ' + result.error);
+                          } else {
+                            Alert.alert('Supprimé', 'Le voyage a été supprimé.', [
+                              { text: 'OK', onPress: () => router.push('/(tabs)/voyage') }
+                            ]);
+                          }
+                        } catch (error) {
+                          Alert.alert('Erreur', 'Une erreur inattendue est survenue.');
+                        }
+                      }
+                    }
+                  ]
+                );
+              }}
+            >
+              <Ionicons name="trash" size={20} color="#fff" style={{ marginBottom: 4 }} />
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Supprimer ce voyage</Text>
+            </TouchableOpacity>
           )}
         </View>
+        
+        {!destination.trim() && !isLoading && (
+          <Text style={styles.generateHint}>
+            Veuillez renseigner une destination pour continuer
+          </Text>
+        )}
+        
+        {isLoading && (
+          <Text style={styles.generateHint}>
+            Enregistrement de votre demande en cours...
+          </Text>
+        )}
       </ScrollView>
 
       {/* Modal de sélection de date */}

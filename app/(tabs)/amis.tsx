@@ -1,5 +1,6 @@
 import { acceptFriendRequest, declineFriendRequest, getAddableUsers, getMyFriends, getReceivedFriendRequests, sendFriendRequest } from '@/lib/friends';
 import { Profile } from '@/lib/profiles';
+import { router } from 'expo-router';
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Dimensions, FlatList, Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -56,14 +57,20 @@ export default function AmisScreen() {
     setProcessingRequest(null);
   };
 
+  const handleFriendPress = (friend: Profile) => {
+    router.push({ pathname: '/profil', params: { userId: friend.id } });
+  };
+
   const renderUser = (item: Profile, isFriend: boolean = false) => (
     <View style={styles.userRow}>
-      <Image source={item.avatar_url ? { uri: item.avatar_url } : require('@/assets/images/icon.png')} style={styles.avatar} />
-      <View style={{ flex: 1, marginLeft: 10 }}>
-        <Text style={styles.userName}>{item.full_name || item.username || item.email || item.id}</Text>
-        <Text style={styles.userEmail}>{item.city} {item.city && item.country ? '·' : ''} {item.country}</Text>
-        {item.bio ? <Text style={styles.userBio}>{item.bio}</Text> : null}
-      </View>
+      <TouchableOpacity onPress={() => isFriend && handleFriendPress(item)} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+        <Image source={item.avatar_url ? { uri: item.avatar_url } : require('@/assets/images/icon.png')} style={styles.avatar} />
+        <View style={{ flex: 1, marginLeft: 10 }}>
+          <Text style={styles.userName}>{item.full_name || item.username || item.email || item.id}</Text>
+          <Text style={styles.userEmail}>{item.city} {item.city && item.country ? '·' : ''} {item.country}</Text>
+          {item.bio ? <Text style={styles.userBio}>{item.bio}</Text> : null}
+        </View>
+      </TouchableOpacity>
       {isFriend ? (
         <View style={styles.friendBadge}><Text style={styles.friendBadgeText}>Ami</Text></View>
       ) : (

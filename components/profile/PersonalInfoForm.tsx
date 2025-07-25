@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -7,8 +8,9 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
+import { GREEN } from '../../constants/Colors';
 import { Profile, ProfileUpdate } from '../../lib/profiles';
 
 interface PersonalInfoFormProps {
@@ -30,6 +32,7 @@ export default function PersonalInfoForm({ profile, onSave, loading = false }: P
   });
 
   const [saving, setSaving] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const handleSave = async () => {
     if (saving || loading) return;
@@ -64,143 +67,126 @@ export default function PersonalInfoForm({ profile, onSave, loading = false }: P
         <Text style={styles.title}>Informations Personnelles</Text>
         <Text style={styles.subtitle}>Complétez votre profil pour une meilleure expérience</Text>
       </View>
-
       <View style={styles.form}>
         {/* Nom complet */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Nom complet *</Text>
-          <View style={styles.inputContainer}>
-            <Ionicons name="person" size={20} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              value={formData.full_name}
-              onChangeText={(value) => updateFormData('full_name', value)}
-              placeholder="Votre nom complet"
-              placeholderTextColor="#999"
-            />
-          </View>
-        </View>
-
+        <BlurView intensity={30} tint="light" style={styles.inputContainerGlass}>
+          <View style={styles.iconCircle}><Ionicons name="person" size={22} color={GREEN} /></View>
+          <TextInput
+            style={[styles.inputPremium, focusedField === 'full_name' && styles.inputFocused]}
+            value={formData.full_name}
+            onChangeText={(value) => updateFormData('full_name', value)}
+            placeholder="Votre nom complet"
+            placeholderTextColor="#bbb"
+            onFocus={() => setFocusedField('full_name')}
+            onBlur={() => setFocusedField(null)}
+          />
+        </BlurView>
         {/* Nom d'utilisateur */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Nom d'utilisateur</Text>
-          <View style={styles.inputContainer}>
-            <Ionicons name="at" size={20} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              value={formData.username}
-              onChangeText={(value) => updateFormData('username', value.toLowerCase())}
-              placeholder="votre_nom_utilisateur"
-              placeholderTextColor="#999"
-              autoCapitalize="none"
-            />
-          </View>
-        </View>
-
+        <BlurView intensity={30} tint="light" style={styles.inputContainerGlass}>
+          <View style={styles.iconCircle}><Ionicons name="at" size={22} color={GREEN} /></View>
+          <TextInput
+            style={[styles.inputPremium, focusedField === 'username' && styles.inputFocused]}
+            value={formData.username}
+            onChangeText={(value) => updateFormData('username', value.toLowerCase())}
+            placeholder="votre_nom_utilisateur"
+            placeholderTextColor="#bbb"
+            autoCapitalize="none"
+            onFocus={() => setFocusedField('username')}
+            onBlur={() => setFocusedField(null)}
+          />
+        </BlurView>
         {/* Bio */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Bio</Text>
-          <View style={[styles.inputContainer, styles.textAreaContainer]}>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={formData.bio}
-              onChangeText={(value) => updateFormData('bio', value)}
-              placeholder="Parlez-nous de vous et de votre passion pour les voyages..."
-              placeholderTextColor="#999"
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
-          </View>
-        </View>
-
+        <BlurView intensity={30} tint="light" style={[styles.inputContainerGlass, { alignItems: 'flex-start', minHeight: 90 }]}> 
+          <View style={[styles.iconCircle, { marginTop: 8 }]}><Ionicons name="chatbubble-ellipses" size={22} color={GREEN} /></View>
+          <TextInput
+            style={[styles.inputPremium, { minHeight: 90, textAlignVertical: 'top' }, focusedField === 'bio' && styles.inputFocused]}
+            value={formData.bio}
+            onChangeText={(value) => updateFormData('bio', value)}
+            placeholder="Parlez-nous de vous et de votre passion pour les voyages..."
+            placeholderTextColor="#bbb"
+            multiline
+            onFocus={() => setFocusedField('bio')}
+            onBlur={() => setFocusedField(null)}
+          />
+        </BlurView>
         {/* Téléphone */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Téléphone</Text>
-          <View style={styles.inputContainer}>
-            <Ionicons name="call" size={20} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              value={formData.phone}
-              onChangeText={(value) => updateFormData('phone', value)}
-              placeholder="+33 6 12 34 56 78"
-              placeholderTextColor="#999"
-              keyboardType="phone-pad"
-            />
-          </View>
-        </View>
-
+        <BlurView intensity={30} tint="light" style={styles.inputContainerGlass}>
+          <View style={styles.iconCircle}><Ionicons name="call" size={22} color={GREEN} /></View>
+          <TextInput
+            style={[styles.inputPremium, focusedField === 'phone' && styles.inputFocused]}
+            value={formData.phone}
+            onChangeText={(value) => updateFormData('phone', value)}
+            placeholder="+33 6 12 34 56 78"
+            placeholderTextColor="#bbb"
+            keyboardType="phone-pad"
+            onFocus={() => setFocusedField('phone')}
+            onBlur={() => setFocusedField(null)}
+          />
+        </BlurView>
         {/* Pays */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Pays</Text>
-          <View style={styles.inputContainer}>
-            <Ionicons name="globe" size={20} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              value={formData.country}
-              onChangeText={(value) => updateFormData('country', value)}
-              placeholder="France"
-              placeholderTextColor="#999"
-            />
-          </View>
-        </View>
-
+        <BlurView intensity={30} tint="light" style={styles.inputContainerGlass}>
+          <View style={styles.iconCircle}><Ionicons name="flag" size={22} color={GREEN} /></View>
+          <TextInput
+            style={[styles.inputPremium, focusedField === 'country' && styles.inputFocused]}
+            value={formData.country}
+            onChangeText={(value) => updateFormData('country', value)}
+            placeholder="France"
+            placeholderTextColor="#bbb"
+            onFocus={() => setFocusedField('country')}
+            onBlur={() => setFocusedField(null)}
+          />
+        </BlurView>
         {/* Ville */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Ville</Text>
-          <View style={styles.inputContainer}>
-            <Ionicons name="location" size={20} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              value={formData.city}
-              onChangeText={(value) => updateFormData('city', value)}
-              placeholder="Paris"
-              placeholderTextColor="#999"
-            />
-          </View>
-        </View>
-
+        <BlurView intensity={30} tint="light" style={styles.inputContainerGlass}>
+          <View style={styles.iconCircle}><Ionicons name="location" size={22} color={GREEN} /></View>
+          <TextInput
+            style={[styles.inputPremium, focusedField === 'city' && styles.inputFocused]}
+            value={formData.city}
+            onChangeText={(value) => updateFormData('city', value)}
+            placeholder="Paris"
+            placeholderTextColor="#bbb"
+            onFocus={() => setFocusedField('city')}
+            onBlur={() => setFocusedField(null)}
+          />
+        </BlurView>
         {/* Site web */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Site web</Text>
-          <View style={styles.inputContainer}>
-            <Ionicons name="link" size={20} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              value={formData.website}
-              onChangeText={(value) => updateFormData('website', value)}
-              placeholder="https://monsite.com"
-              placeholderTextColor="#999"
-              keyboardType="url"
-              autoCapitalize="none"
-            />
-          </View>
-        </View>
-
+        <BlurView intensity={30} tint="light" style={styles.inputContainerGlass}>
+          <View style={styles.iconCircle}><Ionicons name="globe" size={22} color={GREEN} /></View>
+          <TextInput
+            style={[styles.inputPremium, focusedField === 'website' && styles.inputFocused]}
+            value={formData.website}
+            onChangeText={(value) => updateFormData('website', value)}
+            placeholder="https://votre-site.com"
+            placeholderTextColor="#bbb"
+            autoCapitalize="none"
+            keyboardType="url"
+            onFocus={() => setFocusedField('website')}
+            onBlur={() => setFocusedField(null)}
+          />
+        </BlurView>
         {/* Date de naissance */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Date de naissance</Text>
-          <View style={styles.inputContainer}>
-            <Ionicons name="calendar" size={20} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              value={formData.date_of_birth}
-              onChangeText={(value) => updateFormData('date_of_birth', value)}
-              placeholder="AAAA-MM-JJ"
-              placeholderTextColor="#999"
-            />
-          </View>
-          <Text style={styles.helperText}>Format: AAAA-MM-JJ (ex: 1990-12-25)</Text>
-        </View>
-
-        {/* Bouton de sauvegarde */}
+        <BlurView intensity={30} tint="light" style={styles.inputContainerGlass}>
+          <View style={styles.iconCircle}><Ionicons name="calendar" size={22} color={GREEN} /></View>
+          <TextInput
+            style={[styles.inputPremium, focusedField === 'date_of_birth' && styles.inputFocused]}
+            value={formData.date_of_birth}
+            onChangeText={(value) => updateFormData('date_of_birth', value)}
+            placeholder="JJ/MM/AAAA"
+            placeholderTextColor="#bbb"
+            keyboardType="numeric"
+            onFocus={() => setFocusedField('date_of_birth')}
+            onBlur={() => setFocusedField(null)}
+          />
+        </BlurView>
+        {/* Bouton de sauvegarde premium */}
         <TouchableOpacity 
-          style={[styles.saveButton, (saving || loading) && styles.saveButtonDisabled]} 
+          style={[styles.saveButtonPremium, (saving || loading) && styles.saveButtonDisabled]} 
           onPress={handleSave}
           disabled={saving || loading}
+          activeOpacity={0.85}
         >
-          <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-          <Text style={styles.saveButtonText}>
+          <Ionicons name="checkmark" size={22} color="#FFFFFF" style={{ marginRight: 8 }} />
+          <Text style={styles.saveButtonTextPremium}>
             {saving ? 'Sauvegarde...' : 'Sauvegarder'}
           </Text>
         </TouchableOpacity>
@@ -290,5 +276,95 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  inputGroupPremium: {
+    marginBottom: 22,
+  },
+  labelPremium: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: GREEN,
+    marginBottom: 7,
+    marginLeft: 2,
+  },
+  inputContainerPremium: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    shadowColor: '#2F7417',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
+    marginBottom: 2,
+  },
+  inputIconPremium: {
+    marginRight: 12,
+    opacity: 0.85,
+  },
+  inputPremium: {
+    flex: 1,
+    fontSize: 16,
+    color: '#222',
+    fontWeight: '500',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    paddingVertical: 2,
+  },
+  inputContainerGlass: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 22,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    marginBottom: 18,
+    borderWidth: 1.5,
+    borderColor: '#E8F5E8',
+    shadowColor: '#2F7417',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.10,
+    shadowRadius: 18,
+    elevation: 4,
+  },
+  iconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#E8F5E8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  inputFocused: {
+    shadowColor: '#2F7417',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 4,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+  },
+  saveButtonPremium: {
+    backgroundColor: GREEN,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 24,
+    marginTop: 18,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.13,
+    shadowRadius: 18,
+    elevation: 6,
+  },
+  saveButtonTextPremium: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: 'bold',
+    letterSpacing: 0.2,
   },
 }); 

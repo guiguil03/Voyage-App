@@ -221,3 +221,21 @@ export async function deleteVoyage(voyageId: string): Promise<{ error: string | 
     return { error: 'Une erreur inattendue est survenue' };
   }
 } 
+
+// Upload d'une image locale vers Supabase Storage et retourne l'URL publique
+export async function uploadImageToSupabase(localUri: string, userId: string): Promise<string> {
+  if (!supabase) throw new Error('Supabase non configuré');
+  const fileName = localUri.split('/').pop() || `image-${Date.now()}`;
+  const fileExt = fileName.split('.').pop();
+  const path = `voyages/${userId}/${Date.now()}-${fileName}`;
+  // Récupère le blob (React Native)
+  const response = await fetch(localUri);
+  const blob = await response.blob();
+  // Upload sur Supabase Storage (bucket 'voyages')
+  const { error } = await supabase.storage.from('voyages').upload(path, blob, { contentType: `image/${fileExt}` });
+  if (error) throw error;
+  // Récupère l’URL publique
+  const { data: publicUrlData } = supabase.storage.from('voyages').getPublicUrl(path);
+  if (!publicUrlData || !publicUrlData.publicUrl) throw new Error('Impossible de récupérer l’URL publique');
+  return publicUrlData.publicUrl;
+} 

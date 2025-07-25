@@ -9,15 +9,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 interface TripPlan {
@@ -290,76 +289,79 @@ export default function HomeScreen() {
           <Text style={[styles.sectionTitle, { color: GREEN, fontWeight: 'bold', fontSize: 20 }]}>Bonjour {user.email?.split('@')[0]}</Text>
         </View>
         {/* Dernier voyage */}
-        <View style={{ backgroundColor: '#fff', borderRadius: 24, marginHorizontal: 18, marginBottom: 18, padding: 20, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 24, elevation: 4, borderWidth: 1, borderColor: BORDER }}> 
-          <View style={styles.sectionHeader}>
+        <View style={{ backgroundColor: '#fff', borderRadius: 28, marginHorizontal: 18, marginBottom: 18, padding: 22, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 8 }}> 
+          <View style={[styles.sectionHeader, { marginBottom: 10 }]}> 
             <Text style={[styles.sectionTitle, { color: DARK, fontWeight: 'bold', fontSize: 18 }]}>Dernier Voyage</Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/voyage')}>
-              <Text style={[styles.seeAllText, { color: GREEN, fontWeight: 'bold' }]}>Voir tout</Text>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/voyage')} style={{ borderRadius: 16, backgroundColor: GREEN_LIGHT, paddingHorizontal: 12, paddingVertical: 6, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}>
+              <Ionicons name="albums" size={16} color={GREEN} style={{ marginRight: 4 }} />
+              <Text style={[styles.seeAllText, { color: GREEN, fontWeight: 'bold', marginLeft: 2 }]}>Voir tout</Text>
             </TouchableOpacity>
           </View>
-          
           {loadingVoyages ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" color="#2F7417" />
               <Text style={styles.loadingText}>Chargement des voyages...</Text>
             </View>
           ) : userVoyages.length > 0 ? (
-            <TripCard
-              date={new Date(userVoyages[0].created_at).toLocaleDateString('fr-FR', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-              })}
-              country={userVoyages[0].destination}
-              flagEmoji={userVoyages[0].flag_emoji || '🌍'}
-              image={userVoyages[0].image_url ? 
-                { uri: userVoyages[0].image_url } : 
-                require('@/assets/images/mountain-background.jpg')
-              }
-              onPress={handleTripDetail}
-            />
+            <View style={{ borderRadius: 20, borderWidth: 1, borderColor: GREEN, shadowColor: GREEN, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.10, shadowRadius: 12, elevation: 4, overflow: 'hidden' }}>
+              <TripCard
+                date={new Date(userVoyages[0].created_at).toLocaleDateString('fr-FR', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric'
+                })}
+                country={userVoyages[0].destination}
+                flagEmoji={userVoyages[0].flag_emoji || '🌍'}
+                image={userVoyages[0].image_url ? 
+                  { uri: userVoyages[0].image_url } : 
+                  require('@/assets/images/mountain-background.jpg')
+                }
+                onPress={handleTripDetail}
+              />
+            </View>
           ) : (
-            <View style={styles.noVoyageCard}>
-              <Text style={styles.noVoyageText}>Aucun voyage encore créé</Text>
+            <View style={[styles.noVoyageCard, { borderRadius: 20, backgroundColor: GREEN_LIGHT, borderColor: GREEN, shadowColor: GREEN, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.10, shadowRadius: 12, elevation: 4 }]}> 
+              <Text style={[styles.noVoyageText, { color: GREEN, fontWeight: 'bold', fontSize: 16 }]}>Aucun voyage encore créé</Text>
               <TouchableOpacity 
-                style={styles.addVoyageButton} 
+                style={{ backgroundColor: GREEN, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 16, marginTop: 10, flexDirection: 'row', alignItems: 'center', shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 8, elevation: 2 }} 
                 onPress={() => router.push('/Memory')}
               >
-                <Text style={styles.addVoyageButtonText}>Ajouter votre premier voyage</Text>
+                <Ionicons name="add-circle" size={20} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>Ajouter votre premier voyage</Text>
               </TouchableOpacity>
             </View>
           )}
         </View>
         {/* Destinations populaires */}
-        <View style={{ backgroundColor: '#fff', borderRadius: 24, marginHorizontal: 18, marginBottom: 18, padding: 20, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 24, elevation: 4, borderWidth: 1, borderColor: BORDER }}> 
-          <Text style={[styles.sectionTitle, { color: DARK, fontWeight: 'bold', fontSize: 18 }]}>Destinations Populaires</Text>
+        <View style={{ backgroundColor: '#fff', borderRadius: 28, marginHorizontal: 18, marginBottom: 18, padding: 22, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 8 }}> 
+          <Text style={[styles.sectionTitle, { color: DARK, fontWeight: 'bold', fontSize: 18, marginBottom: 10 }]}>Destinations Populaires</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.destinationsScroll}>
             {city.city.slice(0, 6).map((cityItem, index) => (
-              <TouchableOpacity key={index} style={{ backgroundColor: GREEN_LIGHT, borderRadius: 18, marginRight: 14, width: 140, alignItems: 'center', borderWidth: 1, borderColor: BORDER, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2, padding: 14 }} onPress={() => handleCityPress(cityItem.name, cityItem.country)}>
-                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginBottom: 8, borderWidth: 1, borderColor: GREEN }}>
-                  <Ionicons name="location" size={28} color={GREEN} />
+              <TouchableOpacity key={index} style={{ backgroundColor: GREEN_LIGHT, borderRadius: 22, marginRight: 14, width: 150, alignItems: 'center', shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.13, shadowRadius: 18, elevation: 6, padding: 16 }} onPress={() => handleCityPress(cityItem.name, cityItem.country)}>
+                <View style={{ width: 54, height: 54, borderRadius: 27, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginBottom: 8, borderWidth: 1, borderColor: GREEN, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}>
+                  <Ionicons name="location" size={30} color={GREEN} />
                 </View>
-                <Text style={{ fontSize: 15, fontWeight: 'bold', color: DARK, marginBottom: 2 }}>{cityItem.name}</Text>
-                <Text style={{ fontSize: 12, color: '#666', marginBottom: 2 }}>{cityItem.country}</Text>
-                <Text style={{ fontSize: 11, color: GREEN }}>{Math.floor(Math.random() * 200) + 50} voyages</Text>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: DARK, marginBottom: 2 }}>{cityItem.name}</Text>
+                <Text style={{ fontSize: 13, color: '#666', marginBottom: 2 }}>{cityItem.country}</Text>
+                <Text style={{ fontSize: 12, color: GREEN }}>{Math.floor(Math.random() * 200) + 50} voyages</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
         </View>
         {/* Prochains voyages planifiés */}
-        <View style={{ backgroundColor: '#fff', borderRadius: 24, marginHorizontal: 18, marginBottom: 18, padding: 20, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 24, elevation: 4, borderWidth: 1, borderColor: BORDER }}> 
-          <View style={styles.sectionHeader}>
+        <View style={{ backgroundColor: '#fff', borderRadius: 28, marginHorizontal: 18, marginBottom: 18, padding: 22, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 8 }}> 
+          <View style={[styles.sectionHeader, { marginBottom: 10 }]}> 
             <Text style={[styles.sectionTitle, { color: DARK, fontWeight: 'bold', fontSize: 18 }]}>Voyages Planifiés</Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/voyage')}>
-              <Text style={[styles.seeAllText, { color: GREEN, fontWeight: 'bold' }]}>Voir tout</Text>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/voyage')} style={{ borderRadius: 16, backgroundColor: GREEN_LIGHT, paddingHorizontal: 12, paddingVertical: 6, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}>
+              <Ionicons name="albums" size={16} color={GREEN} style={{ marginRight: 4 }} />
+              <Text style={[styles.seeAllText, { color: GREEN, fontWeight: 'bold', marginLeft: 2 }]}>Voir tout</Text>
             </TouchableOpacity>
           </View>
-          
           {loadingNextTrip ? (
             <View style={styles.upcomingCard}>
               <LinearGradient
                 colors={['#E3F2FD', '#BBDEFB']}
-                style={styles.upcomingGradient}
+                style={[styles.upcomingGradient, { borderRadius: 20 }]}
               >
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="small" color="#1976D2" />
@@ -368,30 +370,29 @@ export default function HomeScreen() {
               </LinearGradient>
             </View>
           ) : nextTrip ? (
-            <View style={styles.upcomingCard}>
+            <View style={[styles.upcomingCard, { borderRadius: 20, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 8 }]}> 
               <LinearGradient
                 colors={['#E8F5E8', '#D4F1D4']}
-                style={styles.upcomingGradient}
+                style={[styles.upcomingGradient, { borderRadius: 20 }]}
               >
                 <View style={styles.upcomingHeader}>
-                  <View style={styles.upcomingIconContainer}>
-                    <Ionicons name="airplane" size={24} color="#2F7417" />
+                  <View style={[styles.upcomingIconContainer, { backgroundColor: GREEN_LIGHT, borderColor: GREEN, borderWidth: 1 }]}> 
+                    <Ionicons name="airplane" size={24} color={GREEN} />
                   </View>
                   <View style={styles.upcomingInfo}>
-                    <Text style={styles.upcomingDestination}>{nextTrip.destination}</Text>
+                    <Text style={[styles.upcomingDestination, { color: DARK }]}>{nextTrip.destination}</Text>
                     <Text style={styles.upcomingDate}>{formatTripDate(nextTrip)}</Text>
                     <View style={styles.upcomingDetails}>
-                      <View style={[styles.statusBadge, { backgroundColor: getStatusDisplay(nextTrip.status).color }]}>
+                      <View style={[styles.statusBadge, { backgroundColor: getStatusDisplay(nextTrip.status).color }]}> 
                         <Text style={styles.statusText}>{getStatusDisplay(nextTrip.status).text}</Text>
                       </View>
                       <Text style={styles.upcomingType}>{nextTrip.travel_type}</Text>
                     </View>
                   </View>
                 </View>
-                
                 <View style={styles.upcomingActions}>
                   <TouchableOpacity 
-                    style={styles.detailButton} 
+                    style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: GREEN_LIGHT, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }} 
                     onPress={() => {
                       if (nextTrip) {
                         const tripData = {
@@ -406,31 +407,23 @@ export default function HomeScreen() {
                           type: 'trip_plan',
                           created_at: nextTrip.created_at
                         };
-                        
-                        router.push({
-                          pathname: '/travel/detailMemory',
-                          params: {
-                            tripData: JSON.stringify(tripData)
-                          }
-                        });
+                        router.push({ pathname: '/travel/detailMemory', params: { tripData: JSON.stringify(tripData) } });
                       }
                     }}
                   >
-                    <Text style={styles.detailButtonText}>Voir détails</Text>
-                    <Ionicons name="arrow-forward" size={16} color="#2F7417" />
+                    <Ionicons name="eye" size={16} color={GREEN} style={{ marginRight: 6 }} />
+                    <Text style={{ color: GREEN, fontWeight: 'bold', fontSize: 15 }}>Voir détails</Text>
                   </TouchableOpacity>
-                  
                   {nextTrip.status === 'pending' && (
                     <TouchableOpacity 
-                      style={styles.modifyButton} 
+                      style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: GREEN, marginLeft: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }} 
                       onPress={() => router.push('/plan-trip')}
                     >
-                      <Ionicons name="create" size={16} color="#666" />
-                      <Text style={styles.modifyButtonText}>Modifier</Text>
+                      <Ionicons name="create" size={16} color={GREEN} style={{ marginRight: 6 }} />
+                      <Text style={{ color: GREEN, fontWeight: 'bold', fontSize: 15 }}>Modifier</Text>
                     </TouchableOpacity>
                   )}
                 </View>
-                
                 {nextTrip.interests && nextTrip.interests.length > 0 && (
                   <View style={styles.upcomingInterests}>
                     <Text style={styles.interestsLabel}>Centres d&apos;intérêt:</Text>
@@ -440,10 +433,10 @@ export default function HomeScreen() {
               </LinearGradient>
             </View>
           ) : (
-            <View style={styles.upcomingCard}>
+            <View style={[styles.upcomingCard, { borderRadius: 20, backgroundColor: GREEN_LIGHT, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 8 }]}> 
               <LinearGradient
                 colors={['#E3F2FD', '#BBDEFB']}
-                style={styles.upcomingGradient}
+                style={[styles.upcomingGradient, { borderRadius: 20 }]}
               >
                 <View style={styles.upcomingContent}>
                   <Ionicons name="calendar" size={24} color="#1976D2" />
@@ -452,49 +445,48 @@ export default function HomeScreen() {
                     <Text style={styles.upcomingSubtitle}>Créez votre première aventure !</Text>
                   </View>
                 </View>
-                  
-                <TouchableOpacity style={styles.planButton} onPress={handleCreateTrip}>
-                  <Text style={styles.planButtonText}>Planifier</Text>
-                  <Ionicons name="arrow-forward" size={16} color="#1976D2" />
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: GREEN, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, marginTop: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }} onPress={handleCreateTrip}>
+                  <Ionicons name="add-circle" size={16} color="#fff" style={{ marginRight: 6 }} />
+                  <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>Planifier</Text>
                 </TouchableOpacity>
               </LinearGradient>
             </View>
           )}
         </View>
         {/* Amis */}
-        <View style={{ backgroundColor: '#fff', borderRadius: 24, marginHorizontal: 18, marginBottom: 18, padding: 20, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 24, elevation: 4, borderWidth: 1, borderColor: BORDER }}> 
-          <Text style={[styles.sectionTitle, { color: DARK, fontWeight: 'bold', fontSize: 18 }]}>Amis & leurs voyages</Text>
+        <View style={{ backgroundColor: '#fff', borderRadius: 28, marginHorizontal: 18, marginBottom: 18, padding: 22, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 8 }}> 
+          <Text style={[styles.sectionTitle, { color: DARK, fontWeight: 'bold', fontSize: 20, marginBottom: 18, flexDirection: 'row', alignItems: 'center' }]}> 
+            <Ionicons name="people" size={22} color={GREEN} style={{ marginRight: 8 }} /> Amis & leurs voyages
+          </Text>
           {friends.length === 0 ? (
-            <Text style={{ color: '#888', fontStyle: 'italic', marginBottom: 12 }}>Aucun ami pour l&apos;instant.</Text>
+            <Text style={{ color: '#888', fontStyle: 'italic', marginBottom: 12, textAlign: 'center' }}>Aucun ami pour l&apos;instant.</Text>
           ) : (
             friends.map((friend) => (
-              <View key={friend.id} style={styles.friendBlock}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                  <View style={styles.friendAvatarCircle}>
-                    <Ionicons name="person" size={28} color="#2F7417" />
+              <View key={friend.id} style={{ backgroundColor: '#fff', borderRadius: 24, marginBottom: 28, padding: 16, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                  <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: GREEN_LIGHT, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: GREEN, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}>
+                    <Ionicons name="person" size={32} color={GREEN} />
                   </View>
-                  <Text style={styles.friendNameBig}>{friend.full_name || friend.username || friend.email}</Text>
+                  <Text style={{ fontWeight: 'bold', fontSize: 18, color: GREEN, marginLeft: 14 }}>{friend.full_name || friend.username || friend.email}</Text>
+                  <Ionicons name="checkmark-circle" size={20} color={GREEN} style={{ marginLeft: 8 }} />
                 </View>
                 {voyagesByFriend[friend.id] && voyagesByFriend[friend.id].length > 0 ? (
-                  <FlatList
-                    data={voyagesByFriend[friend.id]}
-                    renderItem={({ item }) => (
-                      <TouchableOpacity style={styles.friendVoyageCard} onPress={() => handleFriendVoyageDetail(item)}>
-                        <View style={styles.friendVoyageHeader}>
-                          <Text style={styles.voyageDrapeau}>{item.flag_emoji || '🌍'}</Text>
-                          <View style={styles.friendVoyageInfo}>
-                            <Text style={styles.voyageName}>{item.trip_name}</Text>
-                            <Text style={styles.voyageDestination}>{item.destination}</Text>
-                          </View>
-                        </View>
-                        <Text style={styles.voyageDate}>{item.created_at ? new Date(item.created_at).toLocaleDateString('fr-FR') : ''}</Text>
-                      </TouchableOpacity>
-                    )}
-                    keyExtractor={(item) => item.id}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.friendsList}
-                  />
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: 4, marginTop: 2 }}>
+                    {voyagesByFriend[friend.id].map((item, idx) => (
+                       <TouchableOpacity key={item.id} style={{ backgroundColor: '#F8F9FA', borderRadius: 18, shadowColor: GREEN, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.13, shadowRadius: 18, elevation: 6, flexDirection: 'row', alignItems: 'center', marginRight: 18, padding: 16, minWidth: 170 }} onPress={() => handleFriendVoyageDetail(item)}>
+                         <Text style={{ fontSize: 28, marginRight: 12 }}>{item.flag_emoji || '🌍'}</Text>
+                         <View>
+                           <Text style={{ fontWeight: 'bold', fontSize: 16, color: '#222' }}>{item.destination}</Text>
+                           <Text style={{ fontSize: 13, color: '#888', fontStyle: 'italic', flexDirection: 'row', alignItems: 'center' }}>
+                             {item.country || item.destination}
+                           </Text>
+                           <View style={{ backgroundColor: GREEN_LIGHT, borderRadius: 8, alignSelf: 'flex-start', marginTop: 4, paddingHorizontal: 8, paddingVertical: 2 }}>
+                             <Text style={{ fontSize: 12, color: GREEN }}>{item.created_at ? new Date(item.created_at).toLocaleDateString('fr-FR') : ''}</Text>
+                           </View>
+                         </View>
+                       </TouchableOpacity>
+                    ))}
+                  </ScrollView>
                 ) : (
                   <Text style={{ color: '#bbb', fontSize: 13, fontStyle: 'italic', marginLeft: 10 }}>Aucun voyage</Text>
                 )}

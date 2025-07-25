@@ -315,3 +315,23 @@ export async function getAllPublicProfiles(): Promise<{ data: Profile[] | null; 
     return { data: null, error: 'Erreur inattendue' };
   }
 } 
+
+// Récupérer un profil par ID
+export async function getProfileById(id: string): Promise<{ data: Profile | null; error: string | null }> {
+  if (!supabase) {
+    return { data: null, error: 'Supabase non configuré' };
+  }
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) {
+      return { data: null, error: error.message };
+    }
+    return { data, error: null };
+  } catch (e: any) {
+    return { data: null, error: e.message };
+  }
+} 

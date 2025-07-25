@@ -1,3 +1,4 @@
+import { deleteTripPlan } from '@/lib/trip-planning';
 import { deleteVoyage } from '@/lib/voyages';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -56,8 +57,9 @@ export default function DetailMemoryScreen() {
 
   // Fonction pour supprimer le voyage/souvenir
   const handleDeleteTrip = () => {
+    const isMemory = tripData.type === 'voyage';
     Alert.alert(
-      'Supprimer le souvenir',
+      isMemory ? 'Supprimer le souvenir' : 'Supprimer le voyage',
       `Êtes-vous sûr de vouloir supprimer définitivement "${tripData.trip_name || tripData.destination}" ?`,
       [
         {
@@ -69,18 +71,22 @@ export default function DetailMemoryScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const result = await deleteVoyage(tripData.id);
-              
+              let result;
+              if (isMemory) {
+                result = await deleteVoyage(tripData.id);
+              } else {
+                result = await deleteTripPlan(tripData.id);
+              }
               if (result.error) {
-                Alert.alert('Erreur', 'Impossible de supprimer le souvenir: ' + result.error);
+                Alert.alert('Erreur', 'Impossible de supprimer: ' + result.error);
               } else {
                 Alert.alert(
                   'Supprimé',
-                  'Le souvenir a été supprimé avec succès.',
+                  isMemory ? 'Le souvenir a été supprimé.' : 'Le voyage a été supprimé.',
                   [
                     {
                       text: 'OK',
-                      onPress: () => router.back()
+                      onPress: () => router.push('/(tabs)/voyage')
                     }
                   ]
                 );
@@ -110,7 +116,11 @@ export default function DetailMemoryScreen() {
             <Ionicons name="trash" size={20} color="#FF4757" />
           </TouchableOpacity>
         )}
-        {!isMemory && <View style={styles.placeholder} />}
+        {!isMemory && (
+          <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteTrip}>
+            <Ionicons name="trash" size={20} color="#FF4757" />
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
