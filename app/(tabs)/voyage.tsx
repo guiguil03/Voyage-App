@@ -7,15 +7,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Image,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 interface TripPlan {
@@ -431,7 +431,7 @@ export default function VoyageScreen() {
             // Affichage de l'image principale (image_url ou images[0])
             const mainImage = trip.image_url || (trip.images && trip.images[0]);
             return (
-              <BlurView intensity={30} tint="light" style={{ backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 26, marginBottom: 22, shadowColor: GREEN, shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 8, overflow: 'hidden' }}>
+              <BlurView key={trip.id} intensity={30} tint="light" style={{ backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 26, marginBottom: 22, shadowColor: GREEN, shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 8, overflow: 'hidden' }}>
                 <TouchableOpacity 
                   key={trip.id} 
                   style={{ flex: 1 }}
@@ -546,53 +546,53 @@ export default function VoyageScreen() {
                       </View>
                     )}
                     {/* Actions */}
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-around', borderTopWidth: 1, borderTopColor: BORDER, paddingTop: 16 }}>
+                    <View style={styles.buttonGroup}>
                       <TouchableOpacity 
-                        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5E8', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}
+                        style={styles.buttonDetails}
                         onPress={() => handleTripAction('Détails', trip)}
                       >
                         <Ionicons name="document-text" size={16} color={GREEN} />
-                        <Text style={{ color: GREEN, fontWeight: 'bold', fontSize: 15, marginLeft: 6 }}>Détails</Text>
+                        <Text style={styles.buttonDetailsText}>Détails</Text>
                       </TouchableOpacity>
                       {isMemory ? (
                         <>
                           <TouchableOpacity 
-                            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: '#FF4757', marginLeft: 8, shadowColor: '#FF4757', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}
+                            style={[styles.button, styles.buttonDelete]}
                             onPress={() => handleTripAction('Supprimer le souvenir', trip)}
                           >
                             <Ionicons name="trash" size={16} color="#FF4757" />
-                            <Text style={{ color: '#FF4757', fontWeight: 'bold', fontSize: 15, marginLeft: 6 }}>Supprimer</Text>
+                            <Text style={styles.buttonDeleteText}>Supprimer</Text>
                           </TouchableOpacity>
                           <TouchableOpacity 
-                            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: GREEN, marginLeft: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}
+                            style={styles.button}
                             onPress={() => handleTripAction('Voir photos', trip)}
                           >
                             <Ionicons name="images" size={16} color={GREEN} />
-                            <Text style={{ color: GREEN, fontWeight: 'bold', fontSize: 15, marginLeft: 6 }}>Photos</Text>
+                            <Text style={styles.buttonText}>Photos</Text>
                           </TouchableOpacity>
                         </>
                       ) : (
                         <>
                           <TouchableOpacity 
-                            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: GREEN, marginLeft: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}
+                            style={styles.button}
                             onPress={() => router.push({ pathname: '/plan-trip', params: { tripData: JSON.stringify(trip) } })}
                           >
                             <Ionicons name="create" size={16} color={GREEN} />
-                            <Text style={{ color: GREEN, fontWeight: 'bold', fontSize: 15, marginLeft: 6 }}>Modifier</Text>
+                            <Text style={styles.buttonText}>Modifier</Text>
                           </TouchableOpacity>
                           <TouchableOpacity 
-                            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: GREEN, marginLeft: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}
+                            style={styles.button}
                             onPress={() => handleTripAction('Partager', trip)}
                           >
                             <Ionicons name="share" size={16} color={GREEN} />
-                            <Text style={{ color: GREEN, fontWeight: 'bold', fontSize: 15, marginLeft: 6 }}>Partager</Text>
+                            <Text style={styles.buttonText}>Partager</Text>
                           </TouchableOpacity>
                           <TouchableOpacity 
-                            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: '#FF4757', marginLeft: 8, shadowColor: '#FF4757', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}
+                            style={[styles.button, styles.buttonDelete]}
                             onPress={() => handleTripAction('Supprimer', trip)}
                           >
                             <Ionicons name="trash" size={16} color="#FF4757" />
-                            <Text style={{ color: '#FF4757', fontWeight: 'bold', fontSize: 15, marginLeft: 6 }}>Supprimer</Text>
+                            <Text style={styles.buttonDeleteText}>Supprimer</Text>
                           </TouchableOpacity>
                         </>
                       )}
@@ -1028,5 +1028,74 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
+  },
+  buttonGroup: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: GREEN,
+    marginHorizontal: 4,
+    marginVertical: 4,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.13,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  buttonText: {
+    color: GREEN,
+    fontWeight: 'bold',
+    fontSize: 15,
+    marginLeft: 8,
+  },
+  buttonDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E8',
+    borderRadius: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: GREEN,
+    marginHorizontal: 4,
+    marginVertical: 4,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.13,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  buttonDetailsText: {
+    color: GREEN,
+    fontWeight: 'bold',
+    fontSize: 15,
+    marginLeft: 8,
+  },
+  buttonDelete: {
+    borderColor: '#FF4757',
+    backgroundColor: '#FFF5F5',
+    shadowColor: '#FF4757',
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  buttonDeleteText: {
+    color: '#FF4757',
+    fontWeight: 'bold',
+    fontSize: 15,
+    marginLeft: 8,
   },
 }); 

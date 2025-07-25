@@ -1,5 +1,6 @@
 import { acceptFriendRequest, declineFriendRequest, getAddableUsers, getMyFriends, getReceivedFriendRequests, sendFriendRequest } from '@/lib/friends';
 import { Profile } from '@/lib/profiles';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Dimensions, FlatList, Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -127,8 +128,17 @@ export default function AmisScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Mes amis & communauté</Text>
+      {/* Dégradé premium en haut */}
+      <LinearGradient
+        colors={["#E8F5E8", "#F8F9FA"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 220, zIndex: 0 }}
+      />
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: 'transparent', borderBottomWidth: 0, marginTop: 10, marginBottom: 18, zIndex: 1 }]}>
+        <Text style={[styles.title, { fontSize: 30 }]}>Mes Amis</Text>
+        <Text style={styles.subtitle}>Connectez-vous avec la communauté</Text>
       </View>
       <View style={styles.content}>
         {loading ? (
@@ -150,27 +160,24 @@ export default function AmisScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#F8F9FA',
   },
   header: {
-    paddingTop: 24,
-    paddingBottom: 8,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    marginBottom: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 2,
-    elevation: 2,
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
   },
   title: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#2F7417',
-    letterSpacing: 0.5,
+    marginBottom: 8,
+    letterSpacing: 0.2,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 10,
   },
   content: {
     flex: 1,
