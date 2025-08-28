@@ -1,14 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 
 import React from 'react';
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 const GREEN = '#2F7417';
@@ -31,46 +33,60 @@ export default function CreateScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Dégradé premium en haut */}
+      <LinearGradient
+        colors={["#E8F5E8", "#F8F9FA"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 220, zIndex: 0 }}
+      />
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>Créer</Text>
-          <Text style={styles.subtitle}>Que veux-tu créer aujourd&apos;hui ?</Text>
+        {/* Header */}
+        <View style={[styles.header, { backgroundColor: 'transparent', borderBottomWidth: 0, marginTop: 10, marginBottom: 18, zIndex: 1 }]}>
+          <Text style={[styles.title, { fontSize: 30 }]}>Créer</Text>
+          <Text style={[styles.subtitle, { fontSize: 17 }]}>Que veux-tu créer aujourd&apos;hui ?</Text>
         </View>
 
         <View style={styles.optionsContainer}>
-          <TouchableOpacity style={styles.optionCard} onPress={handleCreateTrip}>
-            <View style={styles.iconContainer}>
-              <Ionicons name="airplane" size={32} color={GREEN} />
-            </View>
-            <Text style={styles.optionTitle}>Planifier un Voyage</Text>
-            <Text style={styles.optionDescription}>
-             Donne nous ta destination des envies et nous te proposons un plannig détaillé de tous ce que tu pourrais faire sur place
-            </Text>
-          </TouchableOpacity>
+          <BlurView intensity={30} tint="light" style={styles.optionCardBlur}>
+            <TouchableOpacity style={styles.optionCard} onPress={handleCreateTrip}>
+              <View style={styles.iconContainer}>
+                <Ionicons name="airplane" size={32} color={GREEN} />
+              </View>
+              <Text style={styles.optionTitle}>Planifier un Voyage</Text>
+              <Text style={styles.optionDescription}>
+               Donne-nous ta destination et tes envies, nous te proposons un planning détaillé de tout ce que tu pourrais faire sur place
+              </Text>
+            </TouchableOpacity>
+          </BlurView>
 
-          <TouchableOpacity style={styles.optionCard} onPress={handleCreateMemory}>
-            <View style={styles.iconContainer}>
-              <Ionicons name="camera" size={32} color={GREEN} />
-            </View>
-            <Text style={styles.optionTitle}>Ajouter un Souvenir</Text>
-            <Text style={styles.optionDescription}>
-              Fais toi un recap de tes meilleurs moments de voyage pour les partager avec tes amis
-            </Text>
-          </TouchableOpacity>
+          <BlurView intensity={30} tint="light" style={styles.optionCardBlur}>
+            <TouchableOpacity style={styles.optionCard} onPress={handleCreateMemory}>
+              <View style={styles.iconContainer}>
+                <Ionicons name="camera" size={32} color={GREEN} />
+              </View>
+              <Text style={styles.optionTitle}>Ajouter un Souvenir</Text>
+              <Text style={styles.optionDescription}>
+                Fais-toi un récap de tes meilleurs moments de voyage pour les partager avec tes amis
+              </Text>
+            </TouchableOpacity>
+          </BlurView>
 
-          <TouchableOpacity style={styles.optionCard} onPress={handleCreateItinerary}>
-            <View style={styles.iconContainer}>
-              <Ionicons name="map" size={32} color={GREEN} />
-            </View>
-            <Text style={styles.optionTitle}>Suggestion d&apos;activités</Text>
-            <Text style={styles.optionDescription}>
-              Renseigne nous sur tes envies et nous te proposons des activités et des visites en fonction de tes envies et de ton budget
-            </Text>
-          </TouchableOpacity>
+          <BlurView intensity={30} tint="light" style={styles.optionCardBlur}>
+            <TouchableOpacity style={styles.optionCard} onPress={handleCreateItinerary}>
+              <View style={styles.iconContainer}>
+                <Ionicons name="map" size={32} color={GREEN} />
+              </View>
+              <Text style={styles.optionTitle}>Suggestion d&apos;activités</Text>
+              <Text style={styles.optionDescription}>
+                Renseigne-nous sur tes envies et nous te proposons des activités et des visites en fonction de tes envies et de ton budget
+              </Text>
+            </TouchableOpacity>
+          </BlurView>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -106,18 +122,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     gap: 18,
   },
-  optionCard: {
-    backgroundColor: '#fff',
-    borderRadius: 22,
-    padding: 24,
+  optionCardBlur: {
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 26,
+    marginBottom: 4,
     shadowColor: GREEN,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.15,
     shadowRadius: 24,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: BORDER,
-    marginBottom: 2,
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  optionCard: {
+    padding: 24,
   },
   iconContainer: {
     width: 60,
@@ -129,6 +146,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: BORDER,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   optionTitle: {
     fontSize: 19,

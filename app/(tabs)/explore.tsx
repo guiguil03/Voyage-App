@@ -1,5 +1,7 @@
 import { getOpenTripMapService } from '@/lib/opentripmap';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -130,59 +132,72 @@ export default function ExploreScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Dégradé premium en haut */}
+      <LinearGradient
+        colors={["#E8F5E8", "#F8F9FA"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 220, zIndex: 0 }}
+      />
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Explorer</Text>
-          <Text style={styles.subtitle}>Découvrez votre prochaine destination</Text>
+        <View style={[styles.header, { backgroundColor: 'transparent', borderBottomWidth: 0, marginTop: 10, marginBottom: 18, zIndex: 1 }]}>
+          <Text style={[styles.title, { fontSize: 30 }]}>Explorer</Text>
+          <Text style={[styles.subtitle, { fontSize: 17 }]}>Découvrez votre prochaine destination</Text>
         </View>
 
         {/* Barre de recherche */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color={styles.searchIcon.color} style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Rechercher une destination..."
-            placeholderTextColor="#666"
-            value={searchText}
-            onChangeText={setSearchText}
-          />
-        </View>
+        <BlurView intensity={30} tint="light" style={styles.searchContainerBlur}>
+          <View style={styles.searchContainer}>
+            <Ionicons name="search" size={20} color={styles.searchIcon.color} style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Rechercher une destination..."
+              placeholderTextColor="#666"
+              value={searchText}
+              onChangeText={setSearchText}
+            />
+          </View>
+        </BlurView>
 
         {/* Catégories */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Catégories</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
             {categories.map((category) => (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.categoryCard,
-                  selectedCategory === category.name && styles.selectedCategoryCard
-                ]}
-                onPress={() => setSelectedCategory(selectedCategory === category.name ? null : category.name)}
-              >
-                <View style={[
-                  styles.categoryIconContainer,
-                  selectedCategory === category.name && styles.selectedCategoryIcon
-                ]}>
-                  <Ionicons 
-                    name={category.icon as any} 
-                    size={24} 
-                    color={selectedCategory === category.name ? '#fff' : '#2F7417'} 
-                  />
-                </View>
-                <Text style={[
-                  styles.categoryText,
-                  selectedCategory === category.name && styles.selectedCategoryText
-                ]}>
-                  {category.name}
-                </Text>
-              </TouchableOpacity>
+              <BlurView key={category.id} intensity={30} tint="light" style={[
+                styles.categoryCardBlur,
+                selectedCategory === category.name && styles.selectedCategoryCardBlur
+              ]}>
+                <TouchableOpacity
+                  style={[
+                    styles.categoryCard,
+                    selectedCategory === category.name && styles.selectedCategoryCard
+                  ]}
+                  onPress={() => setSelectedCategory(selectedCategory === category.name ? null : category.name)}
+                >
+                  <View style={[
+                    styles.categoryIconContainer,
+                    selectedCategory === category.name && styles.selectedCategoryIcon
+                  ]}>
+                    <Ionicons 
+                      name={category.icon as any} 
+                      size={24} 
+                      color={selectedCategory === category.name ? '#fff' : '#2F7417'} 
+                    />
+                  </View>
+                  <Text style={[
+                    styles.categoryText,
+                    selectedCategory === category.name && styles.selectedCategoryText
+                  ]}>
+                    {category.name}
+                  </Text>
+                </TouchableOpacity>
+              </BlurView>
             ))}
           </ScrollView>
         </View>
@@ -195,15 +210,22 @@ export default function ExploreScreen() {
             </View>
             {filteredCities.length > 0 ? (
               filteredCities.map((city, idx) => (
-                <TouchableOpacity key={city.name + idx} style={styles.destinationCard} onPress={() => setSelectedCity(city)}>
-                  <Image source={city.image} style={styles.destinationImage} />
-                  <View style={styles.destinationInfo}>
-                    <View style={styles.destinationHeader}>
-                      <Text style={styles.destinationName}>{city.name}</Text>
-                      <Text style={styles.destinationPrice}>{city.country}</Text>
+                <BlurView key={city.name + idx} intensity={30} tint="light" style={styles.destinationCardBlur}>
+                  <TouchableOpacity style={styles.destinationCard} onPress={() => setSelectedCity(city)}>
+                    <Image source={city.image} style={styles.destinationImage} />
+                    <View style={styles.destinationInfo}>
+                      <View style={styles.destinationHeader}>
+                        <Text style={styles.destinationName}>{city.name}</Text>
+                        <Text style={styles.destinationPrice}>{city.country}</Text>
+                      </View>
                     </View>
+<<<<<<< HEAD
                   </View>
             </TouchableOpacity>
+=======
+                  </TouchableOpacity>
+                </BlurView>
+>>>>>>> b65fc8c637b9989ed7dd580154e77611390f2edd
               ))
             ) : (
               <Text style={{ textAlign: 'center', color: '#888', marginVertical: 20 }}>Aucune destination trouvée</Text>
@@ -226,6 +248,7 @@ export default function ExploreScreen() {
               destinations.map((destination) => {
                 const hasImage = !!(destination.preview?.source || destination.image);
                 return hasImage ? (
+<<<<<<< HEAD
             <TouchableOpacity 
                     key={destination.xid || destination.id} 
               style={styles.destinationCard}
@@ -251,30 +274,69 @@ export default function ExploreScreen() {
             </TouchableOpacity>
                 ) : (
                   <TouchableOpacity
+=======
+                  <BlurView 
+>>>>>>> b65fc8c637b9989ed7dd580154e77611390f2edd
                     key={destination.xid || destination.id}
+                    intensity={30} 
+                    tint="light" 
+                    style={styles.destinationCardBlur}
+                  >
+                    <TouchableOpacity 
+                      style={styles.destinationCard}
+                      onPress={() => handleDestinationPress(destination)}
+                    >
+                      <Image source={{ uri: destination.preview?.source || destination.image }} style={styles.destinationImage} />
+                      <View style={styles.destinationInfo}>
+                        <View style={styles.destinationHeader}>
+                          <Text style={styles.destinationName}>{destination.name}</Text>
+                          {destination.rate && <Text style={styles.destinationPrice}>★ {destination.rate}</Text>}
+                        </View>
+                        <View style={styles.destinationDetails}>
+                          <View style={styles.ratingContainer}>
+                            {destination.kinds && <Text style={styles.categoryTagText}>{destination.kinds.split(',')[0]}</Text>}
+                          </View>
+                          {destination.address?.country && (
+                            <View style={styles.categoryTag}>
+                              <Text style={styles.categoryTagText}>{destination.address.country}</Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  </BlurView>
+                ) : (
+                  <BlurView
+                    key={destination.xid || destination.id}
+                    intensity={30}
+                    tint="light"
                     style={{
-                      backgroundColor: '#fff',
-                      borderRadius: 18,
+                      backgroundColor: 'rgba(255,255,255,0.7)',
+                      borderRadius: 26,
                       marginBottom: 12,
                       marginHorizontal: 20,
-                      padding: 16,
                       shadowColor: '#2F7417',
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.06,
-                      shadowRadius: 8,
-                      elevation: 2,
-                      borderWidth: 1,
-                      borderColor: '#E9ECEF',
-                      flexDirection: 'column',
-                      justifyContent: 'center',
+                      shadowOffset: { width: 0, height: 12 },
+                      shadowOpacity: 0.15,
+                      shadowRadius: 24,
+                      elevation: 8,
+                      overflow: 'hidden',
                     }}
-                    onPress={() => handleDestinationPress(destination)}
                   >
-                    <Text style={{ fontWeight: 'bold', color: '#2F7417', fontSize: 16, marginBottom: 2 }}>{destination.name}</Text>
-                    {destination.kinds && <Text style={{ color: '#2F7417', fontSize: 13, marginBottom: 2 }}>{destination.kinds.split(',')[0]}</Text>}
-                    {destination.address?.country && <Text style={{ color: '#666', fontSize: 12 }}>{destination.address.country}</Text>}
-                    {destination.rate && <Text style={{ color: '#2F7417', fontWeight: 'bold', fontSize: 13, marginTop: 2 }}>★ {destination.rate}</Text>}
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={{
+                        padding: 16,
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                      }}
+                      onPress={() => handleDestinationPress(destination)}
+                    >
+                      <Text style={{ fontWeight: 'bold', color: '#2F7417', fontSize: 16, marginBottom: 2 }}>{destination.name}</Text>
+                      {destination.kinds && <Text style={{ color: '#2F7417', fontSize: 13, marginBottom: 2 }}>{destination.kinds.split(',')[0]}</Text>}
+                      {destination.address?.country && <Text style={{ color: '#666', fontSize: 12 }}>{destination.address.country}</Text>}
+                      {destination.rate && <Text style={{ color: '#2F7417', fontWeight: 'bold', fontSize: 13, marginTop: 2 }}>★ {destination.rate}</Text>}
+                    </TouchableOpacity>
+                  </BlurView>
                 );
               })
             ) : (
@@ -285,19 +347,21 @@ export default function ExploreScreen() {
         {/* Section planificateur */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Besoin d&apos;aide ?</Text>
-          <TouchableOpacity style={styles.plannerCard} onPress={() => router.push('/plan-trip')}>
-            <View style={styles.plannerContent}>
-              <View style={styles.plannerIconContainer}>
-                <Ionicons name="bulb-outline" size={28} color="#2F7417" />
+          <BlurView intensity={30} tint="light" style={styles.plannerCardBlur}>
+            <TouchableOpacity style={styles.plannerCard} onPress={() => router.push('/plan-trip')}>
+              <View style={styles.plannerContent}>
+                <View style={styles.plannerIconContainer}>
+                  <Ionicons name="bulb-outline" size={28} color="#2F7417" />
+                </View>
+                <View style={styles.plannerText}>
+                  <Text style={styles.plannerTitle}>Planificateur IA</Text>
+                  <Text style={styles.plannerSubtitle}>
+                    Laissez notre IA créer votre voyage parfait selon vos préférences
+                  </Text>
+                </View>
               </View>
-              <View style={styles.plannerText}>
-                <Text style={styles.plannerTitle}>Planificateur IA</Text>
-                <Text style={styles.plannerSubtitle}>
-                  Laissez notre IA créer votre voyage parfait selon vos préférences
-                </Text>
-              </View>
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </BlurView>
         </View>
 
         {/* États vides */}
@@ -354,22 +418,23 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 10,
   },
+  searchContainerBlur: {
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 26,
+    marginHorizontal: 20,
+    marginBottom: 30,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 8,
+    overflow: 'hidden',
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: BG,
-    borderRadius: 18,
     paddingHorizontal: 18,
     paddingVertical: 14,
-    marginHorizontal: 20,
-    marginBottom: 30,
-    borderWidth: 1,
-    borderColor: BORDER,
-    shadowColor: GREEN,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
   },
   searchIcon: {
     marginRight: 12,
@@ -405,25 +470,28 @@ const styles = StyleSheet.create({
   categoriesScroll: {
     paddingLeft: 20,
   },
+  categoryCardBlur: {
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 26,
+    marginRight: 16,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 6,
+    overflow: 'hidden',
+  },
+  selectedCategoryCardBlur: {
+    backgroundColor: 'rgba(47, 116, 23, 0.9)',
+  },
   categoryCard: {
     alignItems: 'center',
-    marginRight: 16,
     paddingVertical: 14,
     paddingHorizontal: 18,
-    backgroundColor: BG,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: BORDER,
     minWidth: 80,
-    shadowColor: GREEN,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
   },
   selectedCategoryCard: {
-    backgroundColor: GREEN,
-    borderColor: GREEN,
+    // Le style de sélection est maintenant géré par le BlurView
   },
   categoryIconContainer: {
     width: 48,
@@ -435,6 +503,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderWidth: 1,
     borderColor: BORDER,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   selectedCategoryIcon: {
     backgroundColor: GREEN,
@@ -448,19 +521,20 @@ const styles = StyleSheet.create({
   selectedCategoryText: {
     color: '#fff',
   },
-  destinationCard: {
-    backgroundColor: '#fff',
-    borderRadius: 22,
+  destinationCardBlur: {
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 26,
     marginBottom: 18,
     marginHorizontal: 20,
     shadowColor: GREEN,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.15,
     shadowRadius: 24,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: BORDER,
+    elevation: 8,
     overflow: 'hidden',
+  },
+  destinationCard: {
+    // Le style est maintenant géré par le BlurView parent
   },
   destinationImage: {
     width: '100%',
@@ -517,22 +591,19 @@ const styles = StyleSheet.create({
     color: GREEN,
     fontWeight: '500',
   },
-  plannerCard: {
-    backgroundColor: '#fff',
-    borderRadius: 22,
-    padding: 24,
+  plannerCardBlur: {
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 26,
     marginHorizontal: 20,
     shadowColor: GREEN,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.15,
     shadowRadius: 24,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: BORDER,
+    elevation: 8,
+    overflow: 'hidden',
   },
-  plannerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  plannerCard: {
+    padding: 24,
   },
   plannerIconContainer: {
     width: 60,
@@ -544,6 +615,11 @@ const styles = StyleSheet.create({
     marginRight: 16,
     borderWidth: 1,
     borderColor: BORDER,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   plannerText: {
     flex: 1,
