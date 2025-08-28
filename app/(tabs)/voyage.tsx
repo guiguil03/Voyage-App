@@ -212,11 +212,11 @@ export default function VoyageScreen() {
         `✈️ Souvenir de voyage\n\n${details}`
       );
     } else {
-      const interests = trip.interests || [];
-      Alert.alert(
-        trip.destination, 
+    const interests = trip.interests || [];
+    Alert.alert(
+      trip.destination, 
         `📋 Plan de voyage - ${getStatusDisplay(trip.status).text}\nType: ${trip.travel_type}\nIntérêts: ${interests.join(', ') || 'Aucun'}\nNiveau: ${trip.activity_level}`
-      );
+    );
     }
   };
 
@@ -313,7 +313,7 @@ export default function VoyageScreen() {
         ]
       );
     } else {
-      Alert.alert(action, `${action} pour ${trip.destination}`);
+    Alert.alert(action, `${action} pour ${trip.destination}`);
     }
   };
 
@@ -432,10 +432,10 @@ export default function VoyageScreen() {
             const mainImage = trip.image_url || (trip.images && trip.images[0]);
             return (
               <BlurView intensity={30} tint="light" style={{ backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 26, marginBottom: 22, shadowColor: GREEN, shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 8, overflow: 'hidden' }}>
-                <TouchableOpacity 
-                  key={trip.id} 
+              <TouchableOpacity 
+                key={trip.id} 
                   style={{ flex: 1 }}
-                  onPress={() => handleTripPress(trip)}
+                onPress={() => handleTripPress(trip)}
                   activeOpacity={0.88}
                 >
                   {/* Image du voyage ou placeholder */}
@@ -448,7 +448,7 @@ export default function VoyageScreen() {
                       >
                         <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#fff', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 }}>{trip.destination}</Text>
                       </LinearGradient>
-                    </View>
+                </View>
                   ) : (
                     <LinearGradient
                       colors={["#E8F5E8", "#F8F9FA"]}
@@ -463,14 +463,14 @@ export default function VoyageScreen() {
                   {/* Badge de statut avec indication du type */}
                   <View style={{ position: 'absolute', top: 18, right: 18, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: statusDisplay.color, shadowColor: statusDisplay.color, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 4 }}>
                     <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#fff' }}>{isMemory ? 'Souvenir' : statusDisplay.text}</Text>
-                  </View>
+                </View>
                   <View style={{ padding: 18 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                       <Text style={{ fontSize: 20, fontWeight: 'bold', color: DARK, flex: 1 }}>{isMemory ? trip.trip_name || trip.destination : trip.destination}</Text>
                       <View style={{ backgroundColor: '#E8F5E8', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5, marginLeft: 10 }}>
                         <Text style={{ fontSize: 13, color: GREEN, fontWeight: '600' }}>{trip.travel_type}</Text>
-                      </View>
                     </View>
+                  </View>
                     <View style={{ marginBottom: 18 }}>
                       {/* Affichage adapté selon le type */}
                       {isMemory ? (
@@ -478,22 +478,22 @@ export default function VoyageScreen() {
                           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 7 }}>
                             <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#E8F5E8', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
                               <Ionicons name="location" size={16} color={GREEN} />
-                            </View>
+                    </View>
                             <Text style={{ fontSize: 15, color: '#666' }}>{trip.destination}</Text>
-                          </View>
+                    </View>
                           {trip.duration && (
                             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 7 }}>
                               <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#E8F5E8', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
                                 <Ionicons name="time" size={16} color={GREEN} />
-                              </View>
+                    </View>
                               <Text style={{ fontSize: 15, color: '#666' }}>{trip.duration}</Text>
-                            </View>
+                  </View>
                           )}
                           {trip.rating && (
                             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 7 }}>
                               <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#E8F5E8', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
                                 <Ionicons name="star" size={16} color="#FFD700" />
-                              </View>
+                      </View>
                               <Text style={{ fontSize: 15, color: '#666' }}>{trip.rating}/5</Text>
                             </View>
                           )}
@@ -534,36 +534,36 @@ export default function VoyageScreen() {
                           <Text style={{ fontSize: 14, fontWeight: 'bold', color: DARK }}>{statusDisplay.text}</Text>
                         </View>
                         <View style={{ height: 7, backgroundColor: BORDER, borderRadius: 4, overflow: 'hidden' }}>
-                          <View 
+                        <View 
                             style={{
                               height: '100%',
                               borderRadius: 4,
                               width: trip.status === 'pending' ? '25%' : trip.status === 'processing' ? '75%' : '100%',
                               backgroundColor: statusDisplay.color
                             }}
-                          />
-                        </View>
+                        />
                       </View>
-                    )}
-                    {/* Actions */}
+                    </View>
+                  )}
+                  {/* Actions */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-around', borderTopWidth: 1, borderTopColor: BORDER, paddingTop: 16 }}>
-                      <TouchableOpacity 
+                    <TouchableOpacity 
                         style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5E8', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}
-                        onPress={() => handleTripAction('Détails', trip)}
-                      >
+                      onPress={() => handleTripAction('Détails', trip)}
+                    >
                         <Ionicons name="document-text" size={16} color={GREEN} />
                         <Text style={{ color: GREEN, fontWeight: 'bold', fontSize: 15, marginLeft: 6 }}>Détails</Text>
-                      </TouchableOpacity>
+                    </TouchableOpacity>
                       {isMemory ? (
                         <>
-                          <TouchableOpacity 
+                    <TouchableOpacity 
                             style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: '#FF4757', marginLeft: 8, shadowColor: '#FF4757', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}
                             onPress={() => handleTripAction('Supprimer le souvenir', trip)}
-                          >
+                    >
                             <Ionicons name="trash" size={16} color="#FF4757" />
                             <Text style={{ color: '#FF4757', fontWeight: 'bold', fontSize: 15, marginLeft: 6 }}>Supprimer</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity 
+                    </TouchableOpacity>
+                    <TouchableOpacity 
                             style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: GREEN, marginLeft: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}
                             onPress={() => handleTripAction('Voir photos', trip)}
                           >
@@ -582,11 +582,11 @@ export default function VoyageScreen() {
                           </TouchableOpacity>
                           <TouchableOpacity 
                             style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: GREEN, marginLeft: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}
-                            onPress={() => handleTripAction('Partager', trip)}
-                          >
+                      onPress={() => handleTripAction('Partager', trip)}
+                    >
                             <Ionicons name="share" size={16} color={GREEN} />
                             <Text style={{ color: GREEN, fontWeight: 'bold', fontSize: 15, marginLeft: 6 }}>Partager</Text>
-                          </TouchableOpacity>
+                    </TouchableOpacity>
                           <TouchableOpacity 
                             style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: '#FF4757', marginLeft: 8, shadowColor: '#FF4757', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}
                             onPress={() => handleTripAction('Supprimer', trip)}
@@ -596,9 +596,9 @@ export default function VoyageScreen() {
                           </TouchableOpacity>
                         </>
                       )}
-                    </View>
                   </View>
-                </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
               </BlurView>
             );
           })}

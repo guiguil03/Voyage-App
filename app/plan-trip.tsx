@@ -7,15 +7,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  Alert,
-  Modal,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Modal,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 export default function PlanTripScreen() {
@@ -541,18 +541,18 @@ export default function PlanTripScreen() {
             </TouchableOpacity>
           )}
         </View>
-        
-        {!destination.trim() && !isLoading && (
-          <Text style={styles.generateHint}>
-            Veuillez renseigner une destination pour continuer
-          </Text>
-        )}
-        
-        {isLoading && (
-          <Text style={styles.generateHint}>
-            Enregistrement de votre demande en cours...
-          </Text>
-        )}
+          
+          {!destination.trim() && !isLoading && (
+            <Text style={styles.generateHint}>
+              Veuillez renseigner une destination pour continuer
+            </Text>
+          )}
+          
+          {isLoading && (
+            <Text style={styles.generateHint}>
+              Enregistrement de votre demande en cours...
+            </Text>
+          )}
       </ScrollView>
 
       {/* Modal de sélection de date */}

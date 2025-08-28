@@ -54,22 +54,22 @@ export default function ProfilScreen() {
         console.error('Erreur inattendue:', error);
         Alert.alert('Erreur', 'Une erreur inattendue est survenue');
       } finally {
-        setLoading(false);
-      }
+      setLoading(false);
+    }
     } else if (user) {
       // Afficher le profil connecté
-      try {
-        const { data, error } = await getCurrentUserProfile();
-        if (error) {
-          console.error('Erreur lors du chargement du profil:', error);
-          Alert.alert('Erreur', 'Impossible de charger le profil');
-        } else {
-          setProfile(data);
-        }
-      } catch (error) {
-        console.error('Erreur inattendue:', error);
-        Alert.alert('Erreur', 'Une erreur inattendue est survenue');
-      } finally {
+    try {
+      const { data, error } = await getCurrentUserProfile();
+      if (error) {
+        console.error('Erreur lors du chargement du profil:', error);
+        Alert.alert('Erreur', 'Impossible de charger le profil');
+      } else {
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error('Erreur inattendue:', error);
+      Alert.alert('Erreur', 'Une erreur inattendue est survenue');
+    } finally {
         setLoading(false);
       }
     } else {

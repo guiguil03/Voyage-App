@@ -304,20 +304,20 @@ export default function HomeScreen() {
             </View>
           ) : userVoyages.length > 0 ? (
             <View style={{ borderRadius: 20, borderWidth: 1, borderColor: GREEN, shadowColor: GREEN, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.10, shadowRadius: 12, elevation: 4, overflow: 'hidden' }}>
-              <TripCard
-                date={new Date(userVoyages[0].created_at).toLocaleDateString('fr-FR', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric'
-                })}
-                country={userVoyages[0].destination}
-                flagEmoji={userVoyages[0].flag_emoji || '🌍'}
-                image={userVoyages[0].image_url ? 
-                  { uri: userVoyages[0].image_url } : 
-                  require('@/assets/images/mountain-background.jpg')
-                }
-                onPress={handleTripDetail}
-              />
+            <TripCard
+              date={new Date(userVoyages[0].created_at).toLocaleDateString('fr-FR', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+              })}
+              country={userVoyages[0].destination}
+              flagEmoji={userVoyages[0].flag_emoji || '🌍'}
+              image={userVoyages[0].image_url ? 
+                { uri: userVoyages[0].image_url } : 
+                require('@/assets/images/mountain-background.jpg')
+              }
+              onPress={handleTripDetail}
+            />
             </View>
           ) : (
             <View style={[styles.noVoyageCard, { borderRadius: 20, backgroundColor: GREEN_LIGHT, borderColor: GREEN, shadowColor: GREEN, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.10, shadowRadius: 12, elevation: 4 }]}> 
@@ -340,7 +340,7 @@ export default function HomeScreen() {
               <TouchableOpacity key={index} style={{ backgroundColor: GREEN_LIGHT, borderRadius: 22, marginRight: 14, width: 150, alignItems: 'center', shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.13, shadowRadius: 18, elevation: 6, padding: 16 }} onPress={() => handleCityPress(cityItem.name, cityItem.country)}>
                 <View style={{ width: 54, height: 54, borderRadius: 27, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginBottom: 8, borderWidth: 1, borderColor: GREEN, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}>
                   <Ionicons name="location" size={30} color={GREEN} />
-                </View>
+                  </View>
                 <Text style={{ fontSize: 16, fontWeight: 'bold', color: DARK, marginBottom: 2 }}>{cityItem.name}</Text>
                 <Text style={{ fontSize: 13, color: '#666', marginBottom: 2 }}>{cityItem.country}</Text>
                 <Text style={{ fontSize: 12, color: GREEN }}>{Math.floor(Math.random() * 200) + 50} voyages</Text>
@@ -383,7 +383,7 @@ export default function HomeScreen() {
                     <Text style={[styles.upcomingDestination, { color: DARK }]}>{nextTrip.destination}</Text>
                     <Text style={styles.upcomingDate}>{formatTripDate(nextTrip)}</Text>
                     <View style={styles.upcomingDetails}>
-                      <View style={[styles.statusBadge, { backgroundColor: getStatusDisplay(nextTrip.status).color }]}> 
+                      <View style={[styles.statusBadge, { backgroundColor: getStatusDisplay(nextTrip.status).color }]}>
                         <Text style={styles.statusText}>{getStatusDisplay(nextTrip.status).text}</Text>
                       </View>
                       <Text style={styles.upcomingType}>{nextTrip.travel_type}</Text>
@@ -495,7 +495,7 @@ export default function HomeScreen() {
           )}
         </View>
       </ScrollView>
-      
+
     </SafeAreaView>
   );
 }

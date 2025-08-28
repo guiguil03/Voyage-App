@@ -3,15 +3,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 const categories = [
@@ -189,9 +189,9 @@ export default function ExploreScreen() {
 
         {/* Destinations populaires (villes) */}
         {!selectedCity && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Destinations populaires</Text>
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Destinations populaires</Text>
             </View>
             {filteredCities.length > 0 ? (
               filteredCities.map((city, idx) => (
@@ -203,7 +203,7 @@ export default function ExploreScreen() {
                       <Text style={styles.destinationPrice}>{city.country}</Text>
                     </View>
                   </View>
-                </TouchableOpacity>
+            </TouchableOpacity>
               ))
             ) : (
               <Text style={{ textAlign: 'center', color: '#888', marginVertical: 20 }}>Aucune destination trouvée</Text>
@@ -226,29 +226,29 @@ export default function ExploreScreen() {
               destinations.map((destination) => {
                 const hasImage = !!(destination.preview?.source || destination.image);
                 return hasImage ? (
-                  <TouchableOpacity 
+            <TouchableOpacity 
                     key={destination.xid || destination.id} 
-                    style={styles.destinationCard}
-                    onPress={() => handleDestinationPress(destination)}
-                  >
+              style={styles.destinationCard}
+              onPress={() => handleDestinationPress(destination)}
+            >
                     <Image source={{ uri: destination.preview?.source || destination.image }} style={styles.destinationImage} />
-                    <View style={styles.destinationInfo}>
-                      <View style={styles.destinationHeader}>
-                        <Text style={styles.destinationName}>{destination.name}</Text>
+              <View style={styles.destinationInfo}>
+                <View style={styles.destinationHeader}>
+                  <Text style={styles.destinationName}>{destination.name}</Text>
                         {destination.rate && <Text style={styles.destinationPrice}>★ {destination.rate}</Text>}
-                      </View>
-                      <View style={styles.destinationDetails}>
-                        <View style={styles.ratingContainer}>
+                </View>
+                <View style={styles.destinationDetails}>
+                  <View style={styles.ratingContainer}>
                           {destination.kinds && <Text style={styles.categoryTagText}>{destination.kinds.split(',')[0]}</Text>}
-                        </View>
+                  </View>
                         {destination.address?.country && (
-                          <View style={styles.categoryTag}>
+                  <View style={styles.categoryTag}>
                             <Text style={styles.categoryTagText}>{destination.address.country}</Text>
-                          </View>
+                  </View>
                         )}
-                      </View>
-                    </View>
-                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableOpacity>
                 ) : (
                   <TouchableOpacity
                     key={destination.xid || destination.id}
@@ -280,7 +280,7 @@ export default function ExploreScreen() {
             ) : (
               <Text style={{ textAlign: 'center', color: '#888', marginVertical: 20 }}>Aucun lieu trouvé</Text>
             )}
-          </View>
+        </View>
         )}
         {/* Section planificateur */}
         <View style={styles.section}>
