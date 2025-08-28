@@ -76,14 +76,44 @@ export async function createVoyage(voyageData: {
       return { data: null, error: 'Utilisateur non connecté' };
     }
 
+    // Traiter les images : uploader les images locales vers Supabase Storage
+    const processedImages: string[] = [];
+    let mainImageUrl = voyageData.imageUrl || null;
+
+    if (voyageData.images && voyageData.images.length > 0) {
+      for (const imageUri of voyageData.images) {
+        try {
+          // Vérifier si c'est une URL locale (fichier) ou une URL web
+          if (imageUri.startsWith('file://') || imageUri.startsWith('content://') || imageUri.startsWith('/')) {
+            // C'est une image locale, l'uploader vers Supabase Storage
+            console.log('📤 Upload de l\'image locale vers Supabase Storage:', imageUri);
+            const uploadedUrl = await uploadImageToSupabase(imageUri, userData.user.id);
+            processedImages.push(uploadedUrl);
+            console.log('✅ Image uploadée avec succès:', uploadedUrl);
+          } else {
+            // C'est déjà une URL web, la garder telle quelle
+            processedImages.push(imageUri);
+          }
+        } catch (uploadError) {
+          console.error('❌ Erreur lors de l\'upload de l\'image:', uploadError);
+          // Continuer avec les autres images même si une échoue
+        }
+      }
+    }
+
+    // Si on n'a pas d'image principale mais qu'on a des images uploadées, utiliser la première
+    if (!mainImageUrl && processedImages.length > 0) {
+      mainImageUrl = processedImages[0];
+    }
+
     // Préparer les données d'insertion
     const insertData: VoyageInsert = {
       user_id: userData.user.id,
       trip_name: voyageData.tripName,
       destination: voyageData.destination,
       description: voyageData.description || null,
-      image_url: voyageData.imageUrl || null,
-      images: voyageData.images || [], // Stocker les images multiples en JSON
+      image_url: mainImageUrl,
+      images: processedImages, // Stocker les URLs des images uploadées
       trip_type: voyageData.tripType,
       rating: voyageData.rating,
       duration: voyageData.duration,

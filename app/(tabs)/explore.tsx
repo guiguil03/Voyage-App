@@ -219,13 +219,8 @@ export default function ExploreScreen() {
                         <Text style={styles.destinationPrice}>{city.country}</Text>
                       </View>
                     </View>
-<<<<<<< HEAD
-                  </View>
-            </TouchableOpacity>
-=======
                   </TouchableOpacity>
                 </BlurView>
->>>>>>> b65fc8c637b9989ed7dd580154e77611390f2edd
               ))
             ) : (
               <Text style={{ textAlign: 'center', color: '#888', marginVertical: 20 }}>Aucune destination trouvée</Text>
@@ -248,35 +243,7 @@ export default function ExploreScreen() {
               destinations.map((destination) => {
                 const hasImage = !!(destination.preview?.source || destination.image);
                 return hasImage ? (
-<<<<<<< HEAD
-            <TouchableOpacity 
-                    key={destination.xid || destination.id} 
-              style={styles.destinationCard}
-              onPress={() => handleDestinationPress(destination)}
-            >
-                    <Image source={{ uri: destination.preview?.source || destination.image }} style={styles.destinationImage} />
-              <View style={styles.destinationInfo}>
-                <View style={styles.destinationHeader}>
-                  <Text style={styles.destinationName}>{destination.name}</Text>
-                        {destination.rate && <Text style={styles.destinationPrice}>★ {destination.rate}</Text>}
-                </View>
-                <View style={styles.destinationDetails}>
-                  <View style={styles.ratingContainer}>
-                          {destination.kinds && <Text style={styles.categoryTagText}>{destination.kinds.split(',')[0]}</Text>}
-                  </View>
-                        {destination.address?.country && (
-                  <View style={styles.categoryTag}>
-                            <Text style={styles.categoryTagText}>{destination.address.country}</Text>
-                  </View>
-                        )}
-                </View>
-              </View>
-            </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-=======
-                  <BlurView 
->>>>>>> b65fc8c637b9989ed7dd580154e77611390f2edd
+                  <BlurView
                     key={destination.xid || destination.id}
                     intensity={30} 
                     tint="light" 
@@ -349,11 +316,11 @@ export default function ExploreScreen() {
           <Text style={styles.sectionTitle}>Besoin d&apos;aide ?</Text>
           <BlurView intensity={30} tint="light" style={styles.plannerCardBlur}>
             <TouchableOpacity style={styles.plannerCard} onPress={() => router.push('/plan-trip')}>
-              <View style={styles.plannerContent}>
+              <View style={styles.plannerText}>
                 <View style={styles.plannerIconContainer}>
                   <Ionicons name="bulb-outline" size={28} color="#2F7417" />
                 </View>
-                <View style={styles.plannerText}>
+                <View>
                   <Text style={styles.plannerTitle}>Planificateur IA</Text>
                   <Text style={styles.plannerSubtitle}>
                     Laissez notre IA créer votre voyage parfait selon vos préférences
