@@ -9,14 +9,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 interface TripPlan {
@@ -279,14 +279,48 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: BG }}>
-      <View style={{ backgroundColor: GREEN, paddingTop: 38, paddingBottom: 18, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomLeftRadius: 18, borderBottomRightRadius: 18, marginBottom: 6 }}>
-        <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 22, letterSpacing: 0.5 }}>Tripflow</Text>
-        <Ionicons name="planet" size={30} color="#fff" />
+      {/* Header simplifié et élégant */}
+      <View style={{ backgroundColor: 'transparent', paddingTop: 50, paddingBottom: 10, paddingHorizontal: 20 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <View>
+            <Text style={{ color: GREEN, fontWeight: '800', fontSize: 28, letterSpacing: -0.5 }}>TripFlow</Text>
+            <Text style={{ color: '#666', fontSize: 15, fontWeight: '400', marginTop: 2 }}>Bonjour {user.email?.split('@')[0]} 👋</Text>
+          </View>
+          <TouchableOpacity 
+            style={{ backgroundColor: GREEN_LIGHT, borderRadius: 16, padding: 12, shadowColor: GREEN, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 4 }}
+            onPress={() => router.push('/(tabs)/voyage')}
+          >
+            <Ionicons name="airplane" size={24} color={GREEN} />
+          </TouchableOpacity>
+        </View>
       </View>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Actions rapides */}
-        <View style={[styles.quickActionsContainer, { marginTop: 8 }]}> 
-          <Text style={[styles.sectionTitle, { color: GREEN, fontWeight: 'bold', fontSize: 20 }]}>Bonjour {user.email?.split('@')[0]}</Text>
+        <View style={{ flexDirection: 'row', paddingHorizontal: 18, marginBottom: 18, gap: 12 }}>
+          <TouchableOpacity 
+            style={{ flex: 1, backgroundColor: '#fff', borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', shadowColor: GREEN, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 3 }}
+            onPress={() => router.push('/plan-trip')}
+          >
+            <View style={{ backgroundColor: GREEN_LIGHT, borderRadius: 12, padding: 8, marginRight: 12 }}>
+              <Ionicons name="map" size={20} color={GREEN} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: DARK }}>Planifier</Text>
+              <Text style={{ fontSize: 12, color: '#666' }}>Nouveau voyage</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={{ flex: 1, backgroundColor: '#fff', borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', shadowColor: GREEN, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 3 }}
+            onPress={() => router.push('/search-activities')}
+          >
+            <View style={{ backgroundColor: GREEN_LIGHT, borderRadius: 12, padding: 8, marginRight: 12 }}>
+              <Ionicons name="search" size={20} color={GREEN} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: DARK }}>Explorer</Text>
+              <Text style={{ fontSize: 12, color: '#666' }}>Activités</Text>
+            </View>
+          </TouchableOpacity>
         </View>
         {/* Dernier voyage */}
         <View style={{ backgroundColor: '#fff', borderRadius: 28, marginHorizontal: 18, marginBottom: 18, padding: 22, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 8 }}> 

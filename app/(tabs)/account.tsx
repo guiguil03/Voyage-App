@@ -4,25 +4,25 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  Image,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import PersonalInfoForm from '../../components/profile/PersonalInfoForm';
 import SettingsForm from '../../components/profile/SettingsForm';
 import TravelPreferencesForm from '../../components/profile/TravelPreferencesForm';
 import { BG, BORDER, DARK, GREEN, GREEN_LIGHT } from '../../constants/Colors';
 import {
-  getCurrentUserProfile,
-  Profile,
-  ProfileUpdate,
-  updateNotificationSettings,
-  updateTravelPreferences,
-  upsertProfile,
+    getCurrentUserProfile,
+    Profile,
+    ProfileUpdate,
+    updateNotificationSettings,
+    updateTravelPreferences,
+    upsertProfile,
 } from '../../lib/profiles';
 
 type TabType = 'info' | 'preferences' | 'settings';
@@ -219,41 +219,41 @@ export default function Account() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: BG }]}> 
-      {/* Dégradé premium en haut */}
+      {/* Dégradé premium en haut - réduit */}
       <LinearGradient
         colors={[GREEN_LIGHT, BG]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 220, zIndex: 0 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 140, zIndex: 0 }}
       />
-      {/* Header avec profil */}
-      <View style={[styles.header, { backgroundColor: 'transparent', borderBottomWidth: 0, marginTop: 10, marginBottom: 18, zIndex: 1 }]}> 
+      {/* Header avec profil - compact */}
+      <View style={[styles.header, { backgroundColor: 'transparent', borderBottomWidth: 0, marginTop: 5, marginBottom: 10, zIndex: 1, paddingTop: 40, paddingBottom: 10 }]}> 
         <View style={styles.profileHeader}>
-          <View style={{ alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
-            <View style={{ width: 110, height: 110, borderRadius: 55, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 8, borderWidth: 3, borderColor: GREEN_LIGHT }}>
+          {/* Avatar plus petit */}
+          <View style={{ alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+            <View style={{ width: 70, height: 70, borderRadius: 35, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: GREEN, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 6, borderWidth: 2, borderColor: GREEN_LIGHT }}>
               {profile?.avatar_url ? (
-                <Image source={{ uri: profile.avatar_url }} style={{ width: 100, height: 100, borderRadius: 50 }} />
+                <Image source={{ uri: profile.avatar_url }} style={{ width: 64, height: 64, borderRadius: 32 }} />
               ) : (
-                <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: '#F0F9F0', alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name="person" size={54} color="#2F7417" />
+                <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#F0F9F0', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="person" size={32} color="#2F7417" />
                 </View>
               )}
             </View>
           </View>
-          <Text style={{ fontSize: 26, fontWeight: 'bold', color: DARK, marginBottom: 2 }}>{profile?.full_name || user.email?.split('@')[0] || 'Voyageur'}</Text>
-          <Text style={{ fontSize: 15, color: '#666', marginBottom: 10 }}>{user.email}</Text>
-          {/* Statut de connexion */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: GREEN_LIGHT, paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20, marginBottom: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}>
-            <Ionicons name="ellipse" size={14} color={GREEN} style={{ marginRight: 7 }} />
-            <Text style={{ fontSize: 14, color: GREEN, fontWeight: '600' }}>{isConnected ? 'Connecté' : 'Déconnecté'}</Text>
+          {/* Informations compactes */}
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: DARK, marginBottom: 1 }}>{profile?.full_name || user.email?.split('@')[0] || 'Voyageur'}</Text>
+          <Text style={{ fontSize: 13, color: '#666', marginBottom: 6 }}>{user.email}</Text>
+          {/* Statut de connexion plus petit */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: GREEN_LIGHT, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 16, marginBottom: 4 }}>
+            <Ionicons name="ellipse" size={10} color={GREEN} style={{ marginRight: 5 }} />
+            <Text style={{ fontSize: 12, color: GREEN, fontWeight: '600' }}>{isConnected ? 'Connecté' : 'Déconnecté'}</Text>
           </View>
         </View>
-      </View>
-      {/* Bouton de déconnexion modernisé */}
-      <View style={{ alignItems: 'center', marginBottom: 18 }}>
-        <TouchableOpacity style={{ backgroundColor: '#EF4444', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 18, shadowColor: '#EF4444', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.13, shadowRadius: 18, elevation: 6, width: 240 }} activeOpacity={0.85} onPress={handleLogout}>
-          <Ionicons name="log-out" size={20} color="#FFFFFF" style={{ marginRight: 10 }} />
-          <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>Déconnexion</Text>
+        {/* Bouton de déconnexion compact dans le header */}
+        <TouchableOpacity style={{ backgroundColor: '#EF4444', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 12, shadowColor: '#EF4444', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 4 }} activeOpacity={0.85} onPress={handleLogout}>
+          <Ionicons name="log-out" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+          <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Déconnexion</Text>
         </TouchableOpacity>
       </View>
       {/* Navigation par onglets modernisée */}
@@ -280,8 +280,8 @@ export default function Account() {
           </TouchableOpacity>
         ))}
       </View>
-      {/* Contenu de l'onglet actif */}
-      <View style={[styles.content, { padding: 10, marginTop: 8 }]}> 
+      {/* Contenu de l'onglet actif - plus d'espace */}
+      <View style={[styles.content, { padding: 20, marginTop: 5, flex: 1 }]}> 
         {renderContent()}
       </View>
     </SafeAreaView>
@@ -331,12 +331,12 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 10,
-    paddingBottom: 20,
+    paddingBottom: 10, // Réduit de 20 à 10
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start', // Alignement en haut
   },
   profileHeader: {
     alignItems: 'center',
@@ -448,5 +448,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    minHeight: 400, // Plus d'espace pour le contenu
   },
 }); 

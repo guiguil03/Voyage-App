@@ -2,13 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import React, { useState } from 'react';
 import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { GREEN } from '../../constants/Colors';
 import { Profile, ProfileUpdate } from '../../lib/profiles';
@@ -19,6 +19,32 @@ interface PersonalInfoFormProps {
   loading?: boolean;
 }
 
+// Fonction pour convertir une date ISO (AAAA-MM-JJ) en format JJ/MM/AAAA
+const formatDateForDisplay = (isoDate: string | null) => {
+  if (!isoDate) return '';
+  const match = isoDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    const [, year, month, day] = match;
+    return `${day}/${month}/${year}`;
+  }
+  return isoDate; // Retourner tel quel si pas au format ISO
+};
+
+// Fonction pour formater automatiquement la date avec des "/"
+const formatDateInput = (value: string) => {
+  // Supprimer tous les caractères non numériques
+  const numbers = value.replace(/\D/g, '');
+  
+  // Appliquer le formatage JJ/MM/AAAA
+  if (numbers.length <= 2) {
+    return numbers;
+  } else if (numbers.length <= 4) {
+    return `${numbers.slice(0, 2)}/${numbers.slice(2)}`;
+  } else {
+    return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
+  }
+};
+
 export default function PersonalInfoForm({ profile, onSave, loading = false }: PersonalInfoFormProps) {
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || '',
@@ -28,7 +54,7 @@ export default function PersonalInfoForm({ profile, onSave, loading = false }: P
     country: profile?.country || '',
     city: profile?.city || '',
     website: profile?.website || '',
-    date_of_birth: profile?.date_of_birth || '',
+    date_of_birth: formatDateForDisplay(profile?.date_of_birth) || '',
   });
 
   const [saving, setSaving] = useState(false);
@@ -45,7 +71,34 @@ export default function PersonalInfoForm({ profile, onSave, loading = false }: P
 
     setSaving(true);
     try {
-      await onSave(formData);
+      // Nettoyer et valider les données avant envoi
+      let cleanedDateOfBirth = null;
+      if (formData.date_of_birth.trim()) {
+        // Vérifier le format de la date JJ/MM/AAAA
+        const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+        const match = formData.date_of_birth.match(dateRegex);
+        
+        if (match) {
+          const [, day, month, year] = match;
+          // Convertir au format ISO (AAAA-MM-JJ) pour PostgreSQL
+          cleanedDateOfBirth = `${year}-${month}-${day}`;
+        } else if (formData.date_of_birth.length > 0) {
+          Alert.alert('Erreur', 'Format de date invalide. Utilisez JJ/MM/AAAA (ex: 15/03/1990)');
+          return;
+        }
+      }
+
+      const cleanedData = {
+        ...formData,
+        date_of_birth: cleanedDateOfBirth,
+        phone: formData.phone.trim() || null,
+        country: formData.country.trim() || null,
+        city: formData.city.trim() || null,
+        website: formData.website.trim() || null,
+        bio: formData.bio.trim() || null,
+      };
+      
+      await onSave(cleanedData);
       Alert.alert('Succès', 'Informations mises à jour avec succès !');
     } catch (error: any) {
       Alert.alert('Erreur', error.message || 'Erreur lors de la sauvegarde');
@@ -59,6 +112,23 @@ export default function PersonalInfoForm({ profile, onSave, loading = false }: P
       ...prev,
       [key]: value
     }));
+  };
+
+  // Fonction pour convertir une date ISO (AAAA-MM-JJ) en format JJ/MM/AAAA
+  const formatDateForDisplay = (isoDate: string | null) => {
+    if (!isoDate) return '';
+    const match = isoDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) {
+      const [, year, month, day] = match;
+      return `${day}/${month}/${year}`;
+    }
+    return isoDate; // Retourner tel quel si pas au format ISO
+  };
+
+  // Fonction spéciale pour la date de naissance avec formatage automatique
+  const handleDateChange = (value: string) => {
+    const formattedDate = formatDateInput(value);
+    setFormData(prev => ({ ...prev, date_of_birth: formattedDate }));
   };
 
   return (
@@ -170,10 +240,11 @@ export default function PersonalInfoForm({ profile, onSave, loading = false }: P
           <TextInput
             style={[styles.inputPremium, focusedField === 'date_of_birth' && styles.inputFocused]}
             value={formData.date_of_birth}
-            onChangeText={(value) => updateFormData('date_of_birth', value)}
+            onChangeText={handleDateChange}
             placeholder="JJ/MM/AAAA"
             placeholderTextColor="#bbb"
             keyboardType="numeric"
+            maxLength={10} // Limite à JJ/MM/AAAA
             onFocus={() => setFocusedField('date_of_birth')}
             onBlur={() => setFocusedField(null)}
           />

@@ -7,15 +7,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
-    Modal,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 export default function PlanTripScreen() {
@@ -143,26 +143,64 @@ export default function PlanTripScreen() {
   };
 
   const openDatePicker = (type: 'start' | 'end') => {
+    console.log('📅 Ouverture du sélecteur de date:', type);
+    console.log('📅 État showDatePicker avant:', showDatePicker);
+    
     if (type === 'end' && !startDate) {
       Alert.alert('Date de départ requise', 'Veuillez d\'abord sélectionner une date de départ');
       return;
     }
+    
     setDatePickerType(type);
     setShowDatePicker(true);
+    
+    console.log('📅 État showDatePicker après:', true);
+    console.log('📅 Type de date:', type);
   };
 
-  const generateDateOptions = () => {
-    const dates = [];
+  const generateCalendarDays = () => {
     const today = new Date();
-    const startFromDate = datePickerType === 'end' && startDate ? startDate : today;
+    const months = [];
     
-    // Générer les 60 prochains jours
-    for (let i = 0; i < 60; i++) {
-      const date = new Date(startFromDate);
-      date.setDate(startFromDate.getDate() + i);
-      dates.push(date);
+    // Générer 12 mois à partir du mois actuel
+    for (let i = 0; i < 12; i++) {
+      const monthStart = new Date(today.getFullYear(), today.getMonth() + i, 1);
+      months.push(monthStart);
     }
-    return dates;
+    
+    return months.map(monthStart => {
+      const daysInMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate();
+      const firstDayOfWeek = monthStart.getDay();
+      
+      const days = [];
+      
+      // Ajouter les jours vides au début
+      for (let i = 0; i < firstDayOfWeek; i++) {
+        days.push(null);
+      }
+      
+      // Ajouter tous les jours du mois
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(monthStart.getFullYear(), monthStart.getMonth(), day);
+        
+        // Logique simplifiée pour les dates disponibles
+        if (datePickerType === 'start') {
+          // Pour la date de départ : toutes les dates à partir d'aujourd'hui
+          days.push(date >= today ? date : null);
+        } else if (datePickerType === 'end' && startDate) {
+          // Pour la date de retour : toutes les dates après la date de départ
+          days.push(date > startDate ? date : null);
+        } else {
+          // Si pas de date de départ sélectionnée pour la date de retour
+          days.push(null);
+        }
+      }
+      
+      return {
+        monthName: monthStart.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
+        days
+      };
+    });
   };
 
   const selectDate = (selectedDate: Date) => {
@@ -191,6 +229,7 @@ export default function PlanTripScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       {/* Header amélioré avec progression */}
       <View style={styles.header}>
           <TouchableOpacity 
@@ -288,6 +327,13 @@ export default function PlanTripScreen() {
                   <Text style={styles.dateRangeText}>{formatDateRange()}</Text>
                 </View>
               )}
+              
+              {/* Debug temporaire */}
+              <View style={{ marginTop: 10, padding: 8, backgroundColor: '#f0f0f0', borderRadius: 8 }}>
+                <Text style={{ fontSize: 12, color: '#666' }}>
+                  Debug: showDatePicker = {showDatePicker.toString()}, datePickerType = {datePickerType}
+                </Text>
+              </View>
             </View>
           </View>
         </View>
@@ -555,48 +601,110 @@ export default function PlanTripScreen() {
           )}
       </ScrollView>
 
-      {/* Modal de sélection de date */}
+      {/* Modal de sélection de date - centré et visible */}
       <Modal
         visible={showDatePicker}
         transparent={true}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setShowDatePicker(false)}
+        onShow={() => console.log('📅 Modal de date affiché !')}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {datePickerType === 'start' ? 'Date de départ' : 'Date de retour'}
+        <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.8)', justifyContent: 'center', alignItems: 'center', padding: 10 }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 20, width: '95%', height: '85%', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 }}>
+            {/* Header du modal */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, borderBottomWidth: 1, borderBottomColor: '#E9ECEF' }}>
+              <Text style={{ fontSize: 20, fontWeight: '700', color: '#2F7417' }}>
+                {datePickerType === 'start' ? '📅 Date de départ' : '📅 Date de retour'}
               </Text>
               <TouchableOpacity 
-                style={styles.closeButton}
+                style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F8F9FA', justifyContent: 'center', alignItems: 'center' }}
                 onPress={() => setShowDatePicker(false)}
               >
                 <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
             
-            <ScrollView style={styles.dateList} showsVerticalScrollIndicator={false}>
-              {generateDateOptions().map((date, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.dateOption}
-                  onPress={() => selectDate(date)}
-                >
-                  <View style={styles.dateOptionContent}>
-                    <Text style={styles.dateOptionDay}>
-                      {date.toLocaleDateString('fr-FR', { weekday: 'long' })}
-                    </Text>
-                    <Text style={styles.dateOptionDate}>
-                      {date.toLocaleDateString('fr-FR', { 
-                        day: 'numeric', 
-                        month: 'long', 
-                        year: 'numeric' 
-                      })}
-                    </Text>
+            {/* Calendrier visuel */}
+            <ScrollView style={{ flex: 1, paddingHorizontal: 15, paddingVertical: 15 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+              {/* En-têtes des jours de la semaine */}
+              <View style={{ flexDirection: 'row', marginBottom: 15, paddingHorizontal: 5, paddingVertical: 10, backgroundColor: '#F0F9F0', borderRadius: 12 }}>
+                {['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'].map((day) => (
+                  <View key={day} style={{ flex: 1, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#2F7417' }}>{day}</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color="#2F7417" />
-                </TouchableOpacity>
+                ))}
+              </View>
+              
+              {/* Mois */}
+              {generateCalendarDays().map((month, monthIndex) => (
+                <View key={monthIndex} style={{ marginBottom: 20 }}>
+                  {/* Titre du mois */}
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: '#2F7417', textAlign: 'center', marginBottom: 15, textTransform: 'capitalize' }}>
+                    {month.monthName}
+                  </Text>
+                  
+                  {/* Grille des jours */}
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 5 }}>
+                    {month.days.map((date, dayIndex) => (
+                      <TouchableOpacity
+                        key={dayIndex}
+                        style={{ 
+                          width: '13.5%', // Légèrement plus petit pour plus d'espace
+                          aspectRatio: 1,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginBottom: 12,
+                          marginHorizontal: '0.25%', // Espacement entre les jours
+                          borderRadius: 12,
+                          backgroundColor: (() => {
+                            if (!date) return 'transparent';
+                            const today = new Date();
+                            const isToday = date.toDateString() === today.toDateString();
+                            const isSelected = (datePickerType === 'start' && startDate && date.toDateString() === startDate.toDateString()) ||
+                                             (datePickerType === 'end' && endDate && date.toDateString() === endDate.toDateString());
+                            
+                            if (isSelected) return '#2F7417';
+                            if (isToday) return '#E8F5E8';
+                            return '#F8F9FA';
+                          })(),
+                          borderWidth: date ? 1 : 0,
+                          borderColor: (() => {
+                            if (!date) return 'transparent';
+                            const today = new Date();
+                            const isToday = date.toDateString() === today.toDateString();
+                            const isSelected = (datePickerType === 'start' && startDate && date.toDateString() === startDate.toDateString()) ||
+                                             (datePickerType === 'end' && endDate && date.toDateString() === endDate.toDateString());
+                            
+                            if (isSelected) return '#2F7417';
+                            if (isToday) return '#2F7417';
+                            return '#E9ECEF';
+                          })()
+                        }}
+                        onPress={() => date && selectDate(date)}
+                        disabled={!date}
+                      >
+                        {date && (
+                          <Text style={{ 
+                            fontSize: 16, 
+                            fontWeight: '600', 
+                            color: (() => {
+                              const today = new Date();
+                              const isToday = date.toDateString() === today.toDateString();
+                              const isSelected = (datePickerType === 'start' && startDate && date.toDateString() === startDate.toDateString()) ||
+                                               (datePickerType === 'end' && endDate && date.toDateString() === endDate.toDateString());
+                              
+                              if (isSelected) return '#FFFFFF';
+                              if (isToday) return '#2F7417';
+                              return '#1a1a1a';
+                            })()
+                          }}>
+                            {date.getDate()}
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
               ))}
             </ScrollView>
           </View>
@@ -616,10 +724,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: 80, // Augmenté pour compenser la StatusBar transparente
     paddingBottom: 20,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
+    borderBottomWidth: 0, // Enlevé la bordure
     borderBottomColor: '#E9ECEF',
   },
   backButton: {
@@ -955,18 +1063,24 @@ const styles = StyleSheet.create({
     color: '#666',
     fontStyle: 'italic',
   },
-  // Styles pour le modal de sélection de date
-  modalOverlay: {
+  // Styles pour le modal de sélection de date - centré
+  modalOverlayCenter: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
-  modalContent: {
+  modalContentCenter: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    borderRadius: 20,
+    width: '100%',
+    maxHeight: '70%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -977,9 +1091,9 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E9ECEF',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2F7417',
   },
   closeButton: {
     width: 32,

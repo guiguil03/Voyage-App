@@ -38,7 +38,7 @@ export default function RootLayout() {
         <Stack.Screen name="register" options={{ headerShown: false, title: 'Inscription' }} />
         <Stack.Screen name="+not-found" />
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style="dark" backgroundColor="transparent" translucent />
     </ThemeProvider>
   );
 }

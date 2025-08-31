@@ -6,18 +6,31 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "voyageapp",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true
-    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "voyageapp"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.voyageapp",
+      "associatedDomains": ["applinks:voyageapp.com"]
+    },
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
     "web": {
       "bundler": "metro",
       "output": "static",

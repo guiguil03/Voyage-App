@@ -10,6 +10,7 @@ import {
     Image,
     SafeAreaView,
     ScrollView,
+    StatusBar,
     StyleSheet,
     Text,
     TextInput,
@@ -215,6 +216,7 @@ export default function CreateMemoryScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       {/* Header amélioré */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
@@ -449,10 +451,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: 80, // Augmenté pour compenser la StatusBar transparente
     paddingBottom: 20,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
+    borderBottomWidth: 0, // Enlevé la bordure
     borderBottomColor: '#E9ECEF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

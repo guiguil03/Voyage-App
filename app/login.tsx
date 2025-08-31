@@ -1,19 +1,20 @@
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import { useAuth } from '@/hooks/useAuth';
 import { signIn, signUp } from '@/lib/auth-client';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  ImageBackground,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    ImageBackground,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 export default function LoginScreen() {
@@ -260,14 +261,16 @@ export default function LoginScreen() {
                   <Text style={styles.socialText}>Ou continuer avec</Text>
                   
                   <View style={styles.socialButtons}>
-                    <TouchableOpacity 
-                      style={[styles.socialButton, styles.googleButton]} 
-                      disabled={loading}
-                      onPress={() => Alert.alert('Info', 'Connexion Google non configurée')}
-                    >
-                      <Ionicons name="logo-google" size={20} color="#2F7417" />
-                      <Text style={[styles.socialButtonText, { color: '#000000' }]}>Google</Text>
-                    </TouchableOpacity>
+                    <GoogleSignInButton 
+                      onSuccess={() => {
+                        console.log('✅ Connexion Google réussie');
+                        setRedirecting(true);
+                      }}
+                      onError={(error) => {
+                        console.error('❌ Erreur connexion Google:', error);
+                        Alert.alert('Erreur', error);
+                      }}
+                    />
 
                     <TouchableOpacity 
                       style={[styles.socialButton, styles.facebookButton]} 

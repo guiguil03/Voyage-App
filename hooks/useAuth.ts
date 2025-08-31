@@ -2,6 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { forceSignOut, getSession } from '../lib/auth-client';
+import { setupDeepLinking } from '../lib/deep-linking';
 import { supabase } from '../lib/supabase';
 
 export function useAuth() {
@@ -146,6 +147,14 @@ export function useAuth() {
     const initAuth = async () => {
       console.log('🚀 Initialisation de l\'authentification...');
       
+      // Configurer Google Sign-In (désactivé temporairement)
+      try {
+        // configureGoogleSignIn(); // Désactivé jusqu'à compilation native
+        console.log('⚠️ Google Sign-In désactivé temporairement');
+      } catch (error) {
+        console.warn('⚠️ Erreur configuration Google Sign-In:', error);
+      }
+      
       if (!supabase) {
         console.log('⚠️ Supabase non configuré, mode déconnecté');
         setSession(null);
@@ -180,6 +189,9 @@ export function useAuth() {
 
     initAuth();
 
+    // Configurer les liens profonds
+    const cleanupDeepLinking = setupDeepLinking();
+
     // Écouter les changements d'authentification
     let authListener: any = null;
     
@@ -199,6 +211,18 @@ export function useAuth() {
             setSession(newSession);
             setError(null);
             
+            // Si c'est une nouvelle connexion (SIGNED_IN), rediriger vers l'accueil
+            if (event === 'SIGNED_IN' && newSession?.user) {
+              console.log('🎉 Nouvelle connexion détectée, redirection vers l\'accueil...');
+              setTimeout(() => {
+                try {
+                  router.replace('/(tabs)/home');
+                } catch (navError) {
+                  console.warn('⚠️ Erreur navigation post-connexion:', navError);
+                }
+              }, 500);
+            }
+            
             // Forcer la mise à jour après une petite pause
             setTimeout(() => {
               if (mounted) {
@@ -214,6 +238,7 @@ export function useAuth() {
     // Nettoyage
     return () => {
       mounted = false;
+      cleanupDeepLinking();
       if (authListener) {
         authListener.data?.subscription?.unsubscribe();
       }
