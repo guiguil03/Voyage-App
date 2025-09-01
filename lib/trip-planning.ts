@@ -172,6 +172,61 @@ export async function getTripPlan(id: string) {
 }
 
 /**
+ * Mettre à jour une planification de voyage existante
+ */
+export async function updateTripPlan(id: string, data: CreateTripPlanData) {
+  try {
+    if (!supabase) {
+      throw new Error('Supabase client non initialisé');
+    }
+    
+    // Obtenir l'utilisateur actuel
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      throw new Error('Utilisateur non authentifié');
+    }
+
+    // Préparer les données pour la mise à jour
+    const updateData = {
+      destination: data.destination,
+      start_date: data.startDate ? data.startDate.toISOString().split('T')[0] : null,
+      end_date: data.endDate ? data.endDate.toISOString().split('T')[0] : null,
+      travel_type: data.travelType,
+      interests: data.interests,
+      activity_level: data.activityLevel,
+      updated_at: new Date().toISOString()
+    };
+
+    // Mettre à jour dans la base de données
+    const { data: tripPlan, error } = await supabase
+      .from('trip_plans')
+      .update(updateData)
+      .eq('id', id)
+      .eq('user_id', user.id) // S'assurer que l'utilisateur peut seulement modifier ses propres voyages
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Erreur lors de la mise à jour de la planification:', error);
+      throw new Error(`Erreur lors de la mise à jour: ${error.message}`);
+    }
+
+    if (!tripPlan) {
+      throw new Error('Voyage non trouvé ou vous n\'avez pas l\'autorisation de le modifier');
+    }
+
+    return { data: tripPlan, error: null };
+  } catch (error) {
+    console.error('Erreur dans updateTripPlan:', error);
+    return { 
+      data: null, 
+      error: error instanceof Error ? error.message : 'Erreur inconnue' 
+    };
+  }
+}
+
+/**
  * Mettre à jour le statut d'une planification
  */
 export async function updateTripPlanStatus(id: string, status: TripPlan['status']) {
@@ -230,6 +285,43 @@ export async function saveGeneratedItinerary(tripPlanId: string, itinerary: Gene
     return { data, error: null };
   } catch (error) {
     console.error('Erreur dans saveGeneratedItinerary:', error);
+    return { 
+      data: null, 
+      error: error instanceof Error ? error.message : 'Erreur inconnue' 
+    };
+  }
+}
+
+/**
+ * Récupérer le planning sauvegardé d'un voyage
+ */
+export async function getTripPlanWithItinerary(id: string) {
+  try {
+    if (!supabase) {
+      throw new Error('Supabase client non initialisé');
+    }
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      throw new Error('Utilisateur non authentifié');
+    }
+
+    const { data: tripPlan, error } = await supabase
+      .from('trip_plans')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', user.id) // S'assurer que l'utilisateur ne peut voir que ses propres voyages
+      .single();
+
+    if (error) {
+      console.error('Erreur lors de la récupération du voyage avec planning:', error);
+      throw new Error(`Erreur lors de la récupération: ${error.message}`);
+    }
+
+    return { data: tripPlan, error: null };
+  } catch (error) {
+    console.error('Erreur dans getTripPlanWithItinerary:', error);
     return { 
       data: null, 
       error: error instanceof Error ? error.message : 'Erreur inconnue' 

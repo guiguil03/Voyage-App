@@ -1,5 +1,5 @@
 import { useAuth } from '@/hooks/useAuth';
-import { deleteTripPlan, getUserTripPlans } from '@/lib/trip-planning';
+import { deleteTripPlan, getTripPlanWithItinerary, getUserTripPlans } from '@/lib/trip-planning';
 import { getUserVoyages } from '@/lib/voyages';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -7,15 +7,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Image,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 interface TripPlan {
@@ -45,6 +45,7 @@ interface UnifiedTrip {
   status: string;
   type: 'trip_plan' | 'voyage'; // Pour distinguer la source
   created_at: string;
+  generated_itinerary?: any; // Planning sauvegardé
   // Champs spécifiques aux souvenirs
   trip_name?: string;
   description?: string;
@@ -119,7 +120,8 @@ export default function VoyageScreen() {
           activity_level: trip.activity_level,
           status: trip.status,
           type: 'trip_plan',
-          created_at: trip.created_at
+          created_at: trip.created_at,
+          generated_itinerary: trip.generated_itinerary
         })),
         // Souvenirs convertis en format unifié
         ...voyagesData.map((voyage: any): UnifiedTrip => ({
@@ -243,6 +245,52 @@ export default function VoyageScreen() {
     );
   };
 
+  // Fonction pour vérifier si un voyage a un planning sauvegardé
+  const hasPlanning = (trip: UnifiedTrip): boolean => {
+    return trip.type === 'trip_plan' && 
+           trip.generated_itinerary && 
+           trip.generated_itinerary.places && 
+           trip.generated_itinerary.places.length > 0;
+  };
+
+  // Fonction pour voir le planning sauvegardé
+  const handleViewPlanning = async (trip: UnifiedTrip) => {
+    if (trip.type !== 'trip_plan') return;
+    
+    try {
+      const result = await getTripPlanWithItinerary(trip.id);
+      
+      if (result.error || !result.data) {
+        Alert.alert('Erreur', 'Impossible de récupérer le planning. Il n\'existe peut-être pas encore.');
+        return;
+      }
+      
+      const tripData = result.data;
+      
+      if (!tripData.generated_itinerary || !tripData.generated_itinerary.places) {
+        Alert.alert('Aucun planning', 'Ce voyage n\'a pas encore de planning généré.');
+        return;
+      }
+      
+      // Naviguer vers la page planning avec les données sauvegardées
+      router.push({
+        pathname: '/planning',
+        params: {
+          planning: JSON.stringify(tripData.generated_itinerary.places),
+          trip: JSON.stringify({
+            id: tripData.id,
+            destination: tripData.destination,
+            startDate: tripData.start_date,
+            endDate: tripData.end_date
+          })
+        }
+      });
+    } catch (error) {
+      console.error('Erreur lors de la récupération du planning:', error);
+      Alert.alert('Erreur', 'Une erreur est survenue lors de la récupération du planning.');
+    }
+  };
+
   const handleTripAction = (action: string, trip: UnifiedTrip) => {
     if (action === 'Détails') {
       // Naviguer vers la page de détails en passant les données du voyage
@@ -252,6 +300,8 @@ export default function VoyageScreen() {
           tripData: JSON.stringify(trip)
         }
       });
+    } else if (action === 'Voir le planning') {
+      handleViewPlanning(trip);
     } else if (action === 'Supprimer le souvenir' && trip.type === 'voyage') {
       Alert.alert(
         'Supprimer le souvenir',
@@ -284,9 +334,19 @@ export default function VoyageScreen() {
         ]
       );
     } else if (action === 'Supprimer' && trip.type === 'trip_plan') {
+      // Vérifier que le voyage est bien en attente avant de permettre la suppression
+      if (trip.status !== 'pending') {
+        Alert.alert(
+          'Suppression impossible', 
+          'Seuls les voyages en attente peuvent être supprimés. Ce voyage a déjà un statut avancé.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
       Alert.alert(
-        'Supprimer le voyage',
-        `Êtes-vous sûr de vouloir supprimer ce voyage planifié à "${trip.destination}" ?`,
+        'Supprimer le voyage en attente',
+        `Êtes-vous sûr de vouloir supprimer ce voyage en attente vers "${trip.destination}" ?\n\nCette action est irréversible et supprimera toutes les informations du voyage.`,
         [
           {
             text: 'Annuler',
@@ -297,16 +357,21 @@ export default function VoyageScreen() {
             style: 'destructive',
             onPress: async () => {
               try {
+                console.log('🗑️ Suppression du voyage en attente:', trip.id);
                 const result = await deleteTripPlan(trip.id);
+                
                 if (result.error) {
-                  Alert.alert('Erreur', 'Impossible de supprimer: ' + result.error);
+                  Alert.alert('Erreur', `Impossible de supprimer le voyage: ${result.error}`);
                 } else {
-                  Alert.alert('Supprimé', 'Le voyage a été supprimé.', [
-                    { text: 'OK', onPress: () => loadUserTrips() }
-                  ]);
+                  Alert.alert(
+                    'Voyage supprimé ✅', 
+                    `Le voyage en attente vers "${trip.destination}" a été supprimé avec succès.`,
+                    [{ text: 'OK', onPress: () => loadUserTrips() }]
+                  );
                 }
               } catch (error) {
-                Alert.alert('Erreur', 'Une erreur est survenue.');
+                console.error('Erreur lors de la suppression:', error);
+                Alert.alert('Erreur', 'Une erreur inattendue est survenue lors de la suppression.');
               }
             }
           }
@@ -462,7 +527,15 @@ export default function VoyageScreen() {
                   {/* Badge de statut avec indication du type */}
                   <View style={{ position: 'absolute', top: 18, right: 18, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: statusDisplay.color, shadowColor: statusDisplay.color, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 4 }}>
                     <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#fff' }}>{isMemory ? 'Souvenir' : statusDisplay.text}</Text>
-                </View>
+                  </View>
+                  
+                  {/* Badge "Supprimable" pour les voyages en attente */}
+                  {trip.status === 'pending' && trip.type === 'trip_plan' && (
+                    <View style={{ position: 'absolute', top: 18, left: 18, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, backgroundColor: '#FF4757', shadowColor: '#FF4757', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 6, elevation: 3 }}>
+                      <Ionicons name="trash-outline" size={12} color="#fff" style={{ marginRight: 4 }} />
+                      <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#fff' }}>Supprimable</Text>
+                    </View>
+                  )}
                   <View style={{ padding: 18 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                       <Text style={{ fontSize: 20, fontWeight: 'bold', color: DARK, flex: 1 }}>{isMemory ? trip.trip_name || trip.destination : trip.destination}</Text>
@@ -553,6 +626,17 @@ export default function VoyageScreen() {
                         <Ionicons name="document-text" size={16} color={GREEN} />
                         <Text style={{ color: GREEN, fontWeight: 'bold', fontSize: 15, marginLeft: 6 }}>Détails</Text>
                     </TouchableOpacity>
+                    
+                    {/* Bouton "Voir le planning" si un planning existe */}
+                    {hasPlanning(trip) && (
+                      <TouchableOpacity 
+                        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF3E0', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: '#FF9800', shadowColor: '#FF9800', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}
+                        onPress={() => handleTripAction('Voir le planning', trip)}
+                      >
+                        <Ionicons name="map" size={16} color="#FF9800" />
+                        <Text style={{ color: '#FF9800', fontWeight: 'bold', fontSize: 15, marginLeft: 6 }}>Planning</Text>
+                      </TouchableOpacity>
+                    )}
                       {isMemory ? (
                         <>
                     <TouchableOpacity 
@@ -586,13 +670,32 @@ export default function VoyageScreen() {
                             <Ionicons name="share" size={16} color={GREEN} />
                             <Text style={{ color: GREEN, fontWeight: 'bold', fontSize: 15, marginLeft: 6 }}>Partager</Text>
                     </TouchableOpacity>
-                          <TouchableOpacity 
-                            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: '#FF4757', marginLeft: 8, shadowColor: '#FF4757', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}
-                            onPress={() => handleTripAction('Supprimer', trip)}
-                          >
-                            <Ionicons name="trash" size={16} color="#FF4757" />
-                            <Text style={{ color: '#FF4757', fontWeight: 'bold', fontSize: 15, marginLeft: 6 }}>Supprimer</Text>
-                          </TouchableOpacity>
+                          
+                          {/* Bouton Supprimer seulement pour les voyages en attente */}
+                          {trip.status === 'pending' && (
+                            <TouchableOpacity 
+                              style={{ 
+                                flexDirection: 'row', 
+                                alignItems: 'center', 
+                                backgroundColor: '#FFF5F5', 
+                                borderRadius: 16, 
+                                paddingHorizontal: 16, 
+                                paddingVertical: 8, 
+                                borderWidth: 2, 
+                                borderColor: '#FF4757', 
+                                marginLeft: 8, 
+                                shadowColor: '#FF4757', 
+                                shadowOffset: { width: 0, height: 2 }, 
+                                shadowOpacity: 0.15, 
+                                shadowRadius: 6, 
+                                elevation: 3 
+                              }}
+                              onPress={() => handleTripAction('Supprimer', trip)}
+                            >
+                              <Ionicons name="trash" size={16} color="#FF4757" />
+                              <Text style={{ color: '#FF4757', fontWeight: 'bold', fontSize: 15, marginLeft: 6 }}>Supprimer</Text>
+                            </TouchableOpacity>
+                          )}
                         </>
                       )}
                   </View>

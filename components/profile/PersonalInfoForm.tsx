@@ -114,16 +114,7 @@ export default function PersonalInfoForm({ profile, onSave, loading = false }: P
     }));
   };
 
-  // Fonction pour convertir une date ISO (AAAA-MM-JJ) en format JJ/MM/AAAA
-  const formatDateForDisplay = (isoDate: string | null) => {
-    if (!isoDate) return '';
-    const match = isoDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (match) {
-      const [, year, month, day] = match;
-      return `${day}/${month}/${year}`;
-    }
-    return isoDate; // Retourner tel quel si pas au format ISO
-  };
+
 
   // Fonction spéciale pour la date de naissance avec formatage automatique
   const handleDateChange = (value: string) => {

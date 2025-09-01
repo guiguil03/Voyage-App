@@ -2,7 +2,7 @@ import InputField from '@/components/planning/InputField';
 import SelectionButton from '@/components/planning/SelectionButton';
 import { useAuth } from '@/hooks/useAuth';
 import { getOpenTripMapService } from '@/lib/opentripmap';
-import { createTripPlan, deleteTripPlan } from '@/lib/trip-planning';
+import { createTripPlan, deleteTripPlan, saveGeneratedItinerary, updateTripPlan } from '@/lib/trip-planning';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
@@ -31,6 +31,7 @@ export default function PlanTripScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [datePickerType, setDatePickerType] = useState<'start' | 'end'>('start');
   const [isLoading, setIsLoading] = useState(false);
+  const [actionType, setActionType] = useState<'save' | 'generate' | null>(null);
 
   const { user } = useAuth();
 
@@ -57,6 +58,72 @@ export default function PlanTripScreen() {
     }
   };
 
+  // Fonction pour sauvegarder seulement les modifications sans générer de plan
+  const handleSaveOnly = async () => {
+    if (!destination.trim()) {
+      Alert.alert('Destination requise', 'Veuillez saisir une destination');
+      return;
+    }
+
+    if (!user) {
+      Alert.alert('Connexion requise', 'Veuillez vous connecter pour modifier un voyage');
+      return;
+    }
+
+    if (!initialTrip || !initialTrip.id) {
+      Alert.alert('Erreur', 'Aucun voyage à modifier');
+      return;
+    }
+
+    setIsLoading(true);
+    setActionType('save');
+
+    try {
+      const tripPlanData = {
+        destination: destination.trim(),
+        startDate: startDate,
+        endDate: endDate,
+        travelType: selectedTravelType as 'Solo' | 'Couple' | 'Family' | 'Group',
+        interests: selectedThemes,
+        activityLevel: selectedActivityLevel as 'Relax' | 'Balanced' | 'Intense',
+      };
+
+      // Mettre à jour seulement les informations du voyage
+      const { data: tripPlan, error: saveError } = await updateTripPlan(initialTrip.id, tripPlanData);
+      
+      if (saveError || !tripPlan) {
+        Alert.alert('Erreur', 'Impossible de modifier le voyage. Veuillez réessayer.');
+        setIsLoading(false);
+        return;
+      }
+
+      Alert.alert(
+        'Voyage modifié !',
+        'Les informations de votre voyage ont été mises à jour avec succès.',
+        [
+          {
+            text: 'Voir mes voyages',
+            onPress: () => router.push('/(tabs)/voyage')
+          },
+          {
+            text: 'OK',
+            style: 'default'
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Erreur lors de la modification du voyage:', error);
+      Alert.alert(
+        'Erreur',
+        'Une erreur est survenue lors de la modification. Veuillez réessayer.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsLoading(false);
+      setActionType(null);
+    }
+  };
+
   const handleGenerateItinerary = async () => {
     if (!destination.trim()) {
       Alert.alert('Destination requise', 'Veuillez saisir une destination');
@@ -69,6 +136,7 @@ export default function PlanTripScreen() {
     }
 
     setIsLoading(true);
+    setActionType('generate');
 
     try {
       const tripPlanData = {
@@ -80,10 +148,23 @@ export default function PlanTripScreen() {
         activityLevel: selectedActivityLevel as 'Relax' | 'Balanced' | 'Intense',
       };
 
-      // Enregistrer le voyage dans la base de données
-      const { data: tripPlan, error: saveError } = await createTripPlan(tripPlanData);
+      // Enregistrer ou mettre à jour le voyage dans la base de données
+      let tripPlan, saveError;
+      
+      if (initialTrip && initialTrip.id) {
+        // Modification d'un voyage existant
+        const result = await updateTripPlan(initialTrip.id, tripPlanData);
+        tripPlan = result.data;
+        saveError = result.error;
+      } else {
+        // Création d'un nouveau voyage
+        const result = await createTripPlan(tripPlanData);
+        tripPlan = result.data;
+        saveError = result.error;
+      }
+      
       if (saveError || !tripPlan) {
-        Alert.alert('Erreur', 'Impossible d\'enregistrer le voyage. Veuillez réessayer.');
+        Alert.alert('Erreur', `Impossible d'${initialTrip ? 'modifier' : 'enregistrer'} le voyage. Veuillez réessayer.`);
         setIsLoading(false);
         return;
       }
@@ -99,12 +180,37 @@ export default function PlanTripScreen() {
 
       let planningMessage = '';
       if (otmResult.success && otmResult.data && otmResult.data.places.length > 0) {
+        // Créer l'itinéraire structuré pour la sauvegarde
+        const generatedItinerary = {
+          days: [],
+          totalEstimatedCost: 0,
+          recommendations: [
+            `${otmResult.data.places.length} attractions trouvées à ${destination}`,
+            `Voyage ${selectedTravelType.toLowerCase()} avec un niveau d'activité ${selectedActivityLevel.toLowerCase()}`,
+            `Centres d'intérêt: ${selectedThemes.join(', ')}`
+          ],
+          generatedAt: new Date().toISOString(),
+          places: otmResult.data.places // Sauvegarder les lieux pour affichage
+        };
+
+        // Sauvegarder le planning dans la base de données
+        console.log('💾 Sauvegarde du planning pour le voyage ID:', tripPlan.id);
+        const saveResult = await saveGeneratedItinerary(tripPlan.id, generatedItinerary);
+        
+        if (saveResult.error) {
+          console.error('⚠️ Erreur lors de la sauvegarde du planning:', saveResult.error);
+          // Continuer même si la sauvegarde échoue
+        } else {
+          console.log('✅ Planning sauvegardé avec succès');
+        }
+
         // Aller vers la page planning avec le planning et les infos du voyage
         router.push({
           pathname: '/planning',
           params: {
             planning: JSON.stringify(otmResult.data.places),
             trip: JSON.stringify({
+              id: tripPlan.id, // Ajouter l'ID du voyage
               destination: destination.trim(),
               startDate: startDate ? startDate.toISOString() : '',
               endDate: endDate ? endDate.toISOString() : ''
@@ -117,7 +223,7 @@ export default function PlanTripScreen() {
       }
 
       Alert.alert(
-        'Itinéraire généré !',
+        initialTrip ? 'Voyage modifié !' : 'Itinéraire généré !',
         planningMessage,
         [
           {
@@ -131,14 +237,15 @@ export default function PlanTripScreen() {
         ]
       );
     } catch (error) {
-      console.error('Erreur lors de la création du voyage:', error);
+      console.error(`Erreur lors de la ${initialTrip ? 'modification' : 'création'} du voyage:`, error);
       Alert.alert(
         'Erreur',
-        'Une erreur est survenue lors de l\'enregistrement. Veuillez réessayer.',
+        `Une erreur est survenue lors de ${initialTrip ? 'la modification' : 'l\'enregistrement'}. Veuillez réessayer.`,
         [{ text: 'OK' }]
       );
     } finally {
       setIsLoading(false);
+      setActionType(null);
     }
   };
 
@@ -240,8 +347,8 @@ export default function PlanTripScreen() {
           </TouchableOpacity>
         
         <View style={styles.headerContent}>
-          <Text style={styles.title}>Planifier un voyage</Text>
-          <Text style={styles.subtitle}>Créons votre aventure parfaite</Text>
+          <Text style={styles.title}>{initialTrip ? 'Modifier le voyage' : 'Planifier un voyage'}</Text>
+          <Text style={styles.subtitle}>{initialTrip ? 'Modifiez votre aventure' : 'Créons votre aventure parfaite'}</Text>
         </View>
 
         <View style={styles.progressContainer}>
@@ -505,40 +612,105 @@ export default function PlanTripScreen() {
           </View>
         </View>
 
-        {/* Bouton de génération amélioré */}
+        {/* Boutons d'action - différents selon le contexte */}
         <View style={styles.generateSection}>
-          <TouchableOpacity 
-            style={[
-              styles.generateButton,
-              (!destination.trim() || isLoading) && styles.generateButtonDisabled
-            ]} 
-            onPress={handleGenerateItinerary}
-            disabled={!destination.trim() || isLoading}
-          >
-            <View style={styles.generateButtonContent}>
-              <Ionicons 
-                name={isLoading ? "hourglass" : "rocket"} 
-                size={22} 
-                color={(destination.trim() && !isLoading) ? "#FFFFFF" : "#999"} 
-              />
-              <Text style={[
-                styles.generateButtonText,
-                (!destination.trim() || isLoading) && styles.generateButtonTextDisabled
+          {initialTrip ? (
+            // Mode modification : deux boutons
+            <>
+              {/* Bouton pour sauvegarder seulement */}
+              <TouchableOpacity 
+                style={[
+                  styles.saveOnlyButton,
+                  (!destination.trim() || (isLoading && actionType === 'save')) && styles.saveOnlyButtonDisabled
+                ]} 
+                onPress={handleSaveOnly}
+                disabled={!destination.trim() || (isLoading && actionType === 'save')}
+              >
+                <View style={styles.saveOnlyButtonContent}>
+                  <Ionicons 
+                    name={(isLoading && actionType === 'save') ? "hourglass" : "save"} 
+                    size={20} 
+                    color={(destination.trim() && !(isLoading && actionType === 'save')) ? "#2F7417" : "#999"} 
+                  />
+                  <Text style={[
+                    styles.saveOnlyButtonText,
+                    (!destination.trim() || (isLoading && actionType === 'save')) && styles.saveOnlyButtonTextDisabled
+                  ]}>
+                    {(isLoading && actionType === 'save') ? 'Sauvegarde...' : 'Sauvegarder les modifications'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              {/* Bouton pour modifier et générer un nouveau plan */}
+              <TouchableOpacity 
+                style={[
+                  styles.generateButton,
+                  (!destination.trim() || (isLoading && actionType === 'generate')) && styles.generateButtonDisabled,
+                  { marginTop: 12 }
+                ]} 
+                onPress={handleGenerateItinerary}
+                disabled={!destination.trim() || (isLoading && actionType === 'generate')}
+              >
+                <View style={styles.generateButtonContent}>
+                  <Ionicons 
+                    name={(isLoading && actionType === 'generate') ? "hourglass" : "refresh"} 
+                    size={22} 
+                    color={(destination.trim() && !(isLoading && actionType === 'generate')) ? "#FFFFFF" : "#999"} 
+                  />
+                  <Text style={[
+                    styles.generateButtonText,
+                    (!destination.trim() || (isLoading && actionType === 'generate')) && styles.generateButtonTextDisabled
+                  ]}>
+                    {(isLoading && actionType === 'generate') ? 'Génération...' : 'Modifier et générer un nouveau plan'}
+                  </Text>
+                </View>
+                <View style={[
+                  styles.generateButtonIcon,
+                  (!destination.trim() || (isLoading && actionType === 'generate')) && styles.generateButtonIconDisabled
+                ]}>
+                  <Ionicons 
+                    name="arrow-forward" 
+                    size={20} 
+                    color={(destination.trim() && !(isLoading && actionType === 'generate')) ? "#FFFFFF" : "#999"} 
+                  />
+                </View>
+              </TouchableOpacity>
+            </>
+          ) : (
+            // Mode création : un seul bouton
+            <TouchableOpacity 
+              style={[
+                styles.generateButton,
+                (!destination.trim() || isLoading) && styles.generateButtonDisabled
+              ]} 
+              onPress={handleGenerateItinerary}
+              disabled={!destination.trim() || isLoading}
+            >
+              <View style={styles.generateButtonContent}>
+                <Ionicons 
+                  name={isLoading ? "hourglass" : "rocket"} 
+                  size={22} 
+                  color={(destination.trim() && !isLoading) ? "#FFFFFF" : "#999"} 
+                />
+                <Text style={[
+                  styles.generateButtonText,
+                  (!destination.trim() || isLoading) && styles.generateButtonTextDisabled
+                ]}>
+                  {isLoading ? 'Enregistrement...' : 'Générer l\'itinéraire'}
+                </Text>
+              </View>
+              <View style={[
+                styles.generateButtonIcon,
+                (!destination.trim() || isLoading) && styles.generateButtonIconDisabled
               ]}>
-                {isLoading ? 'Enregistrement...' : 'Générer l\'itinéraire'}
-              </Text>
-            </View>
-            <View style={[
-              styles.generateButtonIcon,
-              (!destination.trim() || isLoading) && styles.generateButtonIconDisabled
-            ]}>
-              <Ionicons 
-                name="arrow-forward" 
-                size={20} 
-                color={(destination.trim() && !isLoading) ? "#FFFFFF" : "#999"} 
-              />
-            </View>
-          </TouchableOpacity>
+                <Ionicons 
+                  name="arrow-forward" 
+                  size={20} 
+                  color={(destination.trim() && !isLoading) ? "#FFFFFF" : "#999"} 
+                />
+              </View>
+            </TouchableOpacity>
+          )}
           {/* Bouton de suppression si modification */}
           {initialTrip && (
             <TouchableOpacity
@@ -573,7 +745,8 @@ export default function PlanTripScreen() {
                               { text: 'OK', onPress: () => router.push('/(tabs)/voyage') }
                             ]);
                           }
-                        } catch (error) {
+                        } catch (deleteError) {
+                          console.error('Erreur lors de la suppression:', deleteError);
                           Alert.alert('Erreur', 'Une erreur inattendue est survenue.');
                         }
                       }
@@ -594,9 +767,21 @@ export default function PlanTripScreen() {
             </Text>
           )}
           
-          {isLoading && (
+          {isLoading && actionType === 'save' && (
             <Text style={styles.generateHint}>
-              Enregistrement de votre demande en cours...
+              Sauvegarde de vos modifications en cours...
+            </Text>
+          )}
+          
+          {isLoading && actionType === 'generate' && (
+            <Text style={styles.generateHint}>
+              {initialTrip ? 'Génération du nouveau plan en cours...' : 'Enregistrement de votre demande en cours...'}
+            </Text>
+          )}
+
+          {initialTrip && !isLoading && (
+            <Text style={[styles.generateHint, { marginTop: 16, textAlign: 'center', fontStyle: 'normal', color: '#666' }]}>
+              💡 Vous pouvez sauvegarder vos modifications sans générer un nouveau plan, ou générer un nouveau plan avec vos changements
             </Text>
           )}
       </ScrollView>
@@ -1062,6 +1247,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     fontStyle: 'italic',
+  },
+  // Styles pour le bouton "Sauvegarder seulement"
+  saveOnlyButton: {
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#2F7417',
+    shadowColor: '#2F7417',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  saveOnlyButtonDisabled: {
+    backgroundColor: '#F8F9FA',
+    borderColor: '#E9ECEF',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  saveOnlyButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+  },
+  saveOnlyButtonText: {
+    color: '#2F7417',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  saveOnlyButtonTextDisabled: {
+    color: '#999',
   },
   // Styles pour le modal de sélection de date - centré
   modalOverlayCenter: {

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { Image, Linking, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Linking, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 function groupActivitiesByDay(activities: any[], startDate: string, endDate: string) {
   if (!startDate || !endDate) return { 'Jour 1': activities.slice(0, 5) };
@@ -34,7 +34,24 @@ export default function PlanningScreen() {
         <TouchableOpacity onPress={() => router.push('/(tabs)/home')} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#2F7417" />
         </TouchableOpacity>
-        <Text style={styles.title}>Mon planning à {trip.destination}</Text>
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <Text style={styles.title}>Mon planning à {trip.destination}</Text>
+          {planning.length > 0 && (
+            <Text style={styles.subtitle}>{planning.length} activités • Planning sauvegardé</Text>
+          )}
+        </View>
+        <TouchableOpacity 
+          style={styles.saveIndicator}
+          onPress={() => {
+            Alert.alert(
+              'Planning sauvegardé ✅', 
+              'Ce planning est automatiquement sauvegardé et accessible depuis vos voyages.',
+              [{ text: 'OK' }]
+            );
+          }}
+        >
+          <Ionicons name="checkmark-circle" size={24} color="#2F7417" />
+        </TouchableOpacity>
       </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {Object.entries(grouped).map(([day, acts], i) => (
@@ -78,6 +95,8 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', padding: 18, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e9ecef' },
   backBtn: { marginRight: 12, backgroundColor: '#e0ffe0', borderRadius: 20, padding: 6 },
   title: { fontSize: 20, fontWeight: 'bold', color: '#2F7417' },
+  subtitle: { fontSize: 14, color: '#666', marginTop: 4 },
+  saveIndicator: { marginLeft: 12, backgroundColor: '#e0ffe0', borderRadius: 20, padding: 6 },
   scrollContent: { padding: 18, paddingBottom: 60 },
   daySection: { marginBottom: 32, padding: 10, borderRadius: 18 },
   daySectionAlt: { backgroundColor: '#f6f8f7' },
