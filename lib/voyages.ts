@@ -142,6 +142,32 @@ export async function createVoyage(voyageData: {
   }
 }
 
+// Récupérer les voyages d'un utilisateur spécifique (pour consulter les voyages d'un ami)
+export async function getUserVoyagesById(userId: string): Promise<{ data: Voyage[] | null; error: string | null }> {
+  if (!supabase) {
+    return { data: null, error: 'Supabase non configuré' };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('voyages')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_public', true) // Seulement les voyages publics pour les amis
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Erreur lors de la récupération des voyages de l\'ami:', error);
+      return { data: null, error: error.message };
+    }
+
+    return { data, error: null };
+  } catch (error) {
+    console.error('Erreur dans getUserVoyagesById:', error);
+    return { data: null, error: 'Erreur lors de la récupération des voyages' };
+  }
+}
+
 // Récupérer tous les voyages de l'utilisateur connecté
 export async function getUserVoyages(): Promise<{ data: Voyage[] | null; error: string | null }> {
   if (!supabase) {
@@ -201,7 +227,7 @@ export async function getAllVoyages(): Promise<{ data: any[] | null; error: stri
     }
 
     // Formater les données pour correspondre au format attendu
-    const formattedData = data?.map(voyage => ({
+    const formattedData = data?.map((voyage: any) => ({
       id: voyage.id,
       user: voyage.profiles?.full_name || voyage.profiles?.email?.split('@')[0] || 'Utilisateur',
       name: voyage.trip_name,

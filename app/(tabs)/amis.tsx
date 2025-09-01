@@ -59,7 +59,7 @@ export default function AmisScreen() {
   };
 
   const handleFriendPress = (friend: Profile) => {
-    router.push({ pathname: '/profil', params: { userId: friend.id } });
+    router.push({ pathname: '/friend-profile', params: { userId: friend.id } });
   };
 
   const renderUser = (item: Profile, isFriend: boolean = false) => (
