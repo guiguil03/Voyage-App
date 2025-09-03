@@ -65,7 +65,7 @@ export default function TabLayout() {
         options={{
           title: 'Compte',
           headerShown: false,
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />
         }}
       />
      

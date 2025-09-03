@@ -21,13 +21,27 @@
             }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
+        },
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "https",
+              "host": "eqxgqenvaqexcasjkuaz.supabase.co",
+              "pathPrefix": "/auth/v1/callback"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.voyageapp",
-      "associatedDomains": ["applinks:voyageapp.com"]
+      "associatedDomains": [
+        "applinks:voyageapp.com",
+        "applinks:eqxgqenvaqexcasjkuaz.supabase.co"
+      ]
     },
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,

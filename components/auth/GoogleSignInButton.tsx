@@ -1,13 +1,13 @@
+import { signInWithGoogleMobile } from '@/lib/google-auth-mobile';
 import { signInWithGoogleWeb } from '@/lib/google-auth-web';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
     ActivityIndicator,
-    Alert,
-    StyleSheet,
+    Alert, Platform, StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 
 interface GoogleSignInButtonProps {
@@ -22,18 +22,25 @@ export default function GoogleSignInButton({ onSuccess, onError }: GoogleSignInB
     if (loading) return;
 
     console.log('🔘 Bouton Google cliqué !');
+    console.log('🔧 Platform:', Platform.OS);
     
     setLoading(true);
     try {
       console.log('🚀 Tentative de connexion Google...');
       
-      // Tentative directe de connexion Google
-      const { data, error } = await signInWithGoogleWeb();
+      // Utiliser la méthode appropriée selon la plateforme
+      const { data, error } = Platform.OS === 'web' 
+        ? await signInWithGoogleWeb()
+        : await signInWithGoogleMobile();
       
       if (error) {
         console.error('❌ Erreur Google:', error);
         Alert.alert('Erreur de connexion', error);
         onError?.(error);
+      } else if (data?.user) {
+        console.log('🎉 Authentification Google réussie !');
+        // La redirection sera gérée automatiquement par useAuth
+        onSuccess?.();
       } else if (data?.type === 'success') {
         console.log('🎉 Authentification Google réussie !');
         // La redirection sera gérée automatiquement par useAuth
@@ -81,17 +88,16 @@ export default function GoogleSignInButton({ onSuccess, onError }: GoogleSignInB
 const styles = StyleSheet.create({
   button: {
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#DADCE0',
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 20,
-    marginVertical: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -107,7 +113,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F1F1F',
+    color: '#374151',
     textAlign: 'center',
   },
 });

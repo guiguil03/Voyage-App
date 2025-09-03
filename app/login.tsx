@@ -1,4 +1,9 @@
+import AuthCard from '@/components/auth/AuthCard';
+import EnhancedAuthHeader from '@/components/auth/EnhancedAuthHeader';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
+import GradientButton from '@/components/auth/GradientButton';
+import ModeToggle from '@/components/auth/ModeToggle';
+import Separator from '@/components/auth/Separator';
 import { useAuth } from '@/hooks/useAuth';
 import { signIn, signUp } from '@/lib/auth-client';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +12,6 @@ import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
-    ImageBackground,
     ScrollView,
     StatusBar,
     StyleSheet,
@@ -121,8 +125,8 @@ export default function LoginScreen() {
     }
   };
 
-  const toggleMode = () => {
-    setMode(mode === 'signin' ? 'signup' : 'signin');
+  const handleModeChange = (newMode: 'signin' | 'signup') => {
+    setMode(newMode);
     setEmail('');
     setPassword('');
   };
@@ -152,321 +156,254 @@ export default function LoginScreen() {
   return (
     <>
       <StatusBar barStyle="light-content" />
-      <ImageBackground
-        source={require('@/assets/images/temple-bali-sunset.jpg')}
-        style={styles.background}
-        resizeMode="cover"
-      >
-        <View style={styles.overlay}>
-          <ScrollView 
-            contentContainerStyle={styles.scrollContainer}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* Header */}
-            <View style={styles.headerContainer}>
-              <Text style={styles.appTitle}>CityTrip</Text>
-              <Text style={styles.appSubtitle}>
-                {mode === 'signin' ? 'Bon retour !' : 'Bienvenue !'}
-              </Text>
-            </View>
+      <View style={styles.container}>
+        {/* Header enrichi avec votre charte graphique */}
+        <EnhancedAuthHeader
+          title="CityTrip"
+          subtitle={mode === 'signin' ? 'Bon retour !' : 'Bienvenue dans l\'aventure !'}
+          icon="airplane"
+          showFeatures={true}
+        />
 
-            {/* Formulaire */}
-            <View style={styles.formContainer}>
-              <View style={styles.card}>
-                <Text style={styles.formTitle}>
-                  {mode === 'signin' ? 'Connexion' : 'Inscription'}
-                </Text>
+        {/* Formulaire avec design moderne */}
+        <ScrollView 
+          style={styles.formScrollView}
+          contentContainerStyle={styles.formScrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <AuthCard>
+            {/* Indicateur de mode */}
+            <ModeToggle
+              mode={mode}
+              onModeChange={handleModeChange}
+              disabled={loading}
+            />
 
-                {/* Email */}
-                <View style={styles.inputContainer}>
-                  <View style={styles.inputWrapper}>
-                    <Ionicons name="mail" size={20} color="#2F7417" style={styles.inputIcon} />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Email"
-                      placeholderTextColor="#999"
-                      value={email}
-                      onChangeText={setEmail}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      editable={!loading}
-                    />
-                  </View>
+            {/* Champs de saisie modernes */}
+            <View style={styles.inputsContainer}>
+              {/* Email */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Email</Text>
+                <View style={[styles.inputWrapper, email && styles.inputWrapperFocused]}>
+                  <Ionicons name="mail-outline" size={20} color={email ? "#2F7417" : "#9CA3AF"} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="votre@email.com"
+                    placeholderTextColor="#9CA3AF"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!loading}
+                  />
                 </View>
+              </View>
 
-                {/* Mot de passe */}
-                <View style={styles.inputContainer}>
-                  <View style={styles.inputWrapper}>
-                    <Ionicons name="lock-closed" size={20} color="#2F7417" style={styles.inputIcon} />
-                    <TextInput
-                      style={[styles.input, { flex: 1 }]}
-                      placeholder="Mot de passe"
-                      placeholderTextColor="#999"
-                      value={password}
-                      onChangeText={setPassword}
-                      secureTextEntry={!showPassword}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      editable={!loading}
+              {/* Mot de passe */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Mot de passe</Text>
+                <View style={[styles.inputWrapper, password && styles.inputWrapperFocused]}>
+                  <Ionicons name="lock-closed-outline" size={20} color={password ? "#2F7417" : "#9CA3AF"} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="••••••••"
+                    placeholderTextColor="#9CA3AF"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!loading}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.eyeButton}
+                    disabled={loading}
+                  >
+                    <Ionicons 
+                      name={showPassword ? "eye-outline" : "eye-off-outline"} 
+                      size={20} 
+                      color="#9CA3AF" 
                     />
-                    <TouchableOpacity
-                      onPress={() => setShowPassword(!showPassword)}
-                      style={styles.eyeButton}
-                      disabled={loading}
-                    >
-                      <Ionicons 
-                        name={showPassword ? "eye" : "eye-off"} 
-                        size={20} 
-                        color="#999" 
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* Bouton principal */}
-                <TouchableOpacity
-                  style={[styles.authButton, loading && styles.authButtonDisabled]}
-                  onPress={handleAuth}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.authButtonText}>
-                      {mode === 'signin' ? 'Se connecter' : 'S inscrire'}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-
-                {/* Bouton changement de mode */}
-                <TouchableOpacity
-                  style={styles.toggleButton}
-                  onPress={toggleMode}
-                  disabled={loading}
-                >
-                  <Text style={styles.toggleButtonText}>
-                    {mode === 'signin' 
-                      ? 'Pas de compte ? S inscrire' 
-                      : 'Déjà un compte ? Se connecter'
-                    }
-                  </Text>
-                </TouchableOpacity>
-
-               
-
-                {/* Boutons sociaux simplifiés */}
-                <View style={styles.socialContainer}>
-                  <Text style={styles.socialText}>Ou continuer avec</Text>
-                  
-                  <View style={styles.socialButtons}>
-                    <GoogleSignInButton 
-                      onSuccess={() => {
-                        console.log('✅ Connexion Google réussie');
-                        setRedirecting(true);
-                      }}
-                      onError={(error) => {
-                        console.error('❌ Erreur connexion Google:', error);
-                        Alert.alert('Erreur', error);
-                      }}
-                    />
-
-                    <TouchableOpacity 
-                      style={[styles.socialButton, styles.facebookButton]} 
-                      disabled={loading}
-                      onPress={() => Alert.alert('Info', 'Connexion Facebook non configurée')}
-                    >
-                      <Ionicons name="logo-facebook" size={20} color="#2F7417" />
-                      <Text style={[styles.socialButtonText, { color: '#0000000' }]}>Facebook</Text>
-                    </TouchableOpacity>
-                  </View>
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
-          </ScrollView>
-        </View>
-      </ImageBackground>
+
+            {/* Bouton principal avec gradient */}
+            <GradientButton
+              title={mode === 'signin' ? 'Se connecter' : 'Créer un compte'}
+              onPress={handleAuth}
+              loading={loading}
+              icon={mode === 'signin' ? "log-in-outline" : "person-add-outline"}
+            />
+
+            {/* Séparateur */}
+            <Separator text="ou" />
+
+            {/* Boutons sociaux */}
+            <View style={styles.socialContainer}>
+              <GoogleSignInButton 
+                onSuccess={() => {
+                  console.log('✅ Connexion Google réussie');
+                  setRedirecting(true);
+                }}
+                onError={(error) => {
+                  console.error('❌ Erreur connexion Google:', error);
+                  Alert.alert('Erreur', error);
+                }}
+              />
+
+              <TouchableOpacity 
+                style={styles.socialButton} 
+                disabled={loading}
+                onPress={() => Alert.alert('Info', 'Connexion Facebook bientôt disponible')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="logo-facebook" size={20} color="#1877F2" />
+                <Text style={styles.socialButtonText}>Facebook</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Lien de basculement */}
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => handleModeChange(mode === 'signin' ? 'signup' : 'signin')}
+              disabled={loading}
+            >
+              <Text style={styles.toggleButtonText}>
+                {mode === 'signin' 
+                  ? 'Pas encore de compte ? Créer un compte' 
+                  : 'Déjà un compte ? Se connecter'
+                }
+              </Text>
+            </TouchableOpacity>
+          </AuthCard>
+        </ScrollView>
+      </View>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  background: {
+  // Container principal
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  
+  // ScrollView du formulaire
+  formScrollView: {
     flex: 1,
   },
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  
+  formScrollContent: {
+    padding: 24,
+    paddingTop: 25,
+    marginTop: 0,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+  
+  // Container des inputs
+  inputsContainer: {
+    marginBottom: 32,
   },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  headerContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  appTitle: {
-    fontSize: 42,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-    marginBottom: 8,
-  },
-  appSubtitle: {
-    fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.9)',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  formContainer: {
-    alignItems: 'center',
-  },
-  card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
-    padding: 30,
-    width: '100%',
-    maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  formTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    textAlign: 'center',
-    marginBottom: 30,
-  },
-  inputContainer: {
+  
+  inputGroup: {
     marginBottom: 20,
   },
+  
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F8FAFC',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#e9ecef',
-    paddingHorizontal: 15,
-    paddingVertical: 12,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
-  inputIcon: {
-    marginRight: 12,
+  
+  inputWrapperFocused: {
+    borderColor: '#2F7417',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#2F7417',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
   },
+  
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#1a1a1a',
-  },
-  eyeButton: {
-    padding: 5,
-  },
-  authButton: {
-    backgroundColor: '#2F7417',
-    borderRadius: 12,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginBottom: 20,
-    shadowColor: '##2F7417',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  authButtonDisabled: {
-    backgroundColor: '#ccc',
-    shadowOpacity: 0,
-  },
-  authButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  toggleButton: {
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  toggleButtonText: {
-    color: '#2F7417',
-    fontSize: 16,
+    color: '#1F2937',
+    marginLeft: 12,
     fontWeight: '500',
   },
-  debugContainer: {
-    backgroundColor: '#FFF3CD',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#FFE69C',
+  
+  eyeButton: {
+    padding: 4,
+    marginLeft: 8,
   },
-  debugText: {
-    fontSize: 12,
-    color: '#8A6D3B',
-    textAlign: 'center',
-  },
+  
+  // Boutons sociaux
   socialContainer: {
-    alignItems: 'center',
+    gap: 12,
+    marginBottom: 24,
   },
-  socialText: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 20,
-  },
-  socialButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
+  
   socialButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    marginHorizontal: 5,
-    borderWidth: 1,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
   },
-  googleButton: {
-    backgroundColor: '#ffffff',
-    borderColor: '##2F7417',
-  },
-  facebookButton: {
-    backgroundColor: '#ffffff',
-    borderColor: '#2F7417',
-  },
+  
   socialButtonText: {
-    marginLeft: 8,
-    fontSize: 14,
+    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  
+  // Bouton de basculement
+  toggleButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  
+  toggleButtonText: {
+    fontSize: 16,
+    color: '#2F7417',
+    fontWeight: '600',
+  },
+  
+  // Styles pour les loaders
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+  },
+  
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#64748B',
     fontWeight: '500',
   },
 }); 

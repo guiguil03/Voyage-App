@@ -206,8 +206,8 @@ export function useAuth() {
             console.log('👋 Utilisateur déconnecté');
             setSession(null);
             setError(null);
-          } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            console.log('👤 Utilisateur connecté/token rafraîchi');
+          } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+            console.log('👤 Utilisateur connecté/token rafraîchi/session initiale');
             setSession(newSession);
             setError(null);
             

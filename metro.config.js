@@ -31,7 +31,9 @@ config.server = {
     return (req, res, next) => {
       // Ignorer les requêtes de symbolication problématiques
       if (req.url && req.url.includes('symbolicate')) {
-        res.status(200).json({ stack: [] });
+        // Utiliser la méthode correcte pour définir le status et envoyer la réponse
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ stack: [] }));
         return;
       }
       return middleware(req, res, next);
