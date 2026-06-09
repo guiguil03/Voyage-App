@@ -1,10 +1,19 @@
-import { acceptFriendRequest, declineFriendRequest, getAddableUsers, getMyFriends, getReceivedFriendRequests, sendFriendRequest } from '@/lib/friends';
-import { Profile } from '@/lib/profiles';
+import { acceptFriendRequest, declineFriendRequest, getAddableUsers, getMyFriends, getReceivedFriendRequests, sendFriendRequest } from '@/features/social/services/friends';
+import { Profile } from '@/features/profile/services/profiles';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Dimensions, FlatList, Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
+const C = {
+  bg:         '#0D0D0D',
+  card:       'rgba(13,13,13,0.82)',
+  border:     'rgba(245,237,214,0.14)',
+  cream:      '#F5EDD6',
+  creamDim:   'rgba(245,237,214,0.50)',
+  creamFaint: 'rgba(245,237,214,0.18)',
+  white:      '#FFFFFF',
+  whiteDim:   'rgba(255,255,255,0.40)',
+};
 
 export default function AmisScreen() {
   const [friends, setFriends] = useState<Profile[]>([]);
@@ -108,7 +117,7 @@ export default function AmisScreen() {
     icon?: string
   ): React.ReactElement => (
     <View style={styles.sectionBox}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={styles.sectionTitle}>{title.toUpperCase()}</Text>
       {data.length === 0 ? (
         <View style={styles.emptyBox}>
           {icon && <Text style={styles.emptyIcon}>{icon}</Text>}
@@ -127,22 +136,20 @@ export default function AmisScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Mes amis & communauté</Text>
-      </View>
-      <View style={styles.content}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+        <Text style={styles.pageTitle}>AMIS</Text>
         {loading ? (
-          <ActivityIndicator size="large" color="#2F7417" style={{ marginTop: 40 }} />
+          <ActivityIndicator size="large" color={C.cream} style={{ marginTop: 40 }} />
         ) : error ? (
-          <Text style={{ color: 'red', textAlign: 'center', marginTop: 40 }}>{error}</Text>
+          <Text style={styles.errorText}>{error}</Text>
         ) : (
           <>
             {renderSection('Demandes reçues', receivedRequests, renderRequest, 'Aucune demande en attente.', '👋')}
-            {renderSection('Mes amis', friends, (item) => renderUser(item, true), 'Aucun ami pour l&apos;instant.', '🤝')}
+            {renderSection('Mes amis', friends, (item) => renderUser(item, true), 'Aucun ami pour l\'instant.', '🤝')}
             {renderSection('Ajouter des amis', addableUsers, (item) => renderUser(item, false), 'Aucun utilisateur à ajouter.', '🔍')}
           </>
         )}
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -150,134 +157,114 @@ export default function AmisScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: C.bg,
   },
-  header: {
-    paddingTop: 24,
-    paddingBottom: 8,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    marginBottom: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 2,
-    elevation: 2,
+  pageTitle: {
+    fontSize: 28,
+    fontWeight: '200',
+    letterSpacing: 6,
+    color: C.cream,
+    paddingTop: 55,
+    paddingHorizontal: 22,
+    marginBottom: 28,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#2F7417',
-    letterSpacing: 0.5,
-  },
-  content: {
-    flex: 1,
-    padding: 10,
+  errorText: {
+    color: '#EF4444',
+    textAlign: 'center',
+    marginTop: 40,
+    paddingHorizontal: 22,
   },
   sectionBox: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    marginBottom: 18,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: C.card,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: C.border,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 18,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#2F7417',
-    letterSpacing: 0.2,
+    fontSize: 11,
+    letterSpacing: 3,
+    color: C.creamDim,
+    fontWeight: '300',
+    marginBottom: 14,
   },
   emptyBox: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 18,
   },
   emptyIcon: {
-    fontSize: 32,
-    marginBottom: 4,
+    fontSize: 28,
+    marginBottom: 6,
   },
   emptyText: {
-    color: '#888',
+    color: C.creamDim,
     fontStyle: 'italic',
-    fontSize: 15,
     textAlign: 'center',
+    paddingVertical: 16,
   },
   userRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    padding: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: C.border,
   },
   avatar: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: '#eee',
-    borderWidth: 2,
-    borderColor: '#e0e0e0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 2,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: C.creamFaint,
   },
   userName: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#222',
+    fontSize: 15,
+    fontWeight: '400',
+    color: C.white,
     marginBottom: 2,
   },
   userEmail: {
-    fontSize: 13,
-    color: '#888',
+    fontSize: 12,
+    color: C.creamDim,
     marginBottom: 1,
   },
   userBio: {
-    fontSize: 13,
-    color: '#555',
+    fontSize: 12,
+    color: C.creamDim,
     fontStyle: 'italic',
     marginTop: 2,
   },
   addButton: {
-    backgroundColor: '#2F7417',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
+    backgroundColor: C.cream,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
     marginLeft: 8,
-    minWidth: 80,
     alignItems: 'center',
   },
   addButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 15,
+    color: C.bg,
+    fontSize: 13,
+    fontWeight: '500',
   },
   friendBadge: {
-    backgroundColor: '#e0ffe0',
-    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: C.creamFaint,
+    backgroundColor: 'rgba(245,237,214,0.06)',
+    borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 8,
     marginLeft: 8,
     alignItems: 'center',
   },
   friendBadgeText: {
-    color: '#2F7417',
-    fontWeight: 'bold',
-    fontSize: 15,
+    color: C.cream,
+    fontSize: 13,
+    fontWeight: '400',
   },
   requestButtons: {
     flexDirection: 'row',
@@ -286,30 +273,29 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   acceptButton: {
-    backgroundColor: '#2F7417',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 8,
-    marginRight: 6,
-    minWidth: 80,
+    backgroundColor: C.cream,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
     alignItems: 'center',
   },
   acceptButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 15,
+    color: C.bg,
+    fontWeight: '500',
+    fontSize: 13,
   },
   declineButton: {
-    backgroundColor: '#e74c3c',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 8,
-    minWidth: 80,
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.4)',
+    backgroundColor: 'transparent',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
     alignItems: 'center',
   },
   declineButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 15,
+    color: '#EF4444',
+    fontWeight: '500',
+    fontSize: 13,
   },
 });

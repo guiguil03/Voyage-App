@@ -1,8 +1,9 @@
-import { getOpenTripMapService } from '@/lib/opentripmap';
+import { getOpenTripMapService } from '@/features/explore/services/opentripmap';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Image,
   SafeAreaView,
@@ -13,6 +14,17 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+
+const C = {
+  bg:         '#0D0D0D',
+  card:       'rgba(13,13,13,0.82)',
+  border:     'rgba(245,237,214,0.14)',
+  cream:      '#F5EDD6',
+  creamDim:   'rgba(245,237,214,0.50)',
+  creamFaint: 'rgba(245,237,214,0.18)',
+  white:      '#FFFFFF',
+  whiteDim:   'rgba(255,255,255,0.40)',
+};
 
 const categories = [
   { id: 1, name: 'Aventure', icon: 'trail-sign' },
@@ -130,24 +142,24 @@ export default function ExploreScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
-        style={styles.scrollView} 
+      <ScrollView
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Explorer</Text>
+          <Text style={styles.title}>EXPLORER</Text>
           <Text style={styles.subtitle}>Découvrez votre prochaine destination</Text>
         </View>
 
         {/* Barre de recherche */}
         <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color={styles.searchIcon.color} style={styles.searchIcon} />
+          <Ionicons name="search" size={20} color={C.cream} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Rechercher une destination..."
-            placeholderTextColor="#666"
+            placeholderTextColor={C.whiteDim}
             value={searchText}
             onChangeText={setSearchText}
           />
@@ -155,7 +167,7 @@ export default function ExploreScreen() {
 
         {/* Catégories */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Catégories</Text>
+          <Text style={styles.sectionTitle}>CATÉGORIES</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
             {categories.map((category) => (
               <TouchableOpacity
@@ -170,10 +182,10 @@ export default function ExploreScreen() {
                   styles.categoryIconContainer,
                   selectedCategory === category.name && styles.selectedCategoryIcon
                 ]}>
-                  <Ionicons 
-                    name={category.icon as any} 
-                    size={24} 
-                    color={selectedCategory === category.name ? '#fff' : '#2F7417'} 
+                  <Ionicons
+                    name={category.icon as any}
+                    size={22}
+                    color={selectedCategory === category.name ? C.bg : C.cream}
                   />
                 </View>
                 <Text style={[
@@ -191,7 +203,7 @@ export default function ExploreScreen() {
         {!selectedCity && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Destinations populaires</Text>
+              <Text style={styles.sectionTitle}>DESTINATIONS POPULAIRES</Text>
             </View>
             {filteredCities.length > 0 ? (
               filteredCities.map((city, idx) => (
@@ -206,7 +218,7 @@ export default function ExploreScreen() {
                 </TouchableOpacity>
               ))
             ) : (
-              <Text style={{ textAlign: 'center', color: '#888', marginVertical: 20 }}>Aucune destination trouvée</Text>
+              <Text style={styles.emptyInlineText}>Aucune destination trouvée</Text>
             )}
           </View>
         )}
@@ -216,18 +228,22 @@ export default function ExploreScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <TouchableOpacity onPress={() => setSelectedCity(null)}>
-                <Ionicons name="arrow-back" size={22} color="#2F7417" />
+                <Ionicons name="arrow-back" size={22} color={C.cream} />
               </TouchableOpacity>
-              <Text style={styles.sectionTitle}>À {selectedCity.name}</Text>
+              <Text style={[styles.sectionTitle, { marginBottom: 0, paddingHorizontal: 12 }]}>
+                À {selectedCity.name}
+              </Text>
             </View>
             {loading ? (
-              <Text style={{ textAlign: 'center', color: '#666', marginVertical: 20 }}>Chargement...</Text>
+              <View style={{ alignItems: 'center', marginVertical: 32 }}>
+                <ActivityIndicator color={C.cream} />
+              </View>
             ) : destinations.length > 0 ? (
               destinations.map((destination) => {
                 const hasImage = !!(destination.preview?.source || destination.image);
                 return hasImage ? (
-                  <TouchableOpacity 
-                    key={destination.xid || destination.id} 
+                  <TouchableOpacity
+                    key={destination.xid || destination.id}
                     style={styles.destinationCard}
                     onPress={() => handleDestinationPress(destination)}
                   >
@@ -252,43 +268,35 @@ export default function ExploreScreen() {
                 ) : (
                   <TouchableOpacity
                     key={destination.xid || destination.id}
-                    style={{
-                      backgroundColor: '#fff',
-                      borderRadius: 18,
-                      marginBottom: 12,
-                      marginHorizontal: 20,
-                      padding: 16,
-                      shadowColor: '#2F7417',
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.06,
-                      shadowRadius: 8,
-                      elevation: 2,
-                      borderWidth: 1,
-                      borderColor: '#E9ECEF',
-                      flexDirection: 'column',
-                      justifyContent: 'center',
-                    }}
+                    style={styles.placeCardSimple}
                     onPress={() => handleDestinationPress(destination)}
                   >
-                    <Text style={{ fontWeight: 'bold', color: '#2F7417', fontSize: 16, marginBottom: 2 }}>{destination.name}</Text>
-                    {destination.kinds && <Text style={{ color: '#2F7417', fontSize: 13, marginBottom: 2 }}>{destination.kinds.split(',')[0]}</Text>}
-                    {destination.address?.country && <Text style={{ color: '#666', fontSize: 12 }}>{destination.address.country}</Text>}
-                    {destination.rate && <Text style={{ color: '#2F7417', fontWeight: 'bold', fontSize: 13, marginTop: 2 }}>★ {destination.rate}</Text>}
+                    <Text style={styles.placeCardName}>{destination.name}</Text>
+                    {destination.kinds && (
+                      <Text style={styles.placeCardKind}>{destination.kinds.split(',')[0]}</Text>
+                    )}
+                    {destination.address?.country && (
+                      <Text style={styles.placeCardCountry}>{destination.address.country}</Text>
+                    )}
+                    {destination.rate && (
+                      <Text style={styles.placeCardRate}>★ {destination.rate}</Text>
+                    )}
                   </TouchableOpacity>
                 );
               })
             ) : (
-              <Text style={{ textAlign: 'center', color: '#888', marginVertical: 20 }}>Aucun lieu trouvé</Text>
+              <Text style={styles.emptyInlineText}>Aucun lieu trouvé</Text>
             )}
           </View>
         )}
+
         {/* Section planificateur */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Besoin d&apos;aide ?</Text>
+          <Text style={styles.sectionTitle}>BESOIN D&apos;AIDE ?</Text>
           <TouchableOpacity style={styles.plannerCard} onPress={() => router.push('/plan-trip')}>
             <View style={styles.plannerContent}>
               <View style={styles.plannerIconContainer}>
-                <Ionicons name="bulb-outline" size={28} color="#2F7417" />
+                <Ionicons name="bulb-outline" size={28} color={C.cream} />
               </View>
               <View style={styles.plannerText}>
                 <Text style={styles.plannerTitle}>Planificateur IA</Text>
@@ -303,12 +311,14 @@ export default function ExploreScreen() {
         {/* États vides */}
         {filteredCities.length === 0 && (
           <View style={styles.emptyState}>
-            <Ionicons name="search" size={60} color="#ccc" />
+            <View style={styles.emptyIconCircle}>
+              <Ionicons name="search" size={34} color={C.cream} />
+            </View>
             <Text style={styles.emptyTitle}>Aucune destination trouvée</Text>
             <Text style={styles.emptySubtitle}>
               Essayez de modifier vos critères de recherche
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.resetButton}
               onPress={() => {
                 setSearchText('');
@@ -324,142 +334,124 @@ export default function ExploreScreen() {
   );
 }
 
-const GREEN = '#2F7417';
-const BG = '#F8F9FA';
-const BORDER = '#E9ECEF';
-const GREEN_LIGHT = '#F0F9F0';
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BG,
+    backgroundColor: C.bg,
   },
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: 120,
+  },
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingTop: 60,
-    paddingBottom: 20,
+    paddingBottom: 24,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: GREEN,
+    fontWeight: '200',
+    letterSpacing: 6,
+    color: C.cream,
     marginBottom: 8,
-    letterSpacing: 0.2,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 10,
+    fontSize: 13,
+    color: C.creamDim,
+    fontWeight: '300',
+    letterSpacing: 1,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: BG,
-    borderRadius: 18,
+    backgroundColor: C.card,
+    borderRadius: 20,
     paddingHorizontal: 18,
     paddingVertical: 14,
     marginHorizontal: 20,
-    marginBottom: 30,
+    marginBottom: 32,
     borderWidth: 1,
-    borderColor: BORDER,
-    shadowColor: GREEN,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: C.border,
   },
   searchIcon: {
     marginRight: 12,
-    color: GREEN,
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
-    color: '#1a1a1a',
+    fontSize: 15,
+    color: C.white,
+    fontWeight: '300',
   },
   section: {
-    marginBottom: 30,
+    marginBottom: 32,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: GREEN,
+    fontSize: 11,
+    letterSpacing: 3,
+    color: C.creamDim,
     marginBottom: 16,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
+    fontWeight: '400',
   },
   sectionHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
-    paddingHorizontal: 20,
-  },
-  seeAllText: {
-    fontSize: 14,
-    color: GREEN,
-    fontWeight: '600',
+    paddingHorizontal: 24,
   },
   categoriesScroll: {
     paddingLeft: 20,
   },
   categoryCard: {
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 14,
     paddingVertical: 14,
-    paddingHorizontal: 18,
-    backgroundColor: BG,
-    borderRadius: 18,
+    paddingHorizontal: 16,
+    backgroundColor: C.card,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: C.border,
     minWidth: 80,
-    shadowColor: GREEN,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
   },
   selectedCategoryCard: {
-    backgroundColor: GREEN,
-    borderColor: GREEN,
+    backgroundColor: C.cream,
+    borderColor: C.cream,
   },
   categoryIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: BG,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: 'rgba(245,237,214,0.06)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: C.creamFaint,
   },
   selectedCategoryIcon: {
-    backgroundColor: GREEN,
+    backgroundColor: 'rgba(13,13,13,0.18)',
+    borderColor: 'rgba(13,13,13,0.20)',
   },
   categoryText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontSize: 12,
+    fontWeight: '300',
+    color: C.creamDim,
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
   selectedCategoryText: {
-    color: '#fff',
+    color: C.bg,
+    fontWeight: '500',
   },
   destinationCard: {
-    backgroundColor: '#fff',
-    borderRadius: 22,
-    marginBottom: 18,
+    backgroundColor: C.card,
+    borderRadius: 20,
+    marginBottom: 16,
     marginHorizontal: 20,
-    shadowColor: GREEN,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 4,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: C.border,
     overflow: 'hidden',
   },
   destinationImage: {
@@ -473,18 +465,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   destinationName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: GREEN,
+    fontSize: 17,
+    fontWeight: '300',
+    color: C.cream,
     flex: 1,
+    letterSpacing: 0.5,
   },
   destinationPrice: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: GREEN,
+    fontSize: 13,
+    fontWeight: '300',
+    color: C.creamDim,
+    letterSpacing: 0.5,
   },
   destinationDetails: {
     flexDirection: 'row',
@@ -496,105 +490,147 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   ratingText: {
-    fontSize: 14,
-    color: '#1a1a1a',
+    fontSize: 13,
+    color: C.creamDim,
     marginLeft: 4,
-    fontWeight: '500',
   },
   reviewsText: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 13,
+    color: C.whiteDim,
     marginLeft: 4,
   },
   categoryTag: {
-    backgroundColor: GREEN_LIGHT,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    backgroundColor: C.creamFaint,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: C.border,
   },
   categoryTagText: {
+    fontSize: 11,
+    color: C.creamDim,
+    letterSpacing: 0.5,
+  },
+  placeCardSimple: {
+    backgroundColor: C.card,
+    borderRadius: 20,
+    marginBottom: 12,
+    marginHorizontal: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  placeCardName: {
+    fontSize: 16,
+    fontWeight: '300',
+    color: C.cream,
+    marginBottom: 4,
+    letterSpacing: 0.5,
+  },
+  placeCardKind: {
     fontSize: 12,
-    color: GREEN,
-    fontWeight: '500',
+    color: C.creamDim,
+    marginBottom: 2,
+    letterSpacing: 0.5,
+  },
+  placeCardCountry: {
+    fontSize: 12,
+    color: C.whiteDim,
+  },
+  placeCardRate: {
+    fontSize: 12,
+    color: C.cream,
+    marginTop: 4,
+    letterSpacing: 0.5,
   },
   plannerCard: {
-    backgroundColor: '#fff',
-    borderRadius: 22,
+    backgroundColor: C.card,
+    borderRadius: 20,
     padding: 24,
     marginHorizontal: 20,
-    shadowColor: GREEN,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 4,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: C.border,
   },
   plannerContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   plannerIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: BG,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: 'rgba(245,237,214,0.06)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: C.creamFaint,
   },
   plannerText: {
     flex: 1,
   },
   plannerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: GREEN,
-    marginBottom: 4,
+    fontSize: 17,
+    fontWeight: '300',
+    color: C.cream,
+    marginBottom: 6,
+    letterSpacing: 0.5,
   },
   plannerSubtitle: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 13,
+    color: C.creamDim,
     lineHeight: 20,
+    fontWeight: '300',
+  },
+  emptyInlineText: {
+    textAlign: 'center',
+    color: C.creamDim,
+    marginVertical: 20,
+    fontSize: 13,
+    letterSpacing: 1,
   },
   emptyState: {
     alignItems: 'center',
     paddingVertical: 60,
     paddingHorizontal: 40,
   },
+  emptyIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(245,237,214,0.06)',
+    borderWidth: 1,
+    borderColor: C.creamFaint,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: GREEN,
-    marginTop: 16,
+    fontSize: 18,
+    fontWeight: '300',
+    color: C.cream,
     marginBottom: 8,
+    letterSpacing: 1,
   },
   emptySubtitle: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 13,
+    color: C.creamDim,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 28,
+    lineHeight: 20,
+    fontWeight: '300',
   },
   resetButton: {
-    backgroundColor: GREEN,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 20,
-    marginTop: 10,
-    shadowColor: GREEN,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.10,
-    shadowRadius: 6,
-    elevation: 2,
+    backgroundColor: C.cream,
+    paddingHorizontal: 28,
+    paddingVertical: 13,
+    borderRadius: 12,
   },
   resetButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  scrollContent: {
-    paddingBottom: 120,
+    fontSize: 14,
+    fontWeight: '500',
+    color: C.bg,
+    letterSpacing: 1,
   },
 });

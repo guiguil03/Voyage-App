@@ -52,8 +52,8 @@ const createStorage = () => {
 };
 
 // Pour Expo, les variables d'environnement doivent commencer par EXPO_PUBLIC_
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://kyvjacabosaakbctblqh.supabase.co';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5dmphY2Fib3NhYWtiY3RibHFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMjkxOTQsImV4cCI6MjA5NjYwNTE5NH0.bJUVEO_ADKD7qLWmk-8AJibWXnCOH08gJsxq7rfJg8k';
 
 // Ne créer le client que si les clés sont disponibles
 export const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey, {

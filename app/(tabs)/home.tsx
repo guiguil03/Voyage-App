@@ -1,22 +1,21 @@
-import TripCard from '@/components/travel/TripCard';
+import TripCard from '@/features/trips/components/TripCard';
 import city from '@/data/city.json';
-import { useAuth } from '@/hooks/useAuth';
-import { getFriendsVoyages, getMyFriends } from '@/lib/friends';
-import { getUserTripPlans } from '@/lib/trip-planning';
-import { getAllVoyages, getUserVoyages } from '@/lib/voyages';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { getFriendsVoyages, getMyFriends } from '@/features/social/services/friends';
+import { getUserTripPlans } from '@/features/trips/services/trip-planning';
+import { getUserVoyages } from '@/features/trips/services/voyages';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 interface TripPlan {
@@ -31,1017 +30,534 @@ interface TripPlan {
   created_at: string;
 }
 
+const C = {
+  bg:         '#0D0D0D',
+  card:       'rgba(18,18,18,0.95)',
+  cardLight:  'rgba(245,237,214,0.05)',
+  border:     'rgba(245,237,214,0.12)',
+  borderMid:  'rgba(245,237,214,0.22)',
+  cream:      '#F5EDD6',
+  creamDim:   'rgba(245,237,214,0.50)',
+  creamFaint: 'rgba(245,237,214,0.15)',
+  white:      '#FFFFFF',
+  whiteDim:   'rgba(255,255,255,0.45)',
+  danger:     '#EF4444',
+};
+
 export default function HomeScreen() {
   const { user, isAuthenticated, loading } = useAuth();
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [userVoyages, setUserVoyages] = useState<any[]>([]);
-  const [allVoyages, setAllVoyages] = useState<any[]>([]);
-  const [loadingVoyages, setLoadingVoyages] = useState(true);
-  const [activeFilter, setActiveFilter] = useState('Tous');
-  const [trips, setTrips] = useState<any[]>([]);
-  const [nextTrip, setNextTrip] = useState<TripPlan | null>(null);
-  const [loadingNextTrip, setLoadingNextTrip] = useState(true);
-  const [friends, setFriends] = useState<any[]>([]);
-  const [friendsVoyages, setFriendsVoyages] = useState<any[]>([]);
+  const [userVoyages, setUserVoyages]             = useState<any[]>([]);
+  const [loadingVoyages, setLoadingVoyages]       = useState(true);
+  const [nextTrip, setNextTrip]                   = useState<TripPlan | null>(null);
+  const [loadingNextTrip, setLoadingNextTrip]     = useState(true);
+  const [friends, setFriends]                     = useState<any[]>([]);
+  const [friendsVoyages, setFriendsVoyages]       = useState<any[]>([]);
 
   useEffect(() => {
-    // Si l'utilisateur n'est pas connecté, rediriger vers la page de connexion
-    if (!loading && !isAuthenticated) {
-      router.replace('/login');
-    }
+    if (!loading && !isAuthenticated) router.replace('/login');
   }, [isAuthenticated, loading]);
 
-  // Charger les voyages depuis Supabase
   useEffect(() => {
-    const loadVoyages = async () => {
-      if (isAuthenticated) {
-        setLoadingVoyages(true);
-        try {
-          // Charger les voyages de l'utilisateur et tous les voyages en parallèle
-          const [userResult, allResult] = await Promise.all([
-            getUserVoyages(),
-            getAllVoyages()
-          ]);
-
-          if (userResult.data) {
-            setUserVoyages(userResult.data);
-          }
-          if (allResult.data) {
-            setAllVoyages(allResult.data);
-          }
-        } catch (error) {
-          console.error('Erreur lors du chargement des voyages:', error);
-        } finally {
-          setLoadingVoyages(false);
-        }
-      }
-    };
-
-    loadVoyages();
+    if (!isAuthenticated) return;
+    setLoadingVoyages(true);
+    getUserVoyages()
+      .then(r => { if (r.data) setUserVoyages(r.data); })
+      .finally(() => setLoadingVoyages(false));
   }, [isAuthenticated]);
 
-  // Charger le prochain voyage planifié
   useEffect(() => {
-    const loadNextTrip = async () => {
-      if (isAuthenticated) {
-        setLoadingNextTrip(true);
-        try {
-          const result = await getUserTripPlans();
-          
-          if (result.data && result.data.length > 0) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            // Filtrer les voyages avec des dates de départ futures
-            const upcomingTrips = result.data
-              .filter((trip: TripPlan) => {
-                if (!trip.start_date) return false;
-                const tripDate = new Date(trip.start_date);
-                return tripDate >= today;
-              })
-              .sort((a: TripPlan, b: TripPlan) => {
-                const dateA = new Date(a.start_date!).getTime();
-                const dateB = new Date(b.start_date!).getTime();
-                return dateA - dateB;
-              });
-            
-            // Si pas de voyage futur, prendre le voyage le plus récent
-            if (upcomingTrips.length > 0) {
-              setNextTrip(upcomingTrips[0]);
-            } else if (result.data.length > 0) {
-              // Prendre le voyage le plus récemment créé
-              const sortedByCreation = [...result.data].sort((a: TripPlan, b: TripPlan) => {
-                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-              });
-              setNextTrip(sortedByCreation[0]);
-            }
-          }
-        } catch (error) {
-          console.error('Erreur lors du chargement du prochain voyage:', error);
-        } finally {
-          setLoadingNextTrip(false);
-        }
+    if (!isAuthenticated) return;
+    setLoadingNextTrip(true);
+    getUserTripPlans().then(r => {
+      if (r.data?.length) {
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const upcoming = r.data
+          .filter((t: TripPlan) => t.start_date && new Date(t.start_date) >= today)
+          .sort((a: TripPlan, b: TripPlan) =>
+            new Date(a.start_date!).getTime() - new Date(b.start_date!).getTime());
+        setNextTrip(upcoming[0] ?? [...r.data].sort((a: TripPlan, b: TripPlan) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]);
       }
-    };
-
-    loadNextTrip();
+    }).finally(() => setLoadingNextTrip(false));
   }, [isAuthenticated]);
 
-  // Charger les amis et leur voyages
   useEffect(() => {
-    const loadFriends = async () => {
-      const { data, error } = await getMyFriends()
-      const { data: voyages, error: voyagesError } = await getFriendsVoyages(data);
-      if (error) {
-        console.error('Erreur lors du chargement des amis:', error);
-      } else {
-        setFriends(data);
-        setFriendsVoyages(voyages);
-      }
-    };
-    loadFriends();
-  }, [isAuthenticated]);
-
-
-  const formatTripDate = (trip: TripPlan): string => {
-    if (trip.start_date && trip.end_date) {
-      const startDate = new Date(trip.start_date);
-      const endDate = new Date(trip.end_date);
-      return `Du ${startDate.toLocaleDateString('fr-FR')} au ${endDate.toLocaleDateString('fr-FR')}`;
-    } else if (trip.start_date) {
-      const startDate = new Date(trip.start_date);
-      return `À partir du ${startDate.toLocaleDateString('fr-FR')}`;
-    }
-    return 'Dates à définir';
-  };
-
-  const getStatusDisplay = (status: string) => {
-    switch (status) {
-      case 'pending': return { text: 'En attente', color: '#FF6B35' };
-      case 'processing': return { text: 'En cours', color: '#2F7417' };
-      case 'completed': return { text: 'Terminé', color: '#4ECDC4' };
-      case 'failed': return { text: 'Échoué', color: '#FF4757' };
-      default: return { text: status, color: '#666' };
-    }
-  };
-
- 
-
-
-  const handleTripDetail = () => {
-    if (userVoyages.length > 0) {
-      const lastVoyage = userVoyages[0];
-      // Créer un objet compatible avec le type UnifiedTrip
-      const tripData = {
-        id: lastVoyage.id,
-        destination: lastVoyage.destination,
-        start_date: null,
-        end_date: null,
-        travel_type: lastVoyage.trip_type,
-        interests: [],
-        status: 'completed',
-        type: 'voyage',
-        created_at: lastVoyage.created_at,
-        trip_name: lastVoyage.trip_name,
-        description: lastVoyage.description,
-        memory_text: lastVoyage.memory_text,
-        rating: lastVoyage.rating,
-        duration: lastVoyage.duration,
-        image_url: lastVoyage.image_url,
-        images: lastVoyage.images || []
-      };
-      
-      router.push({
-        pathname: '/travel/detailMemory',
-        params: {
-          tripData: JSON.stringify(tripData)
-        }
-      });
-    } else {
-      Alert.alert('Aucun voyage', 'Aucun voyage à afficher.');
-    }
-  };
-
-  const handleCreateTrip = () => {
-    router.push('/(tabs)/create');
-  };
-
-  const handleExploreTrips = () => {
-    Alert.alert('Explorer', 'Découvrez les destinations populaires !');
-  };
-
-  const handleAddTrip = () => {
-    setShowAddForm(!showAddForm);
-  };
-
-  const handleCityPress = (cityName: string, country: string) => {
-    Alert.alert(`${cityName}`, `Découvrir ${cityName}, ${country}`);
-  };
-
-  const handleFriendVoyageDetail = (voyage: any) => {
-    const tripData = {
-      id: voyage.id,
-      destination: voyage.destination,
-      start_date: voyage.start_date || null,
-      end_date: voyage.end_date || null,
-      travel_type: voyage.trip_type,
-      interests: voyage.interests || [],
-      status: voyage.status || 'completed',
-      type: 'voyage',
-      created_at: voyage.created_at,
-      trip_name: voyage.trip_name,
-      description: voyage.description,
-      memory_text: voyage.memory_text,
-      rating: voyage.rating,
-      duration: voyage.duration,
-      image_url: voyage.image_url,
-      images: voyage.images || [],
-      user: voyage.user, // pour afficher le nom de l'ami si besoin
-    };
-    router.push({
-      pathname: '/travel/detailMemory',
-      params: { tripData: JSON.stringify(tripData) }
+    if (!isAuthenticated) return;
+    getMyFriends().then(({ data }) => {
+      setFriends(data);
+      getFriendsVoyages(data).then(({ data: v }) => setFriendsVoyages(v ?? []));
     });
+  }, [isAuthenticated]);
+
+  const formatDate = (d: string) =>
+    new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+
+  const handleLastVoyage = () => {
+    if (!userVoyages.length) return;
+    const v = userVoyages[0];
+    router.push({ pathname: '/travel/detailMemory', params: { tripData: JSON.stringify({ ...v, type: 'voyage', interests: [], start_date: null, end_date: null }) } });
   };
 
-  // Afficher un loader pendant la vérification de l'authentification
-  if (loading) {
+  const handleFriendVoyage = (voyage: any) => {
+    router.push({ pathname: '/travel/detailMemory', params: { tripData: JSON.stringify({ ...voyage, type: 'voyage', interests: voyage.interests || [], start_date: null, end_date: null }) } });
+  };
+
+  if (loading || !isAuthenticated || !user) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2F7417" />
-        <Text style={styles.loadingText}>Chargement...</Text>
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color={C.cream} />
       </View>
     );
   }
 
-  // Si l'utilisateur n'est pas authentifié, ne rien afficher (redirection en cours)
-  if (!isAuthenticated || !user) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2F7417" />
-        <Text style={styles.loadingText}>Redirection...</Text>
-      </View>
-    );
-  }
-
-  // Grouper les voyages par ami (dans HomeScreen, juste avant le return)
-  const voyagesByFriend = friends.reduce((acc: Record<string, any[]>, friend) => {
-    acc[friend.id] = friendsVoyages.filter(v => v.user_id === friend.id);
+  const username = user.email?.split('@')[0] ?? 'Voyageur';
+  const voyagesByFriend = friends.reduce((acc: Record<string, any[]>, f) => {
+    acc[f.id] = friendsVoyages.filter(v => v.user_id === f.id);
     return acc;
   }, {});
 
-  // Palette verte premium
-  const GREEN = '#2F7417';
-  const GREEN_LIGHT = '#F0F9F0';
-  const DARK = '#1a1a1a';
-  const BG = '#F8F9FA';
-  const BORDER = '#E9ECEF';
+  const statusLabel: Record<string, string> = {
+    pending: 'En attente', processing: 'En cours',
+    completed: 'Terminé', failed: 'Échoué',
+  };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: BG }}>
-      <View style={{ backgroundColor: GREEN, paddingTop: 38, paddingBottom: 18, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomLeftRadius: 18, borderBottomRightRadius: 18, marginBottom: 6 }}>
-        <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 22, letterSpacing: 0.5 }}>Tripflow</Text>
-        <Ionicons name="planet" size={30} color="#fff" />
-      </View>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Actions rapides */}
-        <View style={[styles.quickActionsContainer, { marginTop: 8 }]}> 
-          <Text style={[styles.sectionTitle, { color: GREEN, fontWeight: 'bold', fontSize: 20 }]}>Bonjour {user.email?.split('@')[0]}</Text>
-        </View>
-        {/* Dernier voyage */}
-        <View style={{ backgroundColor: '#fff', borderRadius: 28, marginHorizontal: 18, marginBottom: 18, padding: 22, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 8 }}> 
-          <View style={[styles.sectionHeader, { marginBottom: 10 }]}> 
-            <Text style={[styles.sectionTitle, { color: DARK, fontWeight: 'bold', fontSize: 18 }]}>Dernier Voyage</Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/voyage')} style={{ borderRadius: 16, backgroundColor: GREEN_LIGHT, paddingHorizontal: 12, paddingVertical: 6, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}>
-              <Ionicons name="albums" size={16} color={GREEN} style={{ marginRight: 4 }} />
-              <Text style={[styles.seeAllText, { color: GREEN, fontWeight: 'bold', marginLeft: 2 }]}>Voir tout</Text>
-            </TouchableOpacity>
-          </View>
-          {loadingVoyages ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#2F7417" />
-              <Text style={styles.loadingText}>Chargement des voyages...</Text>
-            </View>
-          ) : userVoyages.length > 0 ? (
-            <View style={{ borderRadius: 20, borderWidth: 1, borderColor: GREEN, shadowColor: GREEN, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.10, shadowRadius: 12, elevation: 4, overflow: 'hidden' }}>
-              <TripCard
-                date={new Date(userVoyages[0].created_at).toLocaleDateString('fr-FR', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric'
-                })}
-                country={userVoyages[0].destination}
-                flagEmoji={userVoyages[0].flag_emoji || '🌍'}
-                image={userVoyages[0].image_url ? 
-                  { uri: userVoyages[0].image_url } : 
-                  require('@/assets/images/mountain-background.jpg')
-                }
-                onPress={handleTripDetail}
-              />
-            </View>
-          ) : (
-            <View style={[styles.noVoyageCard, { borderRadius: 20, backgroundColor: GREEN_LIGHT, borderColor: GREEN, shadowColor: GREEN, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.10, shadowRadius: 12, elevation: 4 }]}> 
-              <Text style={[styles.noVoyageText, { color: GREEN, fontWeight: 'bold', fontSize: 16 }]}>Aucun voyage encore créé</Text>
-              <TouchableOpacity 
-                style={{ backgroundColor: GREEN, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 16, marginTop: 10, flexDirection: 'row', alignItems: 'center', shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 8, elevation: 2 }} 
-                onPress={() => router.push('/Memory')}
+    <View style={styles.bg}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scroll}
+        >
+
+          {/* ━━━ HERO ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+          <View style={styles.hero}>
+            <View style={styles.heroTop}>
+              <View>
+                <Text style={styles.heroLabel}>BONJOUR</Text>
+                <Text style={styles.heroName}>{username}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.avatarBtn}
+                onPress={() => router.push('/(tabs)/account')}
               >
-                <Ionicons name="add-circle" size={20} color="#fff" style={{ marginRight: 8 }} />
-                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>Ajouter votre premier voyage</Text>
+                <Ionicons name="person-circle-outline" size={40} color={C.cream} />
               </TouchableOpacity>
             </View>
-          )}
-        </View>
-        {/* Destinations populaires */}
-        <View style={{ backgroundColor: '#fff', borderRadius: 28, marginHorizontal: 18, marginBottom: 18, padding: 22, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 8 }}> 
-          <Text style={[styles.sectionTitle, { color: DARK, fontWeight: 'bold', fontSize: 18, marginBottom: 10 }]}>Destinations Populaires</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.destinationsScroll}>
-            {city.city.slice(0, 6).map((cityItem, index) => (
-              <TouchableOpacity key={index} style={{ backgroundColor: GREEN_LIGHT, borderRadius: 22, marginRight: 14, width: 150, alignItems: 'center', shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.13, shadowRadius: 18, elevation: 6, padding: 16 }} onPress={() => handleCityPress(cityItem.name, cityItem.country)}>
-                <View style={{ width: 54, height: 54, borderRadius: 27, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginBottom: 8, borderWidth: 1, borderColor: GREEN, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}>
-                  <Ionicons name="location" size={30} color={GREEN} />
-                </View>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', color: DARK, marginBottom: 2 }}>{cityItem.name}</Text>
-                <Text style={{ fontSize: 13, color: '#666', marginBottom: 2 }}>{cityItem.country}</Text>
-                <Text style={{ fontSize: 12, color: GREEN }}>{Math.floor(Math.random() * 200) + 50} voyages</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-        {/* Prochains voyages planifiés */}
-        <View style={{ backgroundColor: '#fff', borderRadius: 28, marginHorizontal: 18, marginBottom: 18, padding: 22, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 8 }}> 
-          <View style={[styles.sectionHeader, { marginBottom: 10 }]}> 
-            <Text style={[styles.sectionTitle, { color: DARK, fontWeight: 'bold', fontSize: 18 }]}>Voyages Planifiés</Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/voyage')} style={{ borderRadius: 16, backgroundColor: GREEN_LIGHT, paddingHorizontal: 12, paddingVertical: 6, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}>
-              <Ionicons name="albums" size={16} color={GREEN} style={{ marginRight: 4 }} />
-              <Text style={[styles.seeAllText, { color: GREEN, fontWeight: 'bold', marginLeft: 2 }]}>Voir tout</Text>
+
+            {/* Stats row */}
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNum}>{loadingVoyages ? '—' : userVoyages.length}</Text>
+                <Text style={styles.statLabel}>VOYAGES</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statNum}>{friends.length}</Text>
+                <Text style={styles.statLabel}>AMIS</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statNum}>{city.city.length}+</Text>
+                <Text style={styles.statLabel}>DESTINATIONS</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* ━━━ ACTIONS RAPIDES ━━━━━━━━━━━━━━━━━━━ */}
+          <View style={styles.actions}>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/Memory')}>
+              <View style={styles.actionIcon}>
+                <Ionicons name="camera-outline" size={22} color={C.cream} />
+              </View>
+              <Text style={styles.actionLabel}>Souvenir</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.actionBtn, styles.actionBtnPrimary]} onPress={() => router.push('/plan-trip')}>
+              <View style={[styles.actionIcon, styles.actionIconPrimary]}>
+                <Ionicons name="airplane-outline" size={22} color={C.bg} />
+              </View>
+              <Text style={[styles.actionLabel, styles.actionLabelPrimary]}>Planifier</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/(tabs)/explore')}>
+              <View style={styles.actionIcon}>
+                <Ionicons name="compass-outline" size={22} color={C.cream} />
+              </View>
+              <Text style={styles.actionLabel}>Explorer</Text>
             </TouchableOpacity>
           </View>
-          {loadingNextTrip ? (
-            <View style={styles.upcomingCard}>
-              <LinearGradient
-                colors={['#E3F2FD', '#BBDEFB']}
-                style={[styles.upcomingGradient, { borderRadius: 20 }]}
-              >
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="small" color="#1976D2" />
-                  <Text style={styles.loadingText}>Chargement...</Text>
-                </View>
-              </LinearGradient>
+
+          {/* ━━━ DERNIER VOYAGE ━━━━━━━━━━━━━━━━━━━━ */}
+          <View style={styles.section}>
+            <View style={styles.sectionHead}>
+              <Text style={styles.sectionTitle}>DERNIER VOYAGE</Text>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/voyage')}>
+                <Text style={styles.sectionLink}>Voir tout →</Text>
+              </TouchableOpacity>
             </View>
-          ) : nextTrip ? (
-            <View style={[styles.upcomingCard, { borderRadius: 20, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 8 }]}> 
-              <LinearGradient
-                colors={['#E8F5E8', '#D4F1D4']}
-                style={[styles.upcomingGradient, { borderRadius: 20 }]}
+
+            {loadingVoyages ? (
+              <View style={[styles.card, styles.cardCenter]}>
+                <ActivityIndicator color={C.cream} />
+              </View>
+            ) : userVoyages.length > 0 ? (
+              <View style={styles.tripCardWrap}>
+                <TripCard
+                  date={new Date(userVoyages[0].created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  country={userVoyages[0].destination}
+                  flagEmoji={userVoyages[0].flag_emoji || '🌍'}
+                  image={userVoyages[0].image_url ? { uri: userVoyages[0].image_url } : require('@/assets/images/mountain-background.jpg')}
+                  onPress={handleLastVoyage}
+                />
+              </View>
+            ) : (
+              <View style={[styles.card, styles.emptyCard]}>
+                <Ionicons name="map-outline" size={32} color={C.creamDim} />
+                <Text style={styles.emptyTitle}>Pas encore de voyage</Text>
+                <Text style={styles.emptyDesc}>Ajoute ton premier souvenir</Text>
+                <TouchableOpacity style={styles.creamBtn} onPress={() => router.push('/Memory')}>
+                  <Text style={styles.creamBtnText}>Commencer</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          {/* ━━━ PROCHAIN DÉPART ━━━━━━━━━━━━━━━━━━━ */}
+          <View style={styles.section}>
+            <View style={styles.sectionHead}>
+              <Text style={styles.sectionTitle}>PROCHAIN DÉPART</Text>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/voyage')}>
+                <Text style={styles.sectionLink}>Voir tout →</Text>
+              </TouchableOpacity>
+            </View>
+
+            {loadingNextTrip ? (
+              <View style={[styles.card, styles.cardCenter]}>
+                <ActivityIndicator color={C.cream} />
+              </View>
+            ) : nextTrip ? (
+              <TouchableOpacity
+                style={styles.card}
+                onPress={() => router.push({ pathname: '/travel/detailMemory', params: { tripData: JSON.stringify({ ...nextTrip, type: 'trip_plan' }) } })}
+                activeOpacity={0.8}
               >
-                <View style={styles.upcomingHeader}>
-                  <View style={[styles.upcomingIconContainer, { backgroundColor: GREEN_LIGHT, borderColor: GREEN, borderWidth: 1 }]}> 
-                    <Ionicons name="airplane" size={24} color={GREEN} />
+                <View style={styles.nextTripRow}>
+                  <View style={styles.nextTripIcon}>
+                    <Ionicons name="airplane-outline" size={20} color={C.cream} />
                   </View>
-                  <View style={styles.upcomingInfo}>
-                    <Text style={[styles.upcomingDestination, { color: DARK }]}>{nextTrip.destination}</Text>
-                    <Text style={styles.upcomingDate}>{formatTripDate(nextTrip)}</Text>
-                    <View style={styles.upcomingDetails}>
-                      <View style={[styles.statusBadge, { backgroundColor: getStatusDisplay(nextTrip.status).color }]}> 
-                        <Text style={styles.statusText}>{getStatusDisplay(nextTrip.status).text}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.nextTripDest}>{nextTrip.destination}</Text>
+                    <Text style={styles.nextTripMeta}>
+                      {nextTrip.travel_type}
+                      {nextTrip.start_date ? `  ·  ${formatDate(nextTrip.start_date)}` : ''}
+                    </Text>
+                  </View>
+                  <View style={styles.statusPill}>
+                    <Text style={styles.statusText}>{statusLabel[nextTrip.status] ?? nextTrip.status}</Text>
+                  </View>
+                </View>
+
+                {nextTrip.interests?.length ? (
+                  <View style={styles.tagRow}>
+                    {nextTrip.interests.slice(0, 3).map((tag: string, i: number) => (
+                      <View key={i} style={styles.tag}>
+                        <Text style={styles.tagText}>{tag}</Text>
                       </View>
-                      <Text style={styles.upcomingType}>{nextTrip.travel_type}</Text>
-                    </View>
+                    ))}
                   </View>
-                </View>
-                <View style={styles.upcomingActions}>
-                  <TouchableOpacity 
-                    style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: GREEN_LIGHT, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }} 
-                    onPress={() => {
-                      if (nextTrip) {
-                        const tripData = {
-                          id: nextTrip.id,
-                          destination: nextTrip.destination,
-                          start_date: nextTrip.start_date,
-                          end_date: nextTrip.end_date,
-                          travel_type: nextTrip.travel_type,
-                          interests: nextTrip.interests || [],
-                          activity_level: nextTrip.activity_level,
-                          status: nextTrip.status,
-                          type: 'trip_plan',
-                          created_at: nextTrip.created_at
-                        };
-                        router.push({ pathname: '/travel/detailMemory', params: { tripData: JSON.stringify(tripData) } });
-                      }
-                    }}
-                  >
-                    <Ionicons name="eye" size={16} color={GREEN} style={{ marginRight: 6 }} />
-                    <Text style={{ color: GREEN, fontWeight: 'bold', fontSize: 15 }}>Voir détails</Text>
-                  </TouchableOpacity>
+                ) : null}
+
+                <View style={styles.cardFooter}>
+                  <Text style={styles.cardFooterLink}>Voir les détails  →</Text>
                   {nextTrip.status === 'pending' && (
-                    <TouchableOpacity 
-                      style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: GREEN, marginLeft: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }} 
-                      onPress={() => router.push('/plan-trip')}
-                    >
-                      <Ionicons name="create" size={16} color={GREEN} style={{ marginRight: 6 }} />
-                      <Text style={{ color: GREEN, fontWeight: 'bold', fontSize: 15 }}>Modifier</Text>
+                    <TouchableOpacity onPress={() => router.push('/plan-trip')}>
+                      <Text style={styles.cardFooterGhost}>Modifier</Text>
                     </TouchableOpacity>
                   )}
                 </View>
-                {nextTrip.interests && nextTrip.interests.length > 0 && (
-                  <View style={styles.upcomingInterests}>
-                    <Text style={styles.interestsLabel}>Centres d&apos;intérêt:</Text>
-                    <Text style={styles.interestsText}>{nextTrip.interests.join(', ')}</Text>
-                  </View>
-                )}
-              </LinearGradient>
-            </View>
-          ) : (
-            <View style={[styles.upcomingCard, { borderRadius: 20, backgroundColor: GREEN_LIGHT, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 8 }]}> 
-              <LinearGradient
-                colors={['#E3F2FD', '#BBDEFB']}
-                style={[styles.upcomingGradient, { borderRadius: 20 }]}
-              >
-                <View style={styles.upcomingContent}>
-                  <Ionicons name="calendar" size={24} color="#1976D2" />
-                  <View style={styles.upcomingText}>
-                    <Text style={styles.upcomingTitle}>Aucun voyage planifié</Text>
-                    <Text style={styles.upcomingSubtitle}>Créez votre première aventure !</Text>
-                  </View>
-                </View>
-                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: GREEN, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, marginTop: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }} onPress={handleCreateTrip}>
-                  <Ionicons name="add-circle" size={16} color="#fff" style={{ marginRight: 6 }} />
-                  <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>Planifier</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={[styles.card, styles.emptyCard]}>
+                <Ionicons name="calendar-outline" size={32} color={C.creamDim} />
+                <Text style={styles.emptyTitle}>Aucun voyage planifié</Text>
+                <Text style={styles.emptyDesc}>Laisse l'IA construire ton itinéraire</Text>
+                <TouchableOpacity style={styles.creamBtn} onPress={() => router.push('/plan-trip')}>
+                  <Text style={styles.creamBtnText}>Planifier</Text>
                 </TouchableOpacity>
-              </LinearGradient>
+              </View>
+            )}
+          </View>
+
+          {/* ━━━ DESTINATIONS ━━━━━━━━━━━━━━━━━━━━━━ */}
+          <View style={styles.section}>
+            <View style={styles.sectionHead}>
+              <Text style={styles.sectionTitle}>DESTINATIONS</Text>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/explore')}>
+                <Text style={styles.sectionLink}>Explorer →</Text>
+              </TouchableOpacity>
             </View>
-          )}
-        </View>
-        {/* Amis */}
-        <View style={{ backgroundColor: '#fff', borderRadius: 28, marginHorizontal: 18, marginBottom: 18, padding: 22, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 8 }}> 
-          <Text style={[styles.sectionTitle, { color: DARK, fontWeight: 'bold', fontSize: 20, marginBottom: 18, flexDirection: 'row', alignItems: 'center' }]}> 
-            <Ionicons name="people" size={22} color={GREEN} style={{ marginRight: 8 }} /> Amis & leurs voyages
-          </Text>
-          {friends.length === 0 ? (
-            <Text style={{ color: '#888', fontStyle: 'italic', marginBottom: 12, textAlign: 'center' }}>Aucun ami pour l&apos;instant.</Text>
-          ) : (
-            friends.map((friend) => (
-              <View key={friend.id} style={{ backgroundColor: '#fff', borderRadius: 24, marginBottom: 28, padding: 16, shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 8 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                  <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: GREEN_LIGHT, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: GREEN, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}>
-                    <Ionicons name="person" size={32} color={GREEN} />
-                  </View>
-                  <Text style={{ fontWeight: 'bold', fontSize: 18, color: GREEN, marginLeft: 14 }}>{friend.full_name || friend.username || friend.email}</Text>
-                  <Ionicons name="checkmark-circle" size={20} color={GREEN} style={{ marginLeft: 8 }} />
-                </View>
-                {voyagesByFriend[friend.id] && voyagesByFriend[friend.id].length > 0 ? (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: 4, marginTop: 2 }}>
-                    {voyagesByFriend[friend.id].map((item, idx) => (
-                       <TouchableOpacity key={item.id} style={{ backgroundColor: '#F8F9FA', borderRadius: 18, shadowColor: GREEN, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.13, shadowRadius: 18, elevation: 6, flexDirection: 'row', alignItems: 'center', marginRight: 18, padding: 16, minWidth: 170 }} onPress={() => handleFriendVoyageDetail(item)}>
-                         <Text style={{ fontSize: 28, marginRight: 12 }}>{item.flag_emoji || '🌍'}</Text>
-                         <View>
-                           <Text style={{ fontWeight: 'bold', fontSize: 16, color: '#222' }}>{item.destination}</Text>
-                           <Text style={{ fontSize: 13, color: '#888', fontStyle: 'italic', flexDirection: 'row', alignItems: 'center' }}>
-                             {item.country || item.destination}
-                           </Text>
-                           <View style={{ backgroundColor: GREEN_LIGHT, borderRadius: 8, alignSelf: 'flex-start', marginTop: 4, paddingHorizontal: 8, paddingVertical: 2 }}>
-                             <Text style={{ fontSize: 12, color: GREEN }}>{item.created_at ? new Date(item.created_at).toLocaleDateString('fr-FR') : ''}</Text>
-                           </View>
-                         </View>
-                       </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                ) : (
-                  <Text style={{ color: '#bbb', fontSize: 13, fontStyle: 'italic', marginLeft: 10 }}>Aucun voyage</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 20, paddingRight: 8 }}>
+              {city.city.slice(0, 8).map((c: { name: string; country: string }, i: number) => (
+                <TouchableOpacity
+                  key={i}
+                  style={styles.cityPill}
+                  onPress={() => Alert.alert(c.name, c.country)}
+                >
+                  <Ionicons name="location-outline" size={14} color={C.creamDim} />
+                  <Text style={styles.cityName}>{c.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* ━━━ AMIS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+          <View style={styles.section}>
+            <View style={styles.sectionHead}>
+              <Text style={styles.sectionTitle}>AMIS</Text>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/amis')}>
+                <Text style={styles.sectionLink}>Voir tout →</Text>
+              </TouchableOpacity>
+            </View>
+
+            {friends.length === 0 ? (
+              <View style={[styles.card, styles.emptyCard]}>
+                <Ionicons name="people-outline" size={32} color={C.creamDim} />
+                <Text style={styles.emptyTitle}>Aucun ami pour l'instant</Text>
+                <TouchableOpacity style={styles.creamBtn} onPress={() => router.push('/(tabs)/amis')}>
+                  <Text style={styles.creamBtnText}>Trouver des amis</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.card}>
+                {friends.slice(0, 4).map((friend, idx) => {
+                  const fvoyages = voyagesByFriend[friend.id] ?? [];
+                  return (
+                    <View key={friend.id}>
+                      {idx > 0 && <View style={styles.friendDivider} />}
+                      <View style={styles.friendRow}>
+                        <View style={styles.friendAvatar}>
+                          <Ionicons name="person-outline" size={16} color={C.cream} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.friendName}>
+                            {friend.full_name || friend.username || friend.email?.split('@')[0]}
+                          </Text>
+                          <Text style={styles.friendMeta}>
+                            {fvoyages.length} voyage{fvoyages.length !== 1 ? 's' : ''}
+                          </Text>
+                        </View>
+                        {fvoyages[0] && (
+                          <TouchableOpacity
+                            style={styles.friendVoyageChip}
+                            onPress={() => handleFriendVoyage(fvoyages[0])}
+                          >
+                            <Text style={styles.friendVoyageFlag}>{fvoyages[0].flag_emoji || '🌍'}</Text>
+                            <Text style={styles.friendVoyageName}>{fvoyages[0].destination}</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
+                {friends.length > 4 && (
+                  <TouchableOpacity style={styles.seeMoreBtn} onPress={() => router.push('/(tabs)/amis')}>
+                    <Text style={styles.seeMoreText}>+{friends.length - 4} autres amis</Text>
+                  </TouchableOpacity>
                 )}
               </View>
-            ))
-          )}
-        </View>
-      </ScrollView>
-      
-    </SafeAreaView>
+            )}
+          </View>
+
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
+  bg:      { flex: 1, backgroundColor: C.bg },
+  loading: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.bg },
+  scroll:  { paddingBottom: 120 },
+
+  /* ── HERO ── */
+  hero: {
+    paddingHorizontal: 22,
+    paddingTop: 18,
+    paddingBottom: 24,
   },
-  friendsSection: {
-    paddingHorizontal: 20,
-    marginBottom: 25,
-  },
-  friendsList: {
-    paddingHorizontal: 20,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  // Styles pour les voyages d'amis
-  friendsTripsSection: {
-    paddingHorizontal: 20,
-    marginBottom: 25,
-  },
-  friendsTripsScroll: {
-    paddingRight: 20,
-  },
- 
-  
-  statsIcon: {
-    marginLeft: 8,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#2F7417',
-    fontWeight: '500',
-  },
-  headerGradient: {
-    paddingTop: 20,
-    paddingBottom: 30,
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
-  },
-  headerContent: {
-    paddingHorizontal: 20,
-  },
-  headerTop: {
+  heroTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 15,
+    marginBottom: 28,
   },
-  welcomeSection: {
-    flex: 1,
-  },
-  welcomeText: {
-    fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontWeight: '400',
-  },
-  userText: {
-    fontSize: 24,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    marginTop: 2,
-  },
-  profileButton: {
-    opacity: 0.9,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+  heroLabel: {
+    fontSize: 11,
+    letterSpacing: 4,
+    color: C.creamDim,
     fontWeight: '300',
-    marginBottom: 20,
+    marginBottom: 4,
   },
-  headerStats: {
+  heroName: {
+    fontSize: 30,
+    fontWeight: '200',
+    letterSpacing: 2,
+    color: C.cream,
+  },
+  avatarBtn: { marginTop: 2 },
+
+  /* Stats */
+  statsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    alignItems: 'center',
+    backgroundColor: C.card,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: C.border,
     paddingVertical: 16,
+    paddingHorizontal: 20,
   },
-  headerStatItem: {
+  statItem: { flex: 1, alignItems: 'center' },
+  statNum:  { fontSize: 22, fontWeight: '200', color: C.cream, letterSpacing: 1 },
+  statLabel:{ fontSize: 9, letterSpacing: 2, color: C.creamDim, marginTop: 3, fontWeight: '300' },
+  statDivider: { width: 1, height: 30, backgroundColor: C.border },
+
+  /* ── ACTIONS ── */
+  actions: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 10,
+    marginBottom: 10,
+  },
+  actionBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.border,
+    gap: 8,
+  },
+  actionBtnPrimary: {
+    backgroundColor: C.cream,
+    borderColor: C.cream,
+  },
+  actionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: C.creamFaint,
+    backgroundColor: 'rgba(245,237,214,0.06)',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  headerStatNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+  actionIconPrimary: {
+    backgroundColor: 'rgba(13,13,13,0.15)',
+    borderColor: 'rgba(13,13,13,0.2)',
   },
-  headerStatLabel: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
+  actionLabel: { fontSize: 11, color: C.cream, fontWeight: '300', letterSpacing: 0.5 },
+  actionLabelPrimary: { color: C.bg, fontWeight: '500' },
+
+  /* ── SECTIONS ── */
+  section:     { marginBottom: 8 },
+  sectionHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 22,
+    paddingTop: 20,
+    paddingBottom: 12,
+  },
+  sectionTitle: { fontSize: 11, letterSpacing: 3, color: C.creamDim, fontWeight: '300' },
+  sectionLink:  { fontSize: 11, letterSpacing: 1, color: C.cream,    fontWeight: '300' },
+
+  /* ── CARD ── */
+  card: {
+    marginHorizontal: 20,
+    backgroundColor: C.card,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: C.border,
+    overflow: 'hidden',
+    shadowColor: C.cream,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.04,
+    shadowRadius: 20,
+    elevation: 4,
+  },
+  cardCenter:  { padding: 32, alignItems: 'center', justifyContent: 'center' },
+  tripCardWrap:{ borderRadius: 20, overflow: 'hidden' },
+
+  /* Empty */
+  emptyCard:  { padding: 32, alignItems: 'center', gap: 8 },
+  emptyTitle: { fontSize: 15, color: C.cream, fontWeight: '300', letterSpacing: 0.5 },
+  emptyDesc:  { fontSize: 12, color: C.creamDim, marginBottom: 8 },
+
+  /* Buttons */
+  creamBtn:     { backgroundColor: C.cream, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10, marginTop: 4 },
+  creamBtnText: { color: C.bg, fontSize: 13, fontWeight: '500', letterSpacing: 0.5 },
+
+  /* Next trip */
+  nextTripRow:  { flexDirection: 'row', alignItems: 'center', padding: 18, gap: 14 },
+  nextTripIcon: {
+    width: 42, height: 42, borderRadius: 21,
+    backgroundColor: 'rgba(245,237,214,0.06)',
+    borderWidth: 1, borderColor: C.creamFaint,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  nextTripDest: { fontSize: 17, fontWeight: '300', color: C.white, letterSpacing: 0.5, marginBottom: 3 },
+  nextTripMeta: { fontSize: 12, color: C.creamDim },
+  statusPill: {
+    borderWidth: 1, borderColor: C.creamFaint, borderRadius: 8,
+    paddingHorizontal: 10, paddingVertical: 4,
+    backgroundColor: 'rgba(245,237,214,0.05)',
+  },
+  statusText: { fontSize: 10, color: C.cream, letterSpacing: 1 },
+  tagRow:     { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 18, paddingBottom: 14 },
+  tag: {
+    borderWidth: 1, borderColor: C.border, borderRadius: 6,
+    paddingHorizontal: 8, paddingVertical: 3,
+  },
+  tagText: { fontSize: 11, color: C.creamDim },
+  cardFooter: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 18, paddingBottom: 16, paddingTop: 4,
+    borderTopWidth: 1, borderTopColor: C.border,
     marginTop: 4,
   },
-  scrollView: {
-    flex: 1,
-  },
-  quickActionsContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 25,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 16,
-  },
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 25,
-  },
-  actionCard: {
-    flex: 1,
-    marginHorizontal: 4,
-  },
-  actionGradient: {
-    alignItems: 'center',
-    paddingVertical: 20,
-    borderRadius: 16,
-    shadowColor: '#2F7417',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  friendCard: {
-    alignItems: 'center',
-    marginRight: 18,
-    width: 70,
-  },
-  friendAvatarCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#e0ffe0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-    borderWidth: 2,
-    borderColor: '#2F7417',
-  },
-  friendName: {
-    fontSize: 12,
-    color: '#2F7417',
-    fontWeight: '600',
-    textAlign: 'center',
-    maxWidth: 70,
-  },
-  friendVoyageCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 16,
-    padding: 12,
-    marginRight: 14,
-    width: 200,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  friendVoyageHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  voyageDrapeau: {
-    fontSize: 28,
-    marginRight: 8,
-  },
-  friendVoyageInfo: {
-    flex: 1,
-  },
-  voyageUser: {
-    fontSize: 12,
-    color: '#2F7417',
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  voyageName: {
-    fontSize: 14,
-    color: '#1a1a1a',
-    fontWeight: 'bold',
-  },
-  voyageDestination: {
-    fontSize: 12,
-    color: '#888',
-  },
-  voyageDate: {
-    fontSize: 11,
-    color: '#888',
-    marginTop: 2,
-  },
-  actionButton: {
-    alignItems: 'center',
-    paddingVertical: 20,
-    borderRadius: 16,
-    backgroundColor: '#f8f9fa',
-    borderWidth: 2,
-    borderColor: 'rgba(47, 116, 23, 0.2)',
-  },
-  actionText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  tripSection: {
-    paddingHorizontal: 20,
-    marginBottom: 25,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  seeAllText: {
-    color: '#2F7417',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  destinationsContainer: {
-    marginBottom: 25,
-  },
-  destinationsScroll: {
-    paddingLeft: 20,
-  },
-  destinationCard: {
-    marginRight: 12,
-    width: 140,
-  },
-  destinationGradient: {
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-  },
-  destinationIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(47, 116, 23, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  destinationName: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  destinationCountry: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  destinationCount: {
-    fontSize: 11,
-    color: '#999',
-    textAlign: 'center',
-  },
-  upcomingSection: {
-    paddingHorizontal: 20,
-    marginBottom: 25,
-  },
-  upcomingCard: {
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  upcomingGradient: {
-    borderRadius: 16,
-    padding: 20,
-  },
-  upcomingHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  upcomingIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(47, 116, 23, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  upcomingInfo: {
-    flex: 1,
-  },
-  upcomingDestination: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 4,
-  },
-  upcomingDate: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-  },
-  upcomingDetails: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginRight: 8,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  upcomingType: {
-    fontSize: 14,
-    color: '#666',
-  },
-  upcomingActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
-  },
-  detailButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(25, 118, 210, 0.1)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  detailButtonText: {
-    color: '#1976D2',
-    fontSize: 14,
-    fontWeight: '600',
-    marginRight: 8,
-  },
-  modifyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(102, 102, 102, 0.1)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  modifyButtonText: {
-    color: '#666',
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  upcomingInterests: {
-    marginTop: 12,
-  },
-  interestsLabel: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 4,
-  },
-  interestsText: {
-    fontSize: 13,
-    color: '#666',
-  },
-  upcomingContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  upcomingText: {
-    marginLeft: 16,
-    flex: 1,
-  },
-  upcomingTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 4,
-  },
-  upcomingSubtitle: {
-    fontSize: 14,
-    color: '#666',
-  },
-  planButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(25, 118, 210, 0.1)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  planButtonText: {
-    color: '#1976D2',
-    fontSize: 14,
-    fontWeight: '600',
-    marginRight: 8,
-  },
-  formContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 25,
-  },
-  formCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  formHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  formTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-  },
-  inspirationSection: {
-    paddingHorizontal: 20,
-    marginBottom: 25,
-  },
-  inspirationGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  inspirationCard: {
-    width: '48%',
-    marginBottom: 12,
-  },
-  inspirationGradient: {
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  inspirationTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  inspirationSubtitle: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.9)',
-    textAlign: 'center',
-  },
+  cardFooterLink:  { fontSize: 12, color: C.cream, fontWeight: '300', letterSpacing: 0.5 },
+  cardFooterGhost: { fontSize: 12, color: C.creamDim },
 
-  fab: {
-    position: 'absolute',
-    bottom: 25,
-    right: 25,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    shadowColor: '#2F7417',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+  /* Cities */
+  cityPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    borderWidth: 1, borderColor: C.border, borderRadius: 20,
+    paddingHorizontal: 14, paddingVertical: 8, marginRight: 8,
+    backgroundColor: C.card,
   },
-  fabGradient: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
+  cityName: { fontSize: 12, color: C.cream, fontWeight: '300' },
+
+  /* Friends */
+  friendRow:    { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
+  friendDivider:{ height: 1, backgroundColor: C.border, marginHorizontal: 16 },
+  friendAvatar: {
+    width: 36, height: 36, borderRadius: 18,
+    borderWidth: 1, borderColor: C.creamFaint,
+    backgroundColor: 'rgba(245,237,214,0.05)',
+    justifyContent: 'center', alignItems: 'center',
   },
-  scrollContent: {
-    paddingBottom: 120,
+  friendName:    { fontSize: 14, fontWeight: '300', color: C.white, letterSpacing: 0.3 },
+  friendMeta:    { fontSize: 11, color: C.creamDim, marginTop: 1 },
+  friendVoyageChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    borderWidth: 1, borderColor: C.border, borderRadius: 10,
+    paddingHorizontal: 10, paddingVertical: 5,
+    backgroundColor: 'rgba(245,237,214,0.04)',
   },
-  noVoyageCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-    borderStyle: 'dashed',
-  },
-  noVoyageText: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  addVoyageButton: {
-    backgroundColor: '#2F7417',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  addVoyageButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  friendBlock: {
-    marginBottom: 24,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  friendNameBig: {
-    fontSize: 16,
-    color: '#2F7417',
-    fontWeight: '700',
-  },
-}); 
+  friendVoyageFlag: { fontSize: 14 },
+  friendVoyageName: { fontSize: 11, color: C.creamDim, maxWidth: 70 },
+  seeMoreBtn:   { padding: 14, alignItems: 'center', borderTopWidth: 1, borderTopColor: C.border },
+  seeMoreText:  { fontSize: 12, color: C.creamDim, letterSpacing: 1 },
+});

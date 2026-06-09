@@ -1,5 +1,5 @@
-import { deleteTripPlan } from '@/lib/trip-planning';
-import { deleteVoyage } from '@/lib/voyages';
+import { deleteTripPlan } from '@/features/trips/services/trip-planning';
+import { deleteVoyage } from '@/features/trips/services/voyages';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';

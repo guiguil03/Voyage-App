@@ -11,9 +11,16 @@ import {
     View,
 } from 'react-native';
 
-const GREEN = '#2F7417';
-const BG = '#F8F9FA';
-const BORDER = '#E9ECEF';
+const C = {
+  bg:         '#0D0D0D',
+  card:       'rgba(13,13,13,0.82)',
+  border:     'rgba(245,237,214,0.14)',
+  cream:      '#F5EDD6',
+  creamDim:   'rgba(245,237,214,0.50)',
+  creamFaint: 'rgba(245,237,214,0.18)',
+  white:      '#FFFFFF',
+  whiteDim:   'rgba(255,255,255,0.40)',
+};
 
 export default function CreateScreen() {
   const handleCreateTrip = () => {
@@ -31,45 +38,63 @@ export default function CreateScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
-        style={styles.scrollView} 
+      <ScrollView
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Créer</Text>
+          <Text style={styles.title}>CRÉER</Text>
           <Text style={styles.subtitle}>Que veux-tu créer aujourd&apos;hui ?</Text>
         </View>
 
         <View style={styles.optionsContainer}>
-          <TouchableOpacity style={styles.optionCard} onPress={handleCreateTrip}>
-            <View style={styles.iconContainer}>
-              <Ionicons name="airplane" size={32} color={GREEN} />
+          {/* Planifier un Voyage */}
+          <TouchableOpacity style={styles.optionCard} onPress={handleCreateTrip} activeOpacity={0.75}>
+            <View style={styles.cardRow}>
+              <View style={styles.iconContainer}>
+                <Ionicons name="airplane" size={26} color={C.cream} />
+              </View>
+              <View style={styles.cardTextBlock}>
+                <Text style={styles.optionTitle}>Planifier un Voyage</Text>
+                <Text style={styles.optionDescription}>
+                  Donne nous ta destination des envies et nous te proposons un planning détaillé de tous ce que tu pourrais faire sur place
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={C.cream} style={styles.arrow} />
             </View>
-            <Text style={styles.optionTitle}>Planifier un Voyage</Text>
-            <Text style={styles.optionDescription}>
-             Donne nous ta destination des envies et nous te proposons un plannig détaillé de tous ce que tu pourrais faire sur place
-            </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.optionCard} onPress={handleCreateMemory}>
-            <View style={styles.iconContainer}>
-              <Ionicons name="camera" size={32} color={GREEN} />
+          {/* Ajouter un Souvenir */}
+          <TouchableOpacity style={styles.optionCard} onPress={handleCreateMemory} activeOpacity={0.75}>
+            <View style={styles.cardRow}>
+              <View style={styles.iconContainer}>
+                <Ionicons name="camera" size={26} color={C.cream} />
+              </View>
+              <View style={styles.cardTextBlock}>
+                <Text style={styles.optionTitle}>Ajouter un Souvenir</Text>
+                <Text style={styles.optionDescription}>
+                  Fais toi un recap de tes meilleurs moments de voyage pour les partager avec tes amis
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={C.cream} style={styles.arrow} />
             </View>
-            <Text style={styles.optionTitle}>Ajouter un Souvenir</Text>
-            <Text style={styles.optionDescription}>
-              Fais toi un recap de tes meilleurs moments de voyage pour les partager avec tes amis
-            </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.optionCard} onPress={handleCreateItinerary}>
-            <View style={styles.iconContainer}>
-              <Ionicons name="map" size={32} color={GREEN} />
+          {/* Suggestion d'activités */}
+          <TouchableOpacity style={styles.optionCard} onPress={handleCreateItinerary} activeOpacity={0.75}>
+            <View style={styles.cardRow}>
+              <View style={styles.iconContainer}>
+                <Ionicons name="map" size={26} color={C.cream} />
+              </View>
+              <View style={styles.cardTextBlock}>
+                <Text style={styles.optionTitle}>Suggestion d&apos;activités</Text>
+                <Text style={styles.optionDescription}>
+                  Renseigne nous sur tes envies et nous te proposons des activités et des visites en fonction de tes envies et de ton budget
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={C.cream} style={styles.arrow} />
             </View>
-            <Text style={styles.optionTitle}>Suggestion d&apos;activités</Text>
-            <Text style={styles.optionDescription}>
-              Renseigne nous sur tes envies et nous te proposons des activités et des visites en fonction de tes envies et de ton budget
-            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -80,69 +105,79 @@ export default function CreateScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BG,
+    backgroundColor: C.bg,
   },
   scrollView: {
     flex: 1,
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 30,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: GREEN,
-    marginBottom: 8,
-    letterSpacing: 0.2,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 10,
-  },
-  optionsContainer: {
-    paddingHorizontal: 20,
-    gap: 18,
-  },
-  optionCard: {
-    backgroundColor: '#fff',
-    borderRadius: 22,
-    padding: 24,
-    shadowColor: GREEN,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: BORDER,
-    marginBottom: 2,
-  },
-  iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: BG,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: BORDER,
-  },
-  optionTitle: {
-    fontSize: 19,
-    fontWeight: 'bold',
-    color: GREEN,
-    marginBottom: 8,
-    letterSpacing: 0.1,
-  },
-  optionDescription: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-  },
   scrollContent: {
     paddingBottom: 120,
   },
-}); 
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 36,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '200',
+    letterSpacing: 6,
+    color: C.cream,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: C.creamDim,
+    fontWeight: '300',
+    letterSpacing: 1,
+  },
+  optionsContainer: {
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  optionCard: {
+    backgroundColor: C.card,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: C.border,
+    paddingVertical: 28,
+    paddingHorizontal: 22,
+  },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(245,237,214,0.06)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+    borderWidth: 1,
+    borderColor: C.creamFaint,
+    flexShrink: 0,
+  },
+  cardTextBlock: {
+    flex: 1,
+  },
+  optionTitle: {
+    fontSize: 18,
+    fontWeight: '300',
+    color: C.cream,
+    marginBottom: 6,
+    letterSpacing: 0.5,
+  },
+  optionDescription: {
+    fontSize: 13,
+    color: C.creamDim,
+    lineHeight: 20,
+    fontWeight: '300',
+  },
+  arrow: {
+    marginLeft: 12,
+    flexShrink: 0,
+    opacity: 0.7,
+  },
+});

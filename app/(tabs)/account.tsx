@@ -1,9 +1,21 @@
-import { useAuth } from '@/hooks/useAuth';
+const C = {
+  bg:         '#0D0D0D',
+  card:       'rgba(13,13,13,0.82)',
+  border:     'rgba(245,237,214,0.14)',
+  cream:      '#F5EDD6',
+  creamDim:   'rgba(245,237,214,0.50)',
+  creamFaint: 'rgba(245,237,214,0.18)',
+  white:      '#FFFFFF',
+  whiteDim:   'rgba(255,255,255,0.40)',
+};
+
+import { useAuth } from '@/features/auth/hooks/useAuth';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Image,
   SafeAreaView,
@@ -12,10 +24,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import PersonalInfoForm from '../../components/profile/PersonalInfoForm';
-import SettingsForm from '../../components/profile/SettingsForm';
-import TravelPreferencesForm from '../../components/profile/TravelPreferencesForm';
-import { BG, BORDER, DARK, GREEN, GREEN_LIGHT } from '../../constants/Colors';
+import PersonalInfoForm from '@/features/profile/components/PersonalInfoForm';
+import SettingsForm from '@/features/profile/components/SettingsForm';
+import TravelPreferencesForm from '@/features/profile/components/TravelPreferencesForm';
 import {
   getCurrentUserProfile,
   Profile,
@@ -23,7 +34,7 @@ import {
   updateNotificationSettings,
   updateTravelPreferences,
   upsertProfile,
-} from '../../lib/profiles';
+} from '@/features/profile/services/profiles';
 
 type TabType = 'info' | 'preferences' | 'settings';
 
@@ -48,11 +59,11 @@ export default function Account() {
       const { data, error } = await getCurrentUserProfile();
       if (error) {
         console.error('Erreur lors du chargement du profil:', error);
-        
+
         // Gestion d'erreur plus spécifique
         if (error.includes('relation "public.profiles" does not exist')) {
           Alert.alert(
-            'Configuration requise', 
+            'Configuration requise',
             'La table des profils n\'existe pas. Veuillez exécuter le script de création de la base de données.',
             [
               { text: 'OK', style: 'default' }
@@ -60,7 +71,7 @@ export default function Account() {
           );
         } else {
           Alert.alert(
-            'Erreur de chargement', 
+            'Erreur de chargement',
             'Impossible de charger le profil. L\'application créera un profil automatiquement lors de la prochaine connexion.',
             [
               { text: 'Réessayer', onPress: loadProfile },
@@ -75,7 +86,7 @@ export default function Account() {
     } catch (error) {
       console.error('Erreur inattendue:', error);
       Alert.alert(
-        'Erreur système', 
+        'Erreur système',
         'Une erreur technique est survenue. Veuillez réessayer.',
         [
           { text: 'Réessayer', onPress: loadProfile },
@@ -169,6 +180,7 @@ export default function Account() {
   if (authLoading || loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={C.cream} />
         <Text style={styles.loadingText}>Chargement du profil...</Text>
       </SafeAreaView>
     );
@@ -218,70 +230,60 @@ export default function Account() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: BG }]}> 
-      {/* Dégradé premium en haut */}
-      <LinearGradient
-        colors={[GREEN_LIGHT, BG]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 220, zIndex: 0 }}
-      />
-      {/* Header avec profil */}
-      <View style={[styles.header, { backgroundColor: 'transparent', borderBottomWidth: 0, marginTop: 10, marginBottom: 18, zIndex: 1 }]}> 
+    <SafeAreaView style={styles.container}>
+      {/* Header profil */}
+      <View style={styles.header}>
         <View style={styles.profileHeader}>
-          <View style={{ alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
-            <View style={{ width: 110, height: 110, borderRadius: 55, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: GREEN, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 8, borderWidth: 3, borderColor: GREEN_LIGHT }}>
-              {profile?.avatar_url ? (
-                <Image source={{ uri: profile.avatar_url }} style={{ width: 100, height: 100, borderRadius: 50 }} />
-              ) : (
-                <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: '#F0F9F0', alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name="person" size={54} color="#2F7417" />
-                </View>
-              )}
-            </View>
+          <View style={styles.avatarContainer}>
+            {profile?.avatar_url ? (
+              <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+            ) : (
+              <Ionicons name="person" size={44} color={C.creamDim} />
+            )}
           </View>
-          <Text style={{ fontSize: 26, fontWeight: 'bold', color: DARK, marginBottom: 2 }}>{profile?.full_name || user.email?.split('@')[0] || 'Voyageur'}</Text>
-          <Text style={{ fontSize: 15, color: '#666', marginBottom: 10 }}>{user.email}</Text>
-          {/* Statut de connexion */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: GREEN_LIGHT, paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20, marginBottom: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 2 }}>
-            <Ionicons name="ellipse" size={14} color={GREEN} style={{ marginRight: 7 }} />
-            <Text style={{ fontSize: 14, color: GREEN, fontWeight: '600' }}>{isConnected ? 'Connecté' : 'Déconnecté'}</Text>
+          <Text style={styles.profileName}>
+            {profile?.full_name || user.email?.split('@')[0] || 'Voyageur'}
+          </Text>
+          <Text style={styles.profileEmail}>{user.email}</Text>
+          <View style={styles.statusBadge}>
+            <Text style={styles.statusText}>
+              {isConnected ? 'Connecté' : 'Déconnecté'}
+            </Text>
           </View>
         </View>
       </View>
-      {/* Bouton de déconnexion modernisé */}
-      <View style={{ alignItems: 'center', marginBottom: 18 }}>
-        <TouchableOpacity style={{ backgroundColor: '#EF4444', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 18, shadowColor: '#EF4444', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.13, shadowRadius: 18, elevation: 6, width: 240 }} activeOpacity={0.85} onPress={handleLogout}>
-          <Ionicons name="log-out" size={20} color="#FFFFFF" style={{ marginRight: 10 }} />
-          <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>Déconnexion</Text>
+
+      {/* Bouton de déconnexion */}
+      <View style={styles.logoutWrapper}>
+        <TouchableOpacity style={styles.logoutButton} activeOpacity={0.75} onPress={handleLogout}>
+          <Ionicons name="log-out" size={18} color="#EF4444" style={{ marginRight: 8 }} />
+          <Text style={styles.logoutText}>Déconnexion</Text>
         </TouchableOpacity>
       </View>
-      {/* Navigation par onglets modernisée */}
-      <View style={[styles.tabContainer, { marginBottom: 10, borderRadius: 16, overflow: 'hidden', backgroundColor: GREEN_LIGHT, padding: 6 }]}> 
+
+      {/* Navigation par onglets */}
+      <View style={styles.tabContainer}>
         {tabs.map(tab => (
           <TouchableOpacity
             key={tab.id}
-            style={[styles.tab, activeTab === tab.id && { backgroundColor: '#fff', shadowColor: GREEN, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 4, borderRadius: 12 }]} 
+            style={[styles.tab, activeTab === tab.id && styles.tabActive]}
             onPress={() => setActiveTab(tab.id)}
-            activeOpacity={0.85}
+            activeOpacity={0.8}
           >
             <Ionicons
               name={tab.icon as any}
-              size={24}
-              color={activeTab === tab.id ? GREEN : '#bbb'}
+              size={20}
+              color={activeTab === tab.id ? C.cream : C.creamDim}
             />
-            <Text style={[
-              styles.tabText,
-              activeTab === tab.id && styles.tabTextActive,
-              { fontSize: 15 }
-            ]}>
+            <Text style={[styles.tabText, activeTab === tab.id && styles.tabTextActive]}>
               {tab.title}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
+
       {/* Contenu de l'onglet actif */}
-      <View style={[styles.content, { padding: 10, marginTop: 8 }]}> 
+      <View style={styles.content}>
         {renderContent()}
       </View>
     </SafeAreaView>
@@ -291,162 +293,160 @@ export default function Account() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: C.bg,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: C.bg,
+    gap: 14,
   },
   loadingText: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
+    fontSize: 15,
+    color: C.creamDim,
+    fontWeight: '300',
+    letterSpacing: 0.5,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: C.bg,
     paddingHorizontal: 20,
   },
   errorText: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 15,
+    color: C.creamDim,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
+    lineHeight: 22,
   },
   loginButton: {
-    backgroundColor: GREEN,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: C.creamFaint,
+    borderRadius: 12,
+    paddingHorizontal: 28,
+    paddingVertical: 13,
+    backgroundColor: 'rgba(245,237,214,0.06)',
   },
   loginButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    color: C.cream,
+    fontSize: 15,
+    fontWeight: '300',
+    letterSpacing: 1,
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 20,
     paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
   },
   profileHeader: {
     alignItems: 'center',
-    flex: 1,
   },
   avatarContainer: {
-    marginBottom: 12,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 1,
+    borderColor: C.creamFaint,
+    backgroundColor: 'rgba(245,237,214,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 0,
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  avatarPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#F0F9F0',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 90,
+    height: 90,
+    borderRadius: 45,
   },
   profileName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
+    fontSize: 22,
+    fontWeight: '200',
+    letterSpacing: 2,
+    color: C.cream,
+    marginTop: 14,
     marginBottom: 4,
   },
   profileEmail: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
+    fontSize: 13,
+    color: C.creamDim,
+    marginBottom: 12,
   },
-  statusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  statusBadge: {
+    borderWidth: 1,
+    borderColor: C.creamFaint,
     borderRadius: 20,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  connectedDot: {
-    backgroundColor: '#2F7417',
-  },
-  disconnectedDot: {
-    backgroundColor: '#EF4444',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(245,237,214,0.04)',
   },
   statusText: {
     fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
+    color: C.cream,
+    letterSpacing: 1,
+  },
+  logoutWrapper: {
+    alignItems: 'center',
+    marginBottom: 20,
   },
   logoutButton: {
-    backgroundColor: '#EF4444',
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.40)',
+    borderRadius: 12,
+    paddingVertical: 13,
+    paddingHorizontal: 24,
+    backgroundColor: 'rgba(239,68,68,0.06)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    width: 200,
-    marginBottom: 10,
-
-    borderRadius: 8,
   },
   logoutText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 4,
+    color: '#EF4444',
+    fontSize: 14,
+    fontWeight: '400',
+    letterSpacing: 1,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#f8f9fa',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    backgroundColor: 'rgba(245,237,214,0.04)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 4,
   },
   tab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 8,
-    borderRadius: 8,
-    marginHorizontal: 2,
+    borderRadius: 10,
+    marginHorizontal: 1,
   },
   tabActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: 'rgba(245,237,214,0.10)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: C.creamFaint,
   },
   tabText: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
-    marginLeft: 4,
+    fontSize: 13,
+    color: C.creamDim,
+    fontWeight: '400',
+    marginLeft: 6,
+    letterSpacing: 0.3,
   },
   tabTextActive: {
-    color: '#2F7417',
-    fontWeight: '600',
+    color: C.cream,
+    fontWeight: '500',
   },
   content: {
     flex: 1,
+    backgroundColor: C.bg,
   },
-}); 
+});

@@ -1,8 +1,8 @@
-import InputField from '@/components/planning/InputField';
-import SelectionButton from '@/components/planning/SelectionButton';
-import { useAuth } from '@/hooks/useAuth';
-import { getOpenTripMapService } from '@/lib/opentripmap';
-import { createTripPlan, deleteTripPlan } from '@/lib/trip-planning';
+import InputField from '@/features/trips/components/InputField';
+import SelectionButton from '@/features/trips/components/SelectionButton';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { getOpenTripMapService } from '@/features/explore/services/opentripmap';
+import { createTripPlan, deleteTripPlan } from '@/features/trips/services/trip-planning';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';

@@ -10,10 +10,10 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import PersonalInfoForm from '../components/profile/PersonalInfoForm';
-import SettingsForm from '../components/profile/SettingsForm';
-import TravelPreferencesForm from '../components/profile/TravelPreferencesForm';
-import { useAuth } from '../hooks/useAuth';
+import PersonalInfoForm from '@/features/profile/components/PersonalInfoForm';
+import SettingsForm from '@/features/profile/components/SettingsForm';
+import TravelPreferencesForm from '@/features/profile/components/TravelPreferencesForm';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 import {
     getCurrentUserProfile,
     getProfileById,
@@ -22,7 +22,7 @@ import {
     updateNotificationSettings,
     updateTravelPreferences,
     upsertProfile,
-} from '../lib/profiles';
+} from '@/features/profile/services/profiles';
 
 type TabType = 'info' | 'preferences' | 'settings';
 

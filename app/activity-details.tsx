@@ -1,5 +1,5 @@
-import type { PlaceDetailsResult } from '@/lib/recherche';
-import { getSearchService } from '@/lib/recherche';
+import type { PlaceDetailsResult } from '@/features/explore/services/search';
+import { getSearchService } from '@/features/explore/services/search';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';

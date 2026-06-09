@@ -1,3 +1,3 @@
-import Memory from '@/components/travel/Memory';
+import Memory from '@/features/trips/components/Memory';
 
 export default Memory; 

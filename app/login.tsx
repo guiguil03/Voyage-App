@@ -1,13 +1,17 @@
-import { useAuth } from '@/hooks/useAuth';
-import { signIn, signUp } from '@/lib/auth-client';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { signIn, signUp } from '@/features/auth/services/auth-client';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  ImageBackground,
-  ScrollView,
+  Animated,
+  Dimensions,
+  Easing,
+  KeyboardAvoidingView,
+  Platform,
   StatusBar,
   StyleSheet,
   Text,
@@ -16,50 +20,69 @@ import {
   View,
 } from 'react-native';
 
+const { width: W, height: H } = Dimensions.get('window');
+
+const C = {
+  bg:         '#0D0D0D',
+  cardBg:     'rgba(13,13,13,0.82)',
+  cardBorder: 'rgba(245,237,214,0.18)',
+  cream:      '#F5EDD6',
+  creamDim:   'rgba(245,237,214,0.55)',
+  creamFocus: 'rgba(245,237,214,0.60)',
+  white:      '#FFFFFF',
+  whiteDim:   'rgba(255,255,255,0.35)',
+};
+
+const ROWS = [
+  { text: 'Paris  ·  Tokyo  ·  New York  ·  Bali  ·  Rome  ·  Marrakech  ·  Sydney  ·  Dubaï  ·  ', dur: 28000, y: H * 0.08, rev: false, op: 0.07 },
+  { text: 'Barcelone  ·  Kyoto  ·  Lisbonne  ·  Istanbul  ·  Santorini  ·  Prague  ·  Maldives  ·  ', dur: 44000, y: H * 0.26, rev: true, op: 0.04 },
+  { text: 'Amsterdam  ·  Seoul  ·  Rio  ·  Nairobi  ·  Reykjavik  ·  Montréal  ·  Athènes  ·  ', dur: 36000, y: H * 0.55, rev: false, op: 0.04 },
+  { text: 'Venise  ·  Singapour  ·  Le Cap  ·  Buenos Aires  ·  Moscou  ·  Séville  ·  Lisbonne  ·  ', dur: 52000, y: H * 0.78, rev: true, op: 0.05 },
+];
+
+const COPY_W = 920;
+
+function DestRow({ text, dur, y, rev, op }: { text: string; dur: number; y: number; rev: boolean; op: number }) {
+  const x = useRef(new Animated.Value(rev ? -COPY_W : 0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(x, {
+        toValue: rev ? 0 : -COPY_W,
+        duration: dur,
+        useNativeDriver: true,
+        easing: Easing.linear,
+      })
+    ).start();
+  }, []);
+
+  return (
+    <Animated.View style={{ position: 'absolute', top: y, width: W * 12, transform: [{ translateX: x }] }}>
+      <Text
+        style={{ fontSize: 12, fontWeight: '200', letterSpacing: 4, color: `rgba(245,237,214,${op})` }}
+        numberOfLines={1}
+      >
+        {text.repeat(4)}
+      </Text>
+    </Animated.View>
+  );
+}
+
 export default function LoginScreen() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
   const [redirecting, setRedirecting] = useState(false);
   const { isConnected, loading: authLoading } = useAuth();
 
-  // Redirection si déjà connecté avec protection contre les erreurs
   useEffect(() => {
-    const handleRedirection = async () => {
-      if (isConnected && !authLoading && !redirecting) {
-        console.log('✅ Utilisateur déjà connecté, préparation redirection...');
-        setRedirecting(true);
-        
-        try {
-          // Attendre un petit délai pour éviter les conflits de navigation
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-          // Vérifier si on peut faire la redirection
-          if (typeof window !== 'undefined') {
-            // Sur web, utiliser replace natif
-            window.location.replace('/(tabs)/home');
-          } else {
-            // Sur mobile, utiliser expo-router
-            router.replace('/(tabs)/home');
-          }
-        } catch (error) {
-          console.warn('⚠️ Erreur de redirection:', error);
-          // En cas d'erreur, essayer une méthode alternative
-          setTimeout(() => {
-            try {
-              router.push('/(tabs)/home');
-            } catch (secondError) {
-              console.error('❌ Impossible de rediriger:', secondError);
-              setRedirecting(false);
-            }
-          }, 500);
-        }
-      }
-    };
-
-    handleRedirection();
+    if (isConnected && !authLoading && !redirecting) {
+      setRedirecting(true);
+      setTimeout(() => { try { router.replace('/(tabs)/home'); } catch { /* ignore */ } }, 100);
+    }
   }, [isConnected, authLoading, redirecting]);
 
   const handleAuth = async () => {
@@ -67,53 +90,19 @@ export default function LoginScreen() {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs');
       return;
     }
-
     setLoading(true);
-
     try {
       if (mode === 'signin') {
-        console.log('🔐 Tentative de connexion...');
         await signIn.email({ email: email.trim(), password });
-        console.log('✅ Connexion réussie');
-        
-        // Redirection plus sûre après connexion
-        setTimeout(() => {
-          try {
-            router.replace('/(tabs)/home');
-          } catch (navError) {
-            console.warn('⚠️ Erreur navigation après connexion:', navError);
-            if (typeof window !== 'undefined') {
-              window.location.href = '/(tabs)/home';
-            }
-          }
-        }, 100);
-        
+        setTimeout(() => { try { router.replace('/(tabs)/home'); } catch { /* ignore */ } }, 100);
       } else {
-        console.log('📝 Tentative d\'inscription...');
         await signUp.email({ email: email.trim(), password });
-        console.log('✅ Inscription réussie');
-        Alert.alert(
-          'Succès',
-          'Compte créé avec succès !',
-          [{ 
-            text: 'OK', 
-            onPress: () => {
-              setTimeout(() => {
-                try {
-                  router.replace('/(tabs)/home');
-                } catch (navError) {
-                  console.warn('⚠️ Erreur navigation après inscription:', navError);
-                  if (typeof window !== 'undefined') {
-                    window.location.href = '/(tabs)/home';
-                  }
-                }
-              }, 100);
-            }
-          }]
-        );
+        Alert.alert('Succès', 'Compte créé !', [{
+          text: 'OK',
+          onPress: () => setTimeout(() => { try { router.replace('/(tabs)/home'); } catch { /* ignore */ } }, 100),
+        }]);
       }
     } catch (error: any) {
-      console.error('❌ Erreur d\'authentification:', error.message);
       Alert.alert('Erreur', error.message || 'Une erreur est survenue');
     } finally {
       setLoading(false);
@@ -126,24 +115,10 @@ export default function LoginScreen() {
     setPassword('');
   };
 
-  // Loader pendant la vérification ou redirection
-  if (authLoading || redirecting) {
+  if (authLoading || redirecting || isConnected) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>
-          {redirecting ? 'Redirection...' : 'Vérification...'}
-        </Text>
-      </View>
-    );
-  }
-
-  // Ne rien afficher si connecté (évite le flash)
-  if (isConnected) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2F7417" />
-        <Text style={styles.loadingText}>Redirection...</Text>
+        <ActivityIndicator size="large" color={C.cream} />
       </View>
     );
   }
@@ -151,319 +126,221 @@ export default function LoginScreen() {
   return (
     <>
       <StatusBar barStyle="light-content" />
-      <ImageBackground
-        source={require('@/assets/images/temple-bali-sunset.jpg')}
-        style={styles.background}
-        resizeMode="cover"
-      >
-        <View style={styles.overlay}>
-          <ScrollView 
-            contentContainerStyle={styles.scrollContainer}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* Header */}
-            <View style={styles.headerContainer}>
-              <Text style={styles.appTitle}>CityTrip</Text>
-              <Text style={styles.appSubtitle}>
-                {mode === 'signin' ? 'Bon retour !' : 'Bienvenue !'}
-              </Text>
-            </View>
+      <View style={styles.bg}>
 
-            {/* Formulaire */}
-            <View style={styles.formContainer}>
-              <View style={styles.card}>
-                <Text style={styles.formTitle}>
-                  {mode === 'signin' ? 'Connexion' : 'Inscription'}
-                </Text>
-
-                {/* Email */}
-                <View style={styles.inputContainer}>
-                  <View style={styles.inputWrapper}>
-                    <Ionicons name="mail" size={20} color="#2F7417" style={styles.inputIcon} />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Email"
-                      placeholderTextColor="#999"
-                      value={email}
-                      onChangeText={setEmail}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      editable={!loading}
-                    />
-                  </View>
-                </View>
-
-                {/* Mot de passe */}
-                <View style={styles.inputContainer}>
-                  <View style={styles.inputWrapper}>
-                    <Ionicons name="lock-closed" size={20} color="#2F7417" style={styles.inputIcon} />
-                    <TextInput
-                      style={[styles.input, { flex: 1 }]}
-                      placeholder="Mot de passe"
-                      placeholderTextColor="#999"
-                      value={password}
-                      onChangeText={setPassword}
-                      secureTextEntry={!showPassword}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      editable={!loading}
-                    />
-                    <TouchableOpacity
-                      onPress={() => setShowPassword(!showPassword)}
-                      style={styles.eyeButton}
-                      disabled={loading}
-                    >
-                      <Ionicons 
-                        name={showPassword ? "eye" : "eye-off"} 
-                        size={20} 
-                        color="#999" 
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* Bouton principal */}
-                <TouchableOpacity
-                  style={[styles.authButton, loading && styles.authButtonDisabled]}
-                  onPress={handleAuth}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.authButtonText}>
-                      {mode === 'signin' ? 'Se connecter' : 'S inscrire'}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-
-                {/* Bouton changement de mode */}
-                <TouchableOpacity
-                  style={styles.toggleButton}
-                  onPress={toggleMode}
-                  disabled={loading}
-                >
-                  <Text style={styles.toggleButtonText}>
-                    {mode === 'signin' 
-                      ? 'Pas de compte ? S inscrire' 
-                      : 'Déjà un compte ? Se connecter'
-                    }
-                  </Text>
-                </TouchableOpacity>
-
-               
-
-                {/* Boutons sociaux simplifiés */}
-                <View style={styles.socialContainer}>
-                  <Text style={styles.socialText}>Ou continuer avec</Text>
-                  
-                  <View style={styles.socialButtons}>
-                    <TouchableOpacity 
-                      style={[styles.socialButton, styles.googleButton]} 
-                      disabled={loading}
-                      onPress={() => Alert.alert('Info', 'Connexion Google non configurée')}
-                    >
-                      <Ionicons name="logo-google" size={20} color="#2F7417" />
-                      <Text style={[styles.socialButtonText, { color: '#000000' }]}>Google</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity 
-                      style={[styles.socialButton, styles.facebookButton]} 
-                      disabled={loading}
-                      onPress={() => Alert.alert('Info', 'Connexion Facebook non configurée')}
-                    >
-                      <Ionicons name="logo-facebook" size={20} color="#2F7417" />
-                      <Text style={[styles.socialButtonText, { color: '#0000000' }]}>Facebook</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            </View>
-          </ScrollView>
+        {/* Couche décorative fond */}
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          {ROWS.map((row, i) => <DestRow key={i} {...row} />)}
+          <LinearGradient
+            colors={['rgba(245,237,214,0.06)', 'rgba(245,237,214,0.02)', 'transparent']}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: H * 0.50 }}
+          />
+          <View style={styles.glowCircle} />
         </View>
-      </ImageBackground>
+
+        {/* Contenu */}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.inner}>
+
+            {/* Header */}
+            <View style={styles.header}>
+              <View style={styles.iconWrap}>
+                <Ionicons name="compass-outline" size={26} color="rgba(245,237,214,0.65)" />
+              </View>
+              <Text style={styles.title}>CityTrip</Text>
+              <Text style={styles.subtitle}>
+                {mode === 'signin' ? 'BON RETOUR' : 'BIENVENUE'}
+              </Text>
+              <Text style={styles.tagline}>Discover the world</Text>
+            </View>
+
+            {/* Carte glass */}
+            <View style={styles.card}>
+              <Text style={styles.formTitle}>
+                {mode === 'signin' ? 'Connexion' : 'Inscription'}
+              </Text>
+
+              <Text style={styles.label}>EMAIL</Text>
+              <View style={[styles.inputWrap, focusedField === 'email' && styles.inputFocused]}>
+                <Ionicons name="mail-outline" size={18} color={C.creamDim} style={styles.icon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="email@gmail.com"
+                  placeholderTextColor={C.whiteDim}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!loading}
+                  onFocus={() => setFocusedField('email')}
+                  onBlur={() => setFocusedField(null)}
+                />
+              </View>
+
+              <Text style={styles.label}>MOT DE PASSE</Text>
+              <View style={[styles.inputWrap, focusedField === 'password' && styles.inputFocused]}>
+                <Ionicons name="lock-closed-outline" size={18} color={C.creamDim} style={styles.icon} />
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="••••••••"
+                  placeholderTextColor={C.whiteDim}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  editable={!loading}
+                  onFocus={() => setFocusedField('password')}
+                  onBlur={() => setFocusedField(null)}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <Ionicons
+                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                    size={18}
+                    color={C.creamDim}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.primaryBtn, loading && styles.primaryBtnDisabled]}
+                onPress={handleAuth}
+                disabled={loading}
+              >
+                {loading
+                  ? <ActivityIndicator size="small" color={C.bg} />
+                  : <Text style={styles.primaryBtnText}>{mode === 'signin' ? 'Se connecter' : "S'inscrire"}</Text>
+                }
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.secondaryBtn} onPress={toggleMode} disabled={loading}>
+                <Text style={styles.secondaryBtnText}>
+                  {mode === 'signin' ? "Pas de compte ? S'inscrire" : 'Déjà un compte ? Se connecter'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+          </View>
+        </KeyboardAvoidingView>
+      </View>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
+  bg: { flex: 1, backgroundColor: C.bg },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.bg },
+  glowCircle: {
+    position: 'absolute',
+    top: H * 0.02,
+    alignSelf: 'center',
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: 'rgba(245,237,214,0.025)',
+    shadowColor: C.cream,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 80,
   },
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  loadingContainer: {
+  inner: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 24,
+    paddingVertical: 50,
   },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
-  },
-  scrollContainer: {
-    flexGrow: 1,
+  header: { alignItems: 'center', marginBottom: 40 },
+  iconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 1,
+    borderColor: 'rgba(245,237,214,0.22)',
+    backgroundColor: 'rgba(245,237,214,0.06)',
     justifyContent: 'center',
-    padding: 20,
-  },
-  headerContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 18,
   },
-  appTitle: {
+  title: {
     fontSize: 42,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    fontWeight: '200',
+    letterSpacing: 10,
+    color: C.cream,
     marginBottom: 8,
   },
-  appSubtitle: {
-    fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.9)',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+  subtitle: {
+    fontSize: 11,
+    letterSpacing: 6,
+    color: C.creamDim,
+    fontWeight: '300',
+    marginBottom: 8,
   },
-  formContainer: {
-    alignItems: 'center',
+  tagline: {
+    fontSize: 13,
+    color: 'rgba(245,237,214,0.28)',
+    fontWeight: '300',
+    fontStyle: 'italic',
+    letterSpacing: 1,
   },
   card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
-    padding: 30,
-    width: '100%',
-    maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
+    backgroundColor: C.cardBg,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: C.cardBorder,
+    padding: 28,
+    shadowColor: C.cream,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 30,
     elevation: 10,
   },
   formTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    textAlign: 'center',
-    marginBottom: 30,
+    fontSize: 22,
+    fontWeight: '300',
+    color: C.white,
+    letterSpacing: 1,
+    marginBottom: 24,
   },
-  inputContainer: {
-    marginBottom: 20,
+  label: {
+    fontSize: 11,
+    letterSpacing: 2,
+    color: C.creamFocus,
+    fontWeight: '400',
+    marginBottom: 8,
+    marginTop: 16,
   },
-  inputWrapper: {
+  inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#e9ecef',
-    paddingHorizontal: 15,
-    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(245,237,214,0.20)',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
   },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#1a1a1a',
-  },
-  eyeButton: {
-    padding: 5,
-  },
-  authButton: {
-    backgroundColor: '#2F7417',
+  inputFocused: { borderColor: C.creamFocus },
+  icon: { marginRight: 10 },
+  input: { flex: 1, fontSize: 15, color: C.white, fontWeight: '300' },
+  primaryBtn: {
+    backgroundColor: C.cream,
     borderRadius: 12,
-    paddingVertical: 15,
+    paddingVertical: 16,
     alignItems: 'center',
-    marginBottom: 20,
-    shadowColor: '##2F7417',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    marginTop: 28,
+    marginBottom: 14,
   },
-  authButtonDisabled: {
-    backgroundColor: '#ccc',
-    shadowOpacity: 0,
-  },
-  authButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  toggleButton: {
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  toggleButtonText: {
-    color: '#2F7417',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  debugContainer: {
-    backgroundColor: '#FFF3CD',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 20,
+  primaryBtnDisabled: { opacity: 0.5 },
+  primaryBtnText: { color: C.bg, fontSize: 15, fontWeight: '500', letterSpacing: 1 },
+  secondaryBtn: {
     borderWidth: 1,
-    borderColor: '#FFE69C',
-  },
-  debugText: {
-    fontSize: 12,
-    color: '#8A6D3B',
-    textAlign: 'center',
-  },
-  socialContainer: {
+    borderColor: 'rgba(245,237,214,0.40)',
+    borderRadius: 12,
+    paddingVertical: 14,
     alignItems: 'center',
   },
-  socialText: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 20,
-  },
-  socialButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  socialButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    marginHorizontal: 5,
-    borderWidth: 1,
-  },
-  googleButton: {
-    backgroundColor: '#ffffff',
-    borderColor: '##2F7417',
-  },
-  facebookButton: {
-    backgroundColor: '#ffffff',
-    borderColor: '#2F7417',
-  },
-  socialButtonText: {
-    marginLeft: 8,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-}); 
+  secondaryBtnText: { color: C.cream, fontSize: 14, fontWeight: '300', letterSpacing: 0.5 },
+});
