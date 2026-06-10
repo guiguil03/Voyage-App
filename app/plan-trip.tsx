@@ -154,23 +154,25 @@ export default function PlanTripScreen() {
 
   useEffect(() => {
     if (isComplete && days.length > 0) {
-      if (tripPlanIdRef.current) {
-        saveGeneratedItinerary(tripPlanIdRef.current, {
-          days: days as any,
-          generatedAt: new Date().toISOString(),
+      (async () => {
+        if (tripPlanIdRef.current) {
+          await saveGeneratedItinerary(tripPlanIdRef.current, {
+            days: days as any, // Two ItineraryDay types in codebase — trip-planning.ts vs itinerary.ts
+            generatedAt: new Date().toISOString(),
+          });
+        }
+        router.push({
+          pathname: '/planning',
+          params: {
+            itinerary: JSON.stringify(days),
+            trip: JSON.stringify({
+              destination: destination.trim(),
+              startDate: startDate ? startDate.toISOString() : '',
+              endDate: endDate ? endDate.toISOString() : '',
+            }),
+          },
         });
-      }
-      router.push({
-        pathname: '/planning',
-        params: {
-          itinerary: JSON.stringify(days),
-          trip: JSON.stringify({
-            destination: destination.trim(),
-            startDate: startDate ? startDate.toISOString() : '',
-            endDate: endDate ? endDate.toISOString() : '',
-          }),
-        },
-      });
+      })();
     }
   }, [isComplete]);
 
@@ -421,7 +423,7 @@ export default function PlanTripScreen() {
                 color={(destination.trim() && !isLoading) ? C.bg : 'rgba(122,184,245,0.40)'}
               />
               <Text style={[styles.generateBtnText, (!destination.trim() || isLoading) && styles.generateBtnTextDisabled]}>
-                {isLoading ? 'Enregistrement...' : "Générer l'itinéraire"}
+                {isLoading ? 'Génération en cours…' : "Générer l'itinéraire"}
               </Text>
             </View>
             <View style={[styles.generateBtnArrow, (!destination.trim() || isLoading) && styles.generateBtnArrowDisabled]}>
@@ -474,7 +476,7 @@ export default function PlanTripScreen() {
           <Text style={styles.hint}>Veuillez renseigner une destination pour continuer</Text>
         )}
         {isLoading && (
-          <Text style={styles.hint}>Enregistrement de votre demande en cours…</Text>
+          <Text style={styles.hint}>Claude génère votre itinéraire…</Text>
         )}
 
       </ScrollView>
