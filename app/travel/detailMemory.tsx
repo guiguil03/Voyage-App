@@ -1,8 +1,9 @@
+import { ItineraryActivity, ItineraryDay } from '@/features/trips/types/itinerary';
 import { deleteTripPlan } from '@/features/trips/services/trip-planning';
 import { deleteVoyage } from '@/features/trips/services/voyages';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Alert,
   Image,
@@ -11,42 +12,83 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 
-function groupActivitiesByDay(activities: any[], startDate: string, endDate: string) {
-  if (!startDate || !endDate) return { 'Jour 1': activities.slice(0, 5) };
-  const days: string[] = [];
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const nbDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
-  for (let i = 0; i < nbDays; i++) {
-    days.push(`Jour ${i + 1}`);
-  }
-  const MAX_PER_DAY = 5;
-  const planning: Record<string, any[]> = {};
-  let idx = 0;
-  days.forEach((day) => {
-    planning[day] = activities.slice(idx, idx + MAX_PER_DAY);
-    idx += MAX_PER_DAY;
-  });
-  return planning;
+const C = {
+  bg:         '#0D0D0D',
+  card:       'rgba(18,18,18,0.95)',
+  border:     'rgba(122,184,245,0.12)',
+  borderMid:  'rgba(122,184,245,0.22)',
+  cream:      '#7AB8F5',
+  creamDim:   'rgba(122,184,245,0.50)',
+  creamFaint: 'rgba(122,184,245,0.14)',
+  white:      '#FFFFFF',
+  whiteDim:   'rgba(255,255,255,0.55)',
+  danger:     '#EF4444',
+};
+
+const CATEGORY_MAP: Record<string, { icon: string; color: string }> = {
+  'Culture':     { icon: 'library',       color: '#A78BFA' },
+  'Gastronomie': { icon: 'restaurant',    color: '#F59E0B' },
+  'Gastronomy':  { icon: 'restaurant',    color: '#F59E0B' },
+  'Nature':      { icon: 'leaf',          color: '#34D399' },
+  'Sport':       { icon: 'bicycle',       color: '#F87171' },
+  'Relaxation':  { icon: 'flower',        color: '#C084FC' },
+  'Shopping':    { icon: 'bag',           color: '#60A5FA' },
+  'Nightlife':   { icon: 'moon',          color: '#818CF8' },
+  'Histoire':    { icon: 'time',          color: '#A78BFA' },
+  'History':     { icon: 'time',          color: '#A78BFA' },
+  'Art':         { icon: 'color-palette', color: '#E879F9' },
+};
+
+function getCat(cat: string) {
+  return CATEGORY_MAP[cat] ?? { icon: 'compass', color: C.cream };
+}
+
+function fmtShort(iso: string) {
+  try { return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }); }
+  catch { return iso; }
+}
+
+function fmtLong(iso: string) {
+  try {
+    return new Date(iso).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  } catch { return iso; }
+}
+
+function ActivityRow({ activity }: { activity: ItineraryActivity }) {
+  const cat = getCat(activity.category);
+  return (
+    <View style={[styles.actCard, { borderLeftColor: cat.color }]}>
+      <Text style={styles.actTime}>
+        {activity.time}  ·  <Text style={[styles.actCat, { color: cat.color }]}>{activity.category}</Text>
+      </Text>
+      <Text style={styles.actName}>{activity.name}</Text>
+      <Text style={styles.actDesc}>{activity.description}</Text>
+      {!!activity.tips && (
+        <Text style={styles.actTips}>💡 {activity.tips}</Text>
+      )}
+    </View>
+  );
 }
 
 export default function DetailMemoryScreen() {
-  // Récupérer les paramètres passés lors de la navigation
   const params = useLocalSearchParams();
-  
-  // Parser les données du voyage si elles sont passées en string
-  const tripData = params.tripData ? JSON.parse(params.tripData as string) : null;
+  const tripData = (() => {
+    try { return params.tripData ? JSON.parse(params.tripData as string) : null; }
+    catch { return null; }
+  })();
+  const [selectedDay, setSelectedDay] = useState(0);
 
   if (!tripData) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Aucune donnée de voyage trouvée</Text>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Text style={styles.backButtonText}>Retour</Text>
+        <View style={styles.errWrap}>
+          <Ionicons name="alert-circle-outline" size={48} color={C.creamDim} />
+          <Text style={styles.errText}>Aucune donnée trouvée</Text>
+          <TouchableOpacity style={styles.errBtn} onPress={() => router.back()}>
+            <Text style={styles.errBtnText}>Retour</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -54,223 +96,176 @@ export default function DetailMemoryScreen() {
   }
 
   const isMemory = tripData.type === 'voyage';
+  const days: ItineraryDay[] = tripData.generated_itinerary?.days ?? [];
+  const hasItinerary = days.length > 0;
 
-  // Fonction pour supprimer le voyage/souvenir
-  const handleDeleteTrip = () => {
-    const isMemory = tripData.type === 'voyage';
+  const handleDelete = () => {
     Alert.alert(
       isMemory ? 'Supprimer le souvenir' : 'Supprimer le voyage',
-      `Êtes-vous sûr de vouloir supprimer définitivement "${tripData.trip_name || tripData.destination}" ?`,
+      `Supprimer "${tripData.trip_name || tripData.destination}" ?`,
       [
+        { text: 'Annuler', style: 'cancel' },
         {
-          text: 'Annuler',
-          style: 'cancel'
-        },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
+          text: 'Supprimer', style: 'destructive',
           onPress: async () => {
             try {
-              let result;
-              if (isMemory) {
-                result = await deleteVoyage(tripData.id);
-              } else {
-                result = await deleteTripPlan(tripData.id);
-              }
-              if (result.error) {
-                Alert.alert('Erreur', 'Impossible de supprimer: ' + result.error);
-              } else {
-                Alert.alert(
-                  'Supprimé',
-                  isMemory ? 'Le souvenir a été supprimé.' : 'Le voyage a été supprimé.',
-                  [
-                    {
-                      text: 'OK',
-                      onPress: () => router.push('/(tabs)/voyage')
-                    }
-                  ]
-                );
-              }
-            } catch (error) {
-              Alert.alert('Erreur', 'Une erreur inattendue est survenue.');
-            }
-          }
-        }
+              const result = isMemory
+                ? await deleteVoyage(tripData.id)
+                : await deleteTripPlan(tripData.id);
+              if (result.error) Alert.alert('Erreur', result.error);
+              else Alert.alert('Supprimé', '', [{ text: 'OK', onPress: () => router.push('/(tabs)/voyage') }]);
+            } catch { Alert.alert('Erreur', 'Une erreur inattendue.'); }
+          },
+        },
       ]
     );
   };
 
+  const cur = days[selectedDay];
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header avec bouton retour et suppression */}
+      {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#2F7417" />
-          <Text style={styles.backButtonText}>Retour</Text>
+        <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
+          <Ionicons name="arrow-back" size={20} color={C.cream} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {isMemory ? 'Détails du souvenir' : 'Détails du voyage'}
-        </Text>
-        {isMemory && (
-          <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteTrip}>
-            <Ionicons name="trash" size={20} color="#FF4757" />
-          </TouchableOpacity>
-        )}
-        {!isMemory && (
-          <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteTrip}>
-            <Ionicons name="trash" size={20} color="#FF4757" />
-          </TouchableOpacity>
-        )}
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <Text style={styles.headerDest}>{tripData.destination}</Text>
+          <Text style={styles.headerSub}>{isMemory ? 'Souvenir' : 'Plan de voyage'}</Text>
+        </View>
+        <TouchableOpacity onPress={handleDelete} style={styles.iconBtnDanger}>
+          <Ionicons name="trash-outline" size={18} color={C.danger} />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Galerie d'images du voyage */}
-        {((tripData.images && tripData.images.length > 0) || tripData.image_url) && (
-          <View>
-            {/* Image principale (hero) */}
-            {(tripData.images?.[0] || tripData.image_url) && (
-              <View style={styles.imageContainer}>
-                <Image 
-                  source={{ uri: tripData.images?.[0] || tripData.image_url }} 
-                  style={styles.heroImage} 
-                />
-                <View style={styles.imageOverlay}>
-                  <Text style={styles.destinationTitle}>{tripData.destination}</Text>
-                  {isMemory && tripData.trip_name && (
-                    <Text style={styles.tripNameTitle}>{tripData.trip_name}</Text>
-                  )}
-                  {tripData.images && tripData.images.length > 1 && (
-                    <Text style={styles.imageCount}>
-                      1 / {tripData.images.length} photos
-                    </Text>
-                  )}
-                </View>
-              </View>
-            )}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
-            {/* Galerie des autres images */}
-            {tripData.images && tripData.images.length > 1 && (
-              <View style={styles.galleryContainer}>
-                <Text style={styles.galleryTitle}>Galerie photos ({tripData.images.length})</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.galleryScroll}>
-                  {tripData.images.map((imageUrl: string, index: number) => (
-                    <TouchableOpacity key={index} style={styles.galleryItem}>
-                      <Image source={{ uri: imageUrl }} style={styles.galleryImage} />
-                      <View style={styles.galleryImageOverlay}>
-                        <Text style={styles.galleryImageNumber}>{index + 1}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
+        {/* HERO IMAGE */}
+        {!!(tripData.image_url || tripData.images?.[0]) && (
+          <View style={styles.heroWrap}>
+            <Image source={{ uri: tripData.image_url || tripData.images[0] }} style={styles.heroImg} />
+            <View style={styles.heroOverlay} />
           </View>
         )}
 
-        {/* Informations principales */}
-        <View style={styles.mainInfoCard}>
-          <View style={styles.infoHeader}>
-            <View style={styles.typeContainer}>
-              <Ionicons name={isMemory ? "heart" : "airplane"} size={20} color="#2F7417" />
-              <Text style={styles.typeText}>
-                {isMemory ? 'Souvenir' : 'Plan de voyage'}
-              </Text>
-            </View>
-            <View style={styles.travelTypeContainer}>
-              <Text style={styles.travelTypeText}>{tripData.travel_type}</Text>
+        {/* TRIP INFO CARD */}
+        <View style={styles.infoCard}>
+          <View style={styles.infoRow}>
+            <Ionicons name="location-outline" size={14} color={C.creamDim} />
+            <Text style={styles.infoText}>{tripData.destination}</Text>
+            <View style={styles.typePill}>
+              <Text style={styles.typePillText}>{tripData.travel_type}</Text>
             </View>
           </View>
 
-          {!tripData.image_url && (
-            <Text style={styles.destinationTitleNoImage}>{tripData.destination}</Text>
+          {(tripData.start_date || tripData.end_date) && (
+            <View style={styles.infoRow}>
+              <Ionicons name="calendar-outline" size={14} color={C.creamDim} />
+              <Text style={styles.infoText}>
+                {tripData.start_date && tripData.end_date
+                  ? `${fmtShort(tripData.start_date)} → ${fmtShort(tripData.end_date)}`
+                  : tripData.start_date ? `À partir du ${fmtShort(tripData.start_date)}` : ''}
+              </Text>
+            </View>
           )}
-          
-          {isMemory && tripData.trip_name && !tripData.image_url && (
-            <Text style={styles.tripNameTitleNoImage}>{tripData.trip_name}</Text>
+
+          {tripData.interests && tripData.interests.length > 0 && (
+            <View style={styles.tagsRow}>
+              {tripData.interests.map((i: string) => (
+                <View key={i} style={styles.tag}>
+                  <Text style={styles.tagText}>{i}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {tripData.activity_level && (
+            <View style={styles.infoRow}>
+              <Ionicons name="fitness-outline" size={14} color={C.creamDim} />
+              <Text style={styles.infoText}>Rythme : {tripData.activity_level}</Text>
+            </View>
           )}
         </View>
 
-        {/* Détails spécifiques aux souvenirs */}
+        {/* MEMORY SECTION (voyage type) */}
         {isMemory && (
-          <View style={styles.detailsCard}>
-            <Text style={styles.sectionTitle}>Détails du souvenir</Text>
-            
-            {tripData.description && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Description</Text>
-                <Text style={styles.detailValue}>{tripData.description}</Text>
-              </View>
-            )}
-
-            {tripData.duration && (
-              <View style={styles.detailRow}>
-                <Ionicons name="time" size={16} color="#666" />
-                <Text style={styles.detailLabel}>Durée</Text>
-                <Text style={styles.detailValue}>{tripData.duration}</Text>
-              </View>
-            )}
-
+          <View style={styles.memCard}>
             {tripData.rating && (
-              <View style={styles.detailRow}>
-                <Ionicons name="star" size={16} color="#FFD700" />
-                <Text style={styles.detailLabel}>Note</Text>
-                <View style={styles.ratingContainer}>
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Ionicons
-                      key={star}
-                      name="star"
-                      size={16}
-                      color={star <= tripData.rating ? "#FFD700" : "#E0E0E0"}
-                    />
-                  ))}
-                  <Text style={styles.ratingText}>({tripData.rating}/5)</Text>
-                </View>
+              <View style={styles.starsRow}>
+                {[1,2,3,4,5].map(s => (
+                  <Ionicons key={s} name="star" size={18} color={s <= tripData.rating ? '#F59E0B' : C.border} />
+                ))}
               </View>
             )}
-
+            {tripData.description && <Text style={styles.memDesc}>{tripData.description}</Text>}
             {tripData.memory_text && (
-              <View style={styles.memorySection}>
-                <Text style={styles.sectionTitle}>Vos souvenirs</Text>
-                <Text style={styles.memoryText}>{tripData.memory_text}</Text>
+              <View style={styles.memTextWrap}>
+                <Ionicons name="journal-outline" size={16} color={C.creamDim} />
+                <Text style={styles.memText}>{tripData.memory_text}</Text>
               </View>
             )}
           </View>
         )}
 
-        {/* Détails spécifiques aux plans de voyage */}
-        {!isMemory && (
-          <View style={styles.detailsCard}>
-            <Text style={styles.sectionTitle}>Détails du voyage</Text>
-            
-            {(tripData.start_date || tripData.end_date) && (
-              <View style={styles.detailRow}>
-                <Ionicons name="calendar" size={16} color="#666" />
-                <Text style={styles.detailLabel}>Dates</Text>
-                <Text style={styles.detailValue}>
-                  {tripData.start_date && tripData.end_date
-                    ? `Du ${new Date(tripData.start_date).toLocaleDateString('fr-FR')} au ${new Date(tripData.end_date).toLocaleDateString('fr-FR')}`
-                    : tripData.start_date
-                    ? `A partir du ${new Date(tripData.start_date).toLocaleDateString('fr-FR')}`
-                    : 'Dates a definir'}
-                </Text>
-              </View>
-            )}
+        {/* ITINERARY CALENDAR */}
+        {hasItinerary && (
+          <View style={styles.calSection}>
+            <View style={styles.calHeader}>
+              <Ionicons name="calendar" size={16} color={C.cream} />
+              <Text style={styles.calTitle}>ITINÉRAIRE</Text>
+              <Text style={styles.calSub}>{days.length} jours</Text>
+            </View>
 
-            {tripData.interests && tripData.interests.length > 0 && (
-              <View style={styles.detailRow}>
-                <Ionicons name="heart" size={16} color="#666" />
-                <Text style={styles.detailLabel}>Intérêts</Text>
-                <Text style={styles.detailValue}>{tripData.interests.join(', ')}</Text>
-              </View>
-            )}
+            {/* Day strip */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.dayStrip}
+            >
+              {days.map((day, idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={[styles.dayPill, selectedDay === idx && styles.dayPillActive]}
+                  onPress={() => setSelectedDay(idx)}
+                >
+                  <Text style={[styles.dayPillNum, selectedDay === idx && styles.dayPillNumActive]}>
+                    J{day.day}
+                  </Text>
+                  <Text style={[styles.dayPillDate, selectedDay === idx && styles.dayPillDateActive]}>
+                    {fmtShort(day.date)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
 
-            {tripData.activity_level && (
-              <View style={styles.detailRow}>
-                <Ionicons name="fitness" size={16} color="#666" />
-                <Text style={styles.detailLabel}>Niveau d activite</Text>
-                <Text style={styles.detailValue}>{tripData.activity_level}</Text>
+            {/* Selected day card */}
+            {cur && (
+              <View style={styles.dayCard}>
+                <Text style={styles.dayCardDate}>{fmtLong(cur.date)}</Text>
+                <Text style={styles.dayCardTheme}>{cur.theme}</Text>
+                {!!cur.intro && <Text style={styles.dayCardIntro}>{cur.intro}</Text>}
+                <View style={styles.actList}>
+                  {(cur.activities ?? []).map((act, aidx) => (
+                    <ActivityRow key={`${cur.day}-${aidx}`} activity={act} />
+                  ))}
+                </View>
               </View>
             )}
+          </View>
+        )}
+
+        {/* No itinerary yet */}
+        {!isMemory && !hasItinerary && (
+          <View style={styles.noItinerary}>
+            <Ionicons name="map-outline" size={40} color={C.creamDim} />
+            <Text style={styles.noItineraryText}>Itinéraire non encore généré</Text>
+            <TouchableOpacity
+              style={styles.genBtn}
+              onPress={() => router.push({ pathname: '/plan-trip', params: { tripData: JSON.stringify(tripData) } })}
+            >
+              <Text style={styles.genBtnText}>Générer l'itinéraire</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -280,279 +275,107 @@ export default function DetailMemoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
+  container: { flex: 1, backgroundColor: C.bg },
+
+  errWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16 },
+  errText: { fontSize: 15, color: C.whiteDim },
+  errBtn:  { backgroundColor: C.creamFaint, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
+  errBtnText: { color: C.cream, fontSize: 14 },
+
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14,
+    borderBottomWidth: 1, borderBottomColor: C.border,
   },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  iconBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: C.creamFaint, justifyContent: 'center', alignItems: 'center',
   },
-  backButtonText: {
-    fontSize: 16,
-    color: '#2F7417',
-    fontWeight: '500',
-    marginLeft: 8,
+  iconBtnDanger: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: 'rgba(239,68,68,0.10)', justifyContent: 'center', alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1a1a1a',
+  headerDest: { fontSize: 17, fontWeight: '300', color: C.white, letterSpacing: 0.5 },
+  headerSub:  { fontSize: 11, color: C.creamDim, marginTop: 2 },
+
+  scroll: { paddingBottom: 80 },
+
+  heroWrap: { height: 200, position: 'relative' },
+  heroImg:  { width: '100%', height: '100%', resizeMode: 'cover' },
+  heroOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, backgroundColor: 'transparent' },
+
+  infoCard: {
+    margin: 16, padding: 16,
+    backgroundColor: C.card, borderRadius: 16, borderWidth: 1, borderColor: C.border,
+    gap: 10,
   },
-  placeholder: {
-    width: 80,
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  infoText: { fontSize: 13, color: C.whiteDim, flex: 1 },
+  typePill: {
+    backgroundColor: C.creamFaint, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 3,
   },
-  scrollView: {
-    flex: 1,
+  typePillText: { fontSize: 11, color: C.cream, fontWeight: '500' },
+  tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  tag: {
+    backgroundColor: 'rgba(122,184,245,0.08)', borderRadius: 8, borderWidth: 1, borderColor: C.border,
+    paddingHorizontal: 10, paddingVertical: 4,
   },
-  scrollContent: {
-    paddingBottom: 40,
+  tagText: { fontSize: 11, color: C.creamDim },
+
+  memCard: {
+    marginHorizontal: 16, marginBottom: 16, padding: 16,
+    backgroundColor: C.card, borderRadius: 16, borderWidth: 1, borderColor: C.border,
+    gap: 12,
   },
-  imageContainer: {
-    position: 'relative',
-    height: 250,
+  starsRow: { flexDirection: 'row', gap: 4 },
+  memDesc: { fontSize: 14, color: C.whiteDim, lineHeight: 20 },
+  memTextWrap: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  memText: { fontSize: 13, color: C.whiteDim, lineHeight: 20, flex: 1, fontStyle: 'italic' },
+
+  calSection: { marginHorizontal: 16, marginBottom: 16 },
+  calHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    marginBottom: 14,
   },
-  heroImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+  calTitle: { fontSize: 11, letterSpacing: 2.5, color: C.creamDim, fontWeight: '400', flex: 1 },
+  calSub:   { fontSize: 11, color: C.creamDim },
+
+  dayStrip: { paddingBottom: 14, gap: 8 },
+  dayPill: {
+    alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10,
+    borderRadius: 12, borderWidth: 1, borderColor: C.border,
+    backgroundColor: C.card, minWidth: 56,
   },
-  imageOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    padding: 20,
+  dayPillActive: { backgroundColor: C.creamFaint, borderColor: C.borderMid },
+  dayPillNum:    { fontSize: 15, fontWeight: '600', color: C.whiteDim },
+  dayPillNumActive: { color: C.cream },
+  dayPillDate:   { fontSize: 10, color: C.creamDim, marginTop: 2 },
+  dayPillDateActive: { color: C.creamDim },
+
+  dayCard: {
+    backgroundColor: C.card, borderRadius: 16, borderWidth: 1, borderColor: C.border,
+    padding: 18, gap: 6,
   },
-  destinationTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+  dayCardDate:  { fontSize: 12, color: C.creamDim, textTransform: 'capitalize' },
+  dayCardTheme: { fontSize: 20, fontWeight: '300', color: C.white, lineHeight: 28, marginBottom: 4 },
+  dayCardIntro: {
+    fontSize: 14, color: C.whiteDim, fontStyle: 'italic', lineHeight: 21,
+    paddingTop: 4, borderTopWidth: 1, borderTopColor: C.border,
   },
-  tripNameTitle: {
-    fontSize: 18,
-    color: '#fff',
-    marginTop: 4,
-    opacity: 0.9,
+
+  actList: { gap: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: C.border },
+  actCard: {
+    borderLeftWidth: 3, borderLeftColor: C.cream,
+    paddingLeft: 14, gap: 4,
   },
-  mainInfoCard: {
-    backgroundColor: '#fff',
-    margin: 20,
-    marginBottom: 16,
-    borderRadius: 16,
-    padding: 20,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  infoHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  typeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  typeText: {
-    fontSize: 14,
-    color: '#2F7417',
-    fontWeight: '500',
-    marginLeft: 8,
-  },
-  travelTypeContainer: {
-    backgroundColor: '#e8f5e8',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  travelTypeText: {
-    fontSize: 12,
-    color: '#2F7417',
-    fontWeight: '500',
-  },
-  destinationTitleNoImage: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 8,
-  },
-  tripNameTitleNoImage: {
-    fontSize: 18,
-    color: '#666',
-  },
-  detailsCard: {
-    backgroundColor: '#fff',
-    marginHorizontal: 20,
-    marginBottom: 16,
-    borderRadius: 16,
-    padding: 20,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    marginBottom: 16,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    minHeight: 24,
-  },
-  detailLabel: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-    marginLeft: 8,
-    width: 80,
-  },
-  detailValue: {
-    fontSize: 14,
-    color: '#1a1a1a',
-    flex: 1,
-    marginLeft: 16,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginLeft: 16,
-  },
-  ratingText: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 8,
-  },
-  memorySection: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e9ecef',
-  },
-  memoryText: {
-    fontSize: 15,
-    color: '#333',
-    lineHeight: 22,
-    fontStyle: 'italic',
-    backgroundColor: '#f8f9fa',
-    padding: 16,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#2F7417',
-  },
-  metaCard: {
-    backgroundColor: '#fff',
-    marginHorizontal: 20,
-    borderRadius: 16,
-    padding: 16,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
-  metaText: {
-    fontSize: 13,
-    color: '#666',
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  // Styles pour la galerie d'images
-  imageCount: {
-    fontSize: 14,
-    color: '#fff',
-    marginTop: 8,
-    opacity: 0.9,
-    fontWeight: '500',
-  },
-  galleryContainer: {
-    backgroundColor: '#fff',
-    margin: 20,
-    marginTop: 0,
-    borderRadius: 16,
-    padding: 20,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  galleryTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    marginBottom: 12,
-  },
-  galleryScroll: {
-    marginHorizontal: -5,
-  },
-  galleryItem: {
-    marginHorizontal: 5,
-    position: 'relative',
-  },
-  galleryImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 12,
-    backgroundColor: '#f0f0f0',
-  },
-  galleryImageOverlay: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    backgroundColor: 'rgba(47, 116, 23, 0.8)',
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  galleryImageNumber: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  deleteButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 71, 87, 0.1)',
-  },
-}); 
+  actTime: { fontSize: 12, color: C.creamDim },
+  actCat:  { fontSize: 12, fontWeight: '600' },
+  actName: { fontSize: 16, fontWeight: '500', color: C.white, lineHeight: 22 },
+  actDesc: { fontSize: 14, color: C.whiteDim, lineHeight: 21 },
+  actTips: { fontSize: 13, color: C.cream, lineHeight: 19, paddingTop: 4 },
+
+  noItinerary: { alignItems: 'center', padding: 32, gap: 12 },
+  noItineraryText: { fontSize: 14, color: C.whiteDim },
+  genBtn: { backgroundColor: C.cream, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 20, marginTop: 4 },
+  genBtnText: { fontSize: 13, fontWeight: '600', color: C.bg },
+});

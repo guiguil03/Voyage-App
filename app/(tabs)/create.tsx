@@ -52,48 +52,42 @@ export default function CreateScreen() {
           {/* Planifier un Voyage */}
           <TouchableOpacity style={styles.optionCard} onPress={handleCreateTrip} activeOpacity={0.75}>
             <View style={styles.cardRow}>
-              <View style={styles.iconContainer}>
-                <Ionicons name="airplane" size={26} color={C.cream} />
-              </View>
+              <Ionicons name="airplane-outline" size={22} color={C.cream} />
               <View style={styles.cardTextBlock}>
                 <Text style={styles.optionTitle}>Planifier un Voyage</Text>
                 <Text style={styles.optionDescription}>
-                  Donne nous ta destination des envies et nous te proposons un planning détaillé de tous ce que tu pourrais faire sur place
+                  Donne-nous ta destination et tes envies, on génère un planning jour par jour avec Claude.
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={C.cream} style={styles.arrow} />
+              <Ionicons name="chevron-forward" size={16} color={C.creamDim} />
             </View>
           </TouchableOpacity>
 
           {/* Ajouter un Souvenir */}
           <TouchableOpacity style={styles.optionCard} onPress={handleCreateMemory} activeOpacity={0.75}>
             <View style={styles.cardRow}>
-              <View style={styles.iconContainer}>
-                <Ionicons name="camera" size={26} color={C.cream} />
-              </View>
+              <Ionicons name="camera-outline" size={22} color={C.cream} />
               <View style={styles.cardTextBlock}>
                 <Text style={styles.optionTitle}>Ajouter un Souvenir</Text>
                 <Text style={styles.optionDescription}>
-                  Fais toi un recap de tes meilleurs moments de voyage pour les partager avec tes amis
+                  Garde une trace de tes meilleurs moments et partage-les avec tes amis.
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={C.cream} style={styles.arrow} />
+              <Ionicons name="chevron-forward" size={16} color={C.creamDim} />
             </View>
           </TouchableOpacity>
 
           {/* Suggestion d'activités */}
           <TouchableOpacity style={styles.optionCard} onPress={handleCreateItinerary} activeOpacity={0.75}>
             <View style={styles.cardRow}>
-              <View style={styles.iconContainer}>
-                <Ionicons name="map" size={26} color={C.cream} />
-              </View>
+              <Ionicons name="map-outline" size={22} color={C.cream} />
               <View style={styles.cardTextBlock}>
-                <Text style={styles.optionTitle}>Suggestion d&apos;activités</Text>
+                <Text style={styles.optionTitle}>Suggestions d&apos;activités</Text>
                 <Text style={styles.optionDescription}>
-                  Renseigne nous sur tes envies et nous te proposons des activités et des visites en fonction de tes envies et de ton budget
+                  Explore des activités et visites adaptées à tes envies et à ta destination.
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={C.cream} style={styles.arrow} />
+              <Ionicons name="chevron-forward" size={16} color={C.creamDim} />
             </View>
           </TouchableOpacity>
         </View>
@@ -137,47 +131,30 @@ const styles = StyleSheet.create({
   },
   optionCard: {
     backgroundColor: C.card,
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: C.border,
-    paddingVertical: 28,
-    paddingHorizontal: 22,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
   },
   cardRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: 'rgba(122,184,245,0.06)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-    borderWidth: 1,
-    borderColor: C.creamFaint,
-    flexShrink: 0,
+    alignItems: 'flex-start',
+    gap: 16,
   },
   cardTextBlock: {
     flex: 1,
   },
   optionTitle: {
-    fontSize: 18,
-    fontWeight: '300',
-    color: C.cream,
+    fontSize: 17,
+    fontWeight: '400',
+    color: C.white,
     marginBottom: 6,
-    letterSpacing: 0.5,
   },
   optionDescription: {
-    fontSize: 13,
-    color: C.creamDim,
-    lineHeight: 20,
+    fontSize: 14,
+    color: C.whiteDim,
+    lineHeight: 21,
     fontWeight: '300',
-  },
-  arrow: {
-    marginLeft: 12,
-    flexShrink: 0,
-    opacity: 0.7,
   },
 });

@@ -46,7 +46,6 @@ const C = {
 function SectionHead({ title, link, onLink }: { title: string; link?: string; onLink?: () => void }) {
   return (
     <View style={sh.row}>
-      <View style={sh.accent} />
       <Text style={sh.title}>{title}</Text>
       {link && onLink && (
         <TouchableOpacity onPress={onLink}>
@@ -57,10 +56,9 @@ function SectionHead({ title, link, onLink }: { title: string; link?: string; on
   );
 }
 const sh = StyleSheet.create({
-  row:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22, paddingBottom: 14, paddingTop: 28 },
-  accent: { width: 3, height: 16, backgroundColor: C.cream, borderRadius: 2, marginRight: 12 },
-  title:  { fontSize: 11, letterSpacing: 3, color: C.creamDim, fontWeight: '400', flex: 1 },
-  link:   { fontSize: 12, color: C.cream, fontWeight: '300', letterSpacing: 0.5 },
+  row:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 12, paddingTop: 24 },
+  title: { fontSize: 13, color: C.creamDim, fontWeight: '300', letterSpacing: 1 },
+  link:  { fontSize: 13, color: C.cream },
 });
 
 export default function HomeScreen() {
@@ -210,9 +208,6 @@ export default function HomeScreen() {
                 activeOpacity={0.8}
               >
                 <View style={styles.nextRow}>
-                  <View style={styles.nextIcon}>
-                    <Ionicons name="airplane-outline" size={20} color={C.cream} />
-                  </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.nextDest}>{nextTrip.destination}</Text>
                     <Text style={styles.nextMeta}>
@@ -441,14 +436,8 @@ const styles = StyleSheet.create({
 
   /* Next trip card */
   nextRow:  { flexDirection: 'row', alignItems: 'center', padding: 18, gap: 14 },
-  nextIcon: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: C.cardLight,
-    borderWidth: 1, borderColor: C.creamFaint,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  nextDest: { fontSize: 18, fontWeight: '300', color: C.white, letterSpacing: 0.5, marginBottom: 3 },
-  nextMeta: { fontSize: 12, color: C.creamDim },
+  nextDest: { fontSize: 20, fontWeight: '300', color: C.white, marginBottom: 4 },
+  nextMeta: { fontSize: 13, color: C.creamDim },
   pill:     { borderWidth: 1, borderColor: C.creamFaint, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: C.cardLight },
   pillText: { fontSize: 10, color: C.cream, letterSpacing: 1 },
   tagRow:   { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 18, paddingBottom: 14 },

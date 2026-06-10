@@ -45,6 +45,7 @@ interface UnifiedTrip {
   trip_name?: string; description?: string;
   memory_text?: string; rating?: number; duration?: string;
   image_url?: string; images?: string[];
+  generated_itinerary?: any;
 }
 
 interface TripStats { totalTrips: number; pendingTrips: number; completedTrips: number; }
@@ -52,15 +53,13 @@ interface TripStats { totalTrips: number; pendingTrips: number; completedTrips: 
 function SectionHead({ title }: { title: string }) {
   return (
     <View style={sh.row}>
-      <View style={sh.accent} />
       <Text style={sh.title}>{title}</Text>
     </View>
   );
 }
 const sh = StyleSheet.create({
-  row:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22, paddingBottom: 14, paddingTop: 24 },
-  accent: { width: 3, height: 16, backgroundColor: C.cream, borderRadius: 2, marginRight: 12 },
-  title:  { fontSize: 11, letterSpacing: 3, color: C.creamDim, fontWeight: '400' },
+  row:   { paddingHorizontal: 22, paddingBottom: 12, paddingTop: 24 },
+  title: { fontSize: 13, color: C.creamDim, fontWeight: '300', letterSpacing: 1 },
 });
 
 export default function VoyageScreen() {
@@ -92,6 +91,7 @@ export default function VoyageScreen() {
           id: t.id, destination: t.destination, start_date: t.start_date, end_date: t.end_date,
           travel_type: t.travel_type, interests: t.interests, activity_level: t.activity_level,
           status: t.status, type: 'trip_plan', created_at: t.created_at,
+          generated_itinerary: t.generated_itinerary,
         })),
         ...voyData.map((v: any): UnifiedTrip => ({
           id: v.id, destination: v.destination, start_date: null, end_date: null,

@@ -239,13 +239,9 @@ const styles = StyleSheet.create({
   profileName:  { fontSize: 24, fontWeight: '200', letterSpacing: 1.5, color: C.white, marginBottom: 4 },
   profileEmail: { fontSize: 13, color: C.creamDim, fontWeight: '300', marginBottom: 16 },
   profileMeta:  { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  statusBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    borderWidth: 1, borderRadius: 20,
-    paddingHorizontal: 12, paddingVertical: 6,
-  },
-  statusDot:  { width: 6, height: 6, borderRadius: 3 },
-  statusText: { fontSize: 12, fontWeight: '300', letterSpacing: 0.5 },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  statusDot:   { width: 6, height: 6, borderRadius: 3 },
+  statusText:  { fontSize: 13, fontWeight: '300' },
   logoutBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)',
