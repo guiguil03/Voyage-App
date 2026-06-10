@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { streamItinerary } from '../services/itinerary-stream';
 import { ItineraryDay, TripPreferences } from '../types/itinerary';
 
@@ -19,8 +19,16 @@ export function useItineraryStream(): UseItineraryStreamResult {
   const closeStreamRef = useRef<(() => void) | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useEffect(() => {
+    return () => {
+      closeStreamRef.current?.();
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
   const reset = useCallback(() => {
     closeStreamRef.current?.();
+    closeStreamRef.current = null;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setDays([]);
     setIsLoading(false);
@@ -35,6 +43,7 @@ export function useItineraryStream(): UseItineraryStreamResult {
 
       timeoutRef.current = setTimeout(() => {
         closeStreamRef.current?.();
+        closeStreamRef.current = null;
         setError('Délai dépassé (30s). Veuillez réessayer.');
         setIsLoading(false);
       }, 30000);
