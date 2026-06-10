@@ -1,12 +1,14 @@
 import InputField from '@/features/trips/components/InputField';
 import SelectionButton from '@/features/trips/components/SelectionButton';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { getOpenTripMapService } from '@/features/explore/services/opentripmap';
-import { createTripPlan, deleteTripPlan } from '@/features/trips/services/trip-planning';
+import { useItineraryStream } from '@/features/trips/hooks/useItineraryStream';
+import { TripPreferences } from '@/features/trips/types/itinerary';
+import { createTripPlan, deleteTripPlan, saveGeneratedItinerary } from '@/features/trips/services/trip-planning';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Modal,
   Platform,
@@ -43,7 +45,8 @@ export default function PlanTripScreen() {
   const [endDate, setEndDate] = useState<Date | null>(initialTrip?.end_date ? new Date(initialTrip.end_date) : null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [datePickerType, setDatePickerType] = useState<'start' | 'end'>('start');
-  const [isLoading, setIsLoading] = useState(false);
+  const { days, isLoading, isComplete, error, generate, reset } = useItineraryStream();
+  const tripPlanIdRef = useRef<string | null>(null);
 
   const { user } = useAuth();
 
@@ -78,67 +81,33 @@ export default function PlanTripScreen() {
       Alert.alert('Connexion requise', 'Veuillez vous connecter pour créer un voyage');
       return;
     }
-    setIsLoading(true);
-    try {
-      const tripPlanData = {
-        destination: destination.trim(),
-        startDate: startDate,
-        endDate: endDate,
-        travelType: selectedTravelType as 'Solo' | 'Couple' | 'Family' | 'Group',
-        interests: selectedThemes,
-        activityLevel: selectedActivityLevel as 'Relax' | 'Balanced' | 'Intense',
-      };
-      const { data: tripPlan, error: saveError } = await createTripPlan(tripPlanData);
-      if (saveError || !tripPlan) {
-        Alert.alert('Erreur', 'Impossible d\'enregistrer le voyage. Veuillez réessayer.');
-        setIsLoading(false);
-        return;
-      }
-      const themeToKinds: Record<string, string[]> = {
-        culture:     ['cultural', 'museums', 'historic'],
-        gastronomy:  ['foods'],
-        sport:       ['sport', 'stadiums'],
-        nature:      ['natural', 'beaches', 'mountains'],
-        relaxation:  ['viewpoints', 'tourist_object', 'interesting_places'],
-      };
-      const allKinds = [...new Set(
-        selectedThemes.flatMap(t => themeToKinds[t.toLowerCase()] ?? ['interesting_places'])
-      )];
-      const otm = getOpenTripMapService();
-      const fsqResult = await otm.searchByCity(destination.trim(), {
-        kinds: allKinds,
-        limit: 200,
-        radius: 15000,
-        minRate: 3,
-      });
-      if (fsqResult.success && fsqResult.data && fsqResult.data.places.length > 0) {
-        router.push({
-          pathname: '/planning',
-          params: {
-            planning: JSON.stringify(fsqResult.data!.places),
-            trip: JSON.stringify({
-              destination: destination.trim(),
-              startDate: startDate ? startDate.toISOString() : '',
-              endDate: endDate ? endDate.toISOString() : '',
-            }),
-          },
-        });
-        return;
-      }
-      Alert.alert(
-        'Itinéraire généré !',
-        `Aucune activité trouvée pour ${destination} avec vos critères.`,
-        [
-          { text: 'Voir mes voyages', onPress: () => router.push('/(tabs)/voyage') },
-          { text: 'Retour à l\'accueil', onPress: () => router.push('/(tabs)/home') },
-        ]
-      );
-    } catch (error) {
-      console.error('Erreur lors de la création du voyage:', error);
-      Alert.alert('Erreur', 'Une erreur est survenue lors de l\'enregistrement. Veuillez réessayer.', [{ text: 'OK' }]);
-    } finally {
-      setIsLoading(false);
+
+    const { data: tripPlan, error: saveError } = await createTripPlan({
+      destination: destination.trim(),
+      startDate,
+      endDate,
+      travelType: selectedTravelType as 'Solo' | 'Couple' | 'Family' | 'Group',
+      interests: selectedThemes,
+      activityLevel: selectedActivityLevel as 'Relax' | 'Balanced' | 'Intense',
+    });
+
+    if (saveError || !tripPlan) {
+      Alert.alert('Erreur', "Impossible d'enregistrer le voyage.");
+      return;
     }
+
+    tripPlanIdRef.current = tripPlan.id;
+
+    const preferences: TripPreferences = {
+      destination: destination.trim(),
+      startDate: startDate ? startDate.toISOString().split('T')[0] : null,
+      endDate: endDate ? endDate.toISOString().split('T')[0] : null,
+      travelType: selectedTravelType as 'Solo' | 'Couple' | 'Family' | 'Group',
+      interests: selectedThemes,
+      activityLevel: selectedActivityLevel as 'Relax' | 'Balanced' | 'Intense',
+    };
+
+    generate(preferences);
   };
 
   const openDatePicker = (type: 'start' | 'end') => {
@@ -182,6 +151,34 @@ export default function PlanTripScreen() {
   };
 
   const completionPercentage = getCompletionPercentage();
+
+  useEffect(() => {
+    if (isComplete && days.length > 0) {
+      if (tripPlanIdRef.current) {
+        saveGeneratedItinerary(tripPlanIdRef.current, {
+          days: days as any,
+          generatedAt: new Date().toISOString(),
+        });
+      }
+      router.push({
+        pathname: '/planning',
+        params: {
+          itinerary: JSON.stringify(days),
+          trip: JSON.stringify({
+            destination: destination.trim(),
+            startDate: startDate ? startDate.toISOString() : '',
+            endDate: endDate ? endDate.toISOString() : '',
+          }),
+        },
+      });
+    }
+  }, [isComplete]);
+
+  useEffect(() => {
+    if (error) {
+      Alert.alert('Erreur de génération', error, [{ text: 'OK', onPress: reset }]);
+    }
+  }, [error, reset]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -524,6 +521,30 @@ export default function PlanTripScreen() {
         </View>
       </Modal>
 
+      {isLoading && (
+        <View style={styles.streamOverlay}>
+          <View style={styles.streamCard}>
+            <Text style={styles.streamTitle}>Claude prépare ton voyage…</Text>
+            <View style={styles.streamDays}>
+              {days.map((d) => (
+                <View key={d.day} style={styles.streamDayRow}>
+                  <Text style={styles.streamCheck}>✅</Text>
+                  <Text style={styles.streamDayText}>
+                    Jour {d.day} — {d.theme}
+                  </Text>
+                </View>
+              ))}
+              <View style={styles.streamDayRow}>
+                <ActivityIndicator size="small" color={C.cream} />
+                <Text style={styles.streamDayText}>
+                  Jour {days.length + 1} en cours…
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
+
     </SafeAreaView>
   );
 }
@@ -700,4 +721,43 @@ const styles = StyleSheet.create({
   },
   dateDay: { fontSize: 12, color: C.creamDim, fontWeight: '300', textTransform: 'capitalize' },
   dateVal: { fontSize: 15, color: C.white, fontWeight: '400', marginTop: 2 },
+
+  /* STREAM OVERLAY */
+  streamOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(13,13,13,0.92)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  streamCard: {
+    backgroundColor: 'rgba(18,18,18,0.98)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(122,184,245,0.22)',
+    padding: 28,
+    width: '85%',
+  },
+  streamTitle: {
+    fontSize: 16,
+    fontWeight: '300',
+    color: '#7AB8F5',
+    marginBottom: 20,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  streamDays: { gap: 12 },
+  streamDayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  streamCheck: { fontSize: 16 },
+  streamDayText: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.75)',
+    fontWeight: '300',
+    flex: 1,
+  },
 });
