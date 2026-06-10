@@ -3,14 +3,14 @@ export interface ItineraryActivity {
   time: string;
   description: string;
   category: string;
-  tips: string;
+  tips?: string;
 }
 
 export interface ItineraryDay {
   day: number;
   date: string;
   theme: string;
-  intro: string;
+  intro?: string;
   activities: ItineraryActivity[];
 }
 
