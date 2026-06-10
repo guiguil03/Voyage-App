@@ -6,23 +6,36 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+
+const C = {
+  bg:         '#0D0D0D',
+  card:       'rgba(18,18,18,0.95)',
+  border:     'rgba(122,184,245,0.12)',
+  borderMid:  'rgba(122,184,245,0.22)',
+  cream:      '#7AB8F5',
+  creamDim:   'rgba(122,184,245,0.50)',
+  creamFaint: 'rgba(122,184,245,0.14)',
+  white:      '#FFFFFF',
+  whiteDim:   'rgba(255,255,255,0.45)',
+  danger:     '#EF4444',
+};
 
 export default function CreateMemoryScreen() {
   const [tripName, setTripName] = useState('');
   const [destination, setDestination] = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-  const [selectedImages, setSelectedImages] = useState<string[]>([]); // Tableau d'images
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [imageSource, setImageSource] = useState<'url' | 'gallery'>('url');
   const [selectedTripType, setSelectedTripType] = useState('Solo');
   const [selectedRating, setSelectedRating] = useState('5');
@@ -33,66 +46,43 @@ export default function CreateMemoryScreen() {
   const ratings = ['1', '2', '3', '4', '5'];
   const durations = ['1-3 jours', '4-7 jours', '1-2 semaines', '2+ semaines'];
 
-  // Fonction pour sélectionner une image depuis la galerie
   const pickImageFromGallery = async () => {
     try {
-      // Demander la permission d'accès à la galerie
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
       if (permissionResult.granted === false) {
-        Alert.alert(
-          'Permission requise',
-          'L\'accès à la galerie photo est nécessaire pour sélectionner une image.'
-        );
+        Alert.alert('Permission requise', "L'accès à la galerie photo est nécessaire pour sélectionner une image.");
         return;
       }
-
-      // Ouvrir la galerie avec sélection multiple
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsMultipleSelection: true, // Permettre la sélection multiple
+        allowsMultipleSelection: true,
         quality: 0.8,
-        selectionLimit: 10, // Limiter à 10 images max
+        selectionLimit: 10,
       });
-
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        // Ajouter toutes les images sélectionnées
         const newImages = result.assets.map(asset => asset.uri);
         setSelectedImages(prev => [...prev, ...newImages]);
         setImageSource('gallery');
-        setImageUrl(''); // Effacer l'URL si des images de galerie sont sélectionnées
+        setImageUrl('');
       }
     } catch (error) {
-      console.error('Erreur lors de la sélection d\'image:', error);
-      Alert.alert('Erreur', 'Impossible de sélectionner l\'image');
+      console.error("Erreur lors de la sélection d'image:", error);
+      Alert.alert('Erreur', "Impossible de sélectionner l'image");
     }
   };
 
-  // Fonction pour prendre une photo avec l'appareil photo
   const takePhotoWithCamera = async () => {
     try {
-      // Demander la permission d'accès à l'appareil photo
       const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-      
       if (permissionResult.granted === false) {
-        Alert.alert(
-          'Permission requise',
-          'L\'accès à l\'appareil photo est nécessaire pour prendre une photo.'
-        );
+        Alert.alert('Permission requise', "L'accès à l'appareil photo est nécessaire pour prendre une photo.");
         return;
       }
-
-      // Ouvrir l'appareil photo
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [16, 9],
-        quality: 0.8,
-      });
-
+      const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [16, 9], quality: 0.8 });
       if (!result.canceled && result.assets[0]) {
         setSelectedImages(prev => [...prev, result.assets[0].uri]);
         setImageSource('gallery');
-        setImageUrl(''); // Effacer l'URL si une photo est prise
+        setImageUrl('');
       }
     } catch (error) {
       console.error('Erreur lors de la prise de photo:', error);
@@ -100,47 +90,21 @@ export default function CreateMemoryScreen() {
     }
   };
 
-  // Fonction pour choisir le type d'image
   const chooseImageSource = () => {
     Alert.alert(
       'Ajouter des images',
       'Comment souhaitez-vous ajouter des images ?',
       [
-        {
-          text: 'Galerie (multiple)',
-          onPress: pickImageFromGallery,
-          style: 'default'
-        },
-        {
-          text: 'Prendre une photo',
-          onPress: takePhotoWithCamera,
-          style: 'default'
-        },
-        {
-          text: 'URL d\'image',
-          onPress: () => {
-            setImageSource('url');
-            // Pas besoin de vider selectedImages ici
-          },
-          style: 'default'
-        },
-        {
-          text: 'Annuler',
-          style: 'cancel'
-        }
+        { text: 'Galerie (multiple)', onPress: pickImageFromGallery },
+        { text: 'Prendre une photo', onPress: takePhotoWithCamera },
+        { text: "URL d'image", onPress: () => setImageSource('url') },
+        { text: 'Annuler', style: 'cancel' },
       ]
     );
   };
 
-  // Fonction pour supprimer une image spécifique
   const removeImage = (imageToRemove: string) => {
     setSelectedImages(prev => prev.filter(img => img !== imageToRemove));
-  };
-
-  // Fonction pour supprimer toutes les images
-  const removeAllImages = () => {
-    setSelectedImages([]);
-    setImageUrl('');
   };
 
   const handleSaveMemory = async () => {
@@ -148,59 +112,36 @@ export default function CreateMemoryScreen() {
       Alert.alert('Champs requis', 'Veuillez renseigner au moins le nom du voyage et la destination');
       return;
     }
-    
     try {
-      // Créer un tableau avec toutes les images (galerie + URL si renseignée)
       const allImages = [...selectedImages];
-      if (imageUrl.trim()) {
-        allImages.push(imageUrl.trim());
-      }
-      
-      // Sauvegarder le souvenir dans la base de données
-      const { data, error } = await createVoyage({
-        tripName,
-        destination,
-        description,
-        imageUrl: allImages[0] || '', // Image principale (première)
-        images: allImages, // Toutes les images
+      if (imageUrl.trim()) allImages.push(imageUrl.trim());
+      const { error } = await createVoyage({
+        tripName, destination, description,
+        imageUrl: allImages[0] || '',
+        images: allImages,
         tripType: selectedTripType,
         rating: parseInt(selectedRating),
         duration: selectedDuration,
         memoryText,
       });
-
       if (error) {
         Alert.alert('Erreur', `Impossible de sauvegarder le voyage: ${error}`);
         return;
       }
-
       Alert.alert(
         'Souvenir sauvegardé !',
         `Votre voyage "${tripName}" à ${destination} a été ajouté à vos souvenirs.`,
         [
-          {
-            text: 'Voir mes voyages',
-            onPress: () => router.push('/(tabs)/voyage')
-          },
-          {
-            text: 'Retour à l\'accueil',
-            onPress: () => router.push('/(tabs)/home')
-          },
+          { text: 'Voir mes voyages', onPress: () => router.push('/(tabs)/voyage') },
+          { text: "Retour à l'accueil", onPress: () => router.push('/(tabs)/home') },
           {
             text: 'Ajouter un autre',
             onPress: () => {
-              // Réinitialiser le formulaire
-              setTripName('');
-              setDestination('');
-              setDescription('');
-              setImageUrl('');
-              setSelectedImages([]);
-              setMemoryText('');
-              setSelectedTripType('Solo');
-              setSelectedRating('5');
-              setSelectedDuration('1-3 jours');
-            }
-          }
+              setTripName(''); setDestination(''); setDescription('');
+              setImageUrl(''); setSelectedImages([]); setMemoryText('');
+              setSelectedTripType('Solo'); setSelectedRating('5'); setSelectedDuration('1-3 jours');
+            },
+          },
         ]
       );
     } catch (error) {
@@ -209,42 +150,36 @@ export default function CreateMemoryScreen() {
     }
   };
 
-  const handleGoBack = () => {
-    router.back();
-  };
-
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header amélioré */}
+
+      {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <Ionicons name="arrow-back" size={24} color="#2F7417" />
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={22} color={C.cream} />
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={styles.title}>Nouveau Souvenir</Text>
-          <Text style={styles.headerSubtitle}>Immortalisez vos plus beaux moments</Text>
+          <Text style={styles.subtitle}>Immortalisez vos plus beaux moments</Text>
         </View>
-        <View style={styles.placeholder} />
+        <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView 
-        style={styles.scrollView} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Section Informations générales */}
+      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+
+        {/* INFORMATIONS GÉNÉRALES */}
         <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconContainer}>
-              <Ionicons name="information-circle" size={24} color="#2F7417" />
+          <View style={styles.sectionHead}>
+            <View style={styles.sectionIcon}>
+              <Ionicons name="information-circle" size={22} color={C.cream} />
             </View>
             <Text style={styles.sectionTitle}>Informations générales</Text>
           </View>
-          
-          <View style={styles.cardContent}>
+
+          <View style={styles.cardBody}>
             <InputField
               label="Nom du voyage"
-              placeholder="Ex: Escapade à Paris"
+              placeholder="Ex : Escapade à Paris"
               value={tripName}
               onChangeText={setTripName}
               iconName="airplane"
@@ -252,75 +187,65 @@ export default function CreateMemoryScreen() {
 
             <InputField
               label="Destination"
-              placeholder="Ex: Paris, France"
+              placeholder="Ex : Paris, France"
               value={destination}
               onChangeText={setDestination}
               iconName="location"
             />
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Description</Text>
+            <View style={styles.fieldWrap}>
+              <Text style={styles.fieldLabel}>Description</Text>
               <TextInput
-                style={styles.textAreaInput}
-                placeholder="Décrivez votre voyage en quelques mots..."
+                style={styles.textArea}
+                placeholder="Décrivez votre voyage en quelques mots…"
                 value={description}
                 onChangeText={setDescription}
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"
-                placeholderTextColor="#999"
+                placeholderTextColor="rgba(255,255,255,0.28)"
               />
             </View>
 
-            {/* Section Image avec options multiples */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Image du voyage</Text>
-              <Text style={styles.sublabel}>Ajoutez une photo pour illustrer votre souvenir</Text>
-              
-              {/* Bouton principal pour choisir une image */}
-              <TouchableOpacity style={styles.imagePickerButton} onPress={chooseImageSource}>
-                <Ionicons name="camera" size={32} color="#2F7417" />
+            {/* IMAGES */}
+            <View style={styles.fieldWrap}>
+              <Text style={styles.fieldLabel}>Images du voyage</Text>
+              <Text style={styles.fieldSub}>Ajoutez des photos pour illustrer votre souvenir</Text>
+
+              <TouchableOpacity style={styles.imagePickerBtn} onPress={chooseImageSource}>
+                <Ionicons name="camera" size={30} color={C.cream} />
                 <Text style={styles.imagePickerText}>Ajouter des images</Text>
-                <Text style={styles.imagePickerSubtext}>Sélection multiple depuis la galerie</Text>
+                <Text style={styles.imagePickerSub}>Sélection multiple depuis la galerie</Text>
               </TouchableOpacity>
 
-              {/* Affichage de toutes les images sélectionnées */}
               {selectedImages.length > 0 && (
                 <View style={styles.imagesGrid}>
-                  {selectedImages.map((imageUri, index) => (
-                    <View key={index} style={styles.imagePreview}>
-                      <Image source={{ uri: imageUri }} style={styles.previewImage} />
-                      <View style={styles.imageOverlay}>
-                        <Text style={styles.imageNumber}>{index + 1}</Text>
+                  {selectedImages.map((uri, index) => (
+                    <View key={index} style={styles.imageThumb}>
+                      <Image source={{ uri }} style={styles.thumbImg} />
+                      <View style={styles.thumbBadge}>
+                        <Text style={styles.thumbNum}>{index + 1}</Text>
                       </View>
-                      <TouchableOpacity 
-                        style={styles.removeImageButton} 
-                        onPress={() => removeImage(imageUri)}
-                      >
-                        <Ionicons name="close-circle" size={24} color="#FF4757" />
+                      <TouchableOpacity style={styles.thumbRemove} onPress={() => removeImage(uri)}>
+                        <Ionicons name="close-circle" size={22} color={C.danger} />
                       </TouchableOpacity>
                     </View>
                   ))}
                 </View>
               )}
 
-              {/* Affichage de l'image URL si renseignée */}
-              {imageUrl.trim() && (
-              <View style={styles.imagePreview}>
-                <Image source={{ uri: imageUrl }} style={styles.previewImage} />
-                <View style={styles.imageOverlay}>
-                    <Text style={styles.imageLabel}>URL</Text>
+              {imageUrl.trim() !== '' && (
+                <View style={styles.imageThumb}>
+                  <Image source={{ uri: imageUrl }} style={styles.thumbImg} />
+                  <View style={styles.thumbBadge}>
+                    <Text style={styles.thumbNum}>URL</Text>
                   </View>
-                  <TouchableOpacity 
-                    style={styles.removeImageButton} 
-                    onPress={() => setImageUrl('')}
-                  >
-                    <Ionicons name="close-circle" size={24} color="#FF4757" />
+                  <TouchableOpacity style={styles.thumbRemove} onPress={() => setImageUrl('')}>
+                    <Ionicons name="close-circle" size={22} color={C.danger} />
                   </TouchableOpacity>
                 </View>
               )}
 
-              {/* Champ URL uniquement si on est en mode URL */}
               {imageSource === 'url' && (
                 <InputField
                   label="URL de l'image"
@@ -330,23 +255,23 @@ export default function CreateMemoryScreen() {
                   iconName="link"
                 />
               )}
-              </View>
+            </View>
           </View>
         </View>
 
-        {/* Section Détails du voyage */}
+        {/* DÉTAILS */}
         <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconContainer}>
-              <Ionicons name="calendar" size={24} color="#2F7417" />
+          <View style={styles.sectionHead}>
+            <View style={styles.sectionIcon}>
+              <Ionicons name="calendar" size={22} color={C.cream} />
             </View>
             <Text style={styles.sectionTitle}>Détails du voyage</Text>
           </View>
 
-          <View style={styles.cardContent}>
+          <View style={styles.cardBody}>
             <View style={styles.selectionGroup}>
-              <Text style={styles.label}>Type de voyage</Text>
-              <View style={styles.selectionContainer}>
+              <Text style={styles.fieldLabel}>Type de voyage</Text>
+              <View style={styles.selectionRow}>
                 {tripTypes.map((type) => (
                   <SelectionButton
                     key={type}
@@ -359,36 +284,29 @@ export default function CreateMemoryScreen() {
             </View>
 
             <View style={styles.selectionGroup}>
-              <Text style={styles.label}>Durée</Text>
-              <View style={styles.selectionContainer}>
-                {durations.map((duration) => (
+              <Text style={styles.fieldLabel}>Durée</Text>
+              <View style={styles.selectionRow}>
+                {durations.map((d) => (
                   <SelectionButton
-                    key={duration}
-                    title={duration}
-                    selected={selectedDuration === duration}
-                    onPress={() => setSelectedDuration(duration)}
+                    key={d}
+                    title={d}
+                    selected={selectedDuration === d}
+                    onPress={() => setSelectedDuration(d)}
                   />
                 ))}
               </View>
             </View>
 
             <View style={styles.selectionGroup}>
-              <Text style={styles.label}>Note globale</Text>
-              <View style={styles.ratingContainer}>
-                {ratings.map((rating) => (
+              <Text style={styles.fieldLabel}>Note globale</Text>
+              <View style={styles.ratingRow}>
+                {ratings.map((r) => (
                   <TouchableOpacity
-                    key={rating}
-                    style={[
-                      styles.starButton,
-                      selectedRating >= rating && styles.starButtonSelected
-                    ]}
-                    onPress={() => setSelectedRating(rating)}
+                    key={r}
+                    style={[styles.starBtn, selectedRating >= r && styles.starBtnSelected]}
+                    onPress={() => setSelectedRating(r)}
                   >
-                    <Ionicons 
-                      name="star" 
-                      size={28} 
-                      color={selectedRating >= rating ? "#FFD700" : "#E0E0E0"} 
-                    />
+                    <Ionicons name="star" size={26} color={selectedRating >= r ? '#FFD700' : 'rgba(255,255,255,0.18)'} />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -396,351 +314,142 @@ export default function CreateMemoryScreen() {
           </View>
         </View>
 
-        {/* Section Souvenirs */}
+        {/* SOUVENIRS */}
         <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconContainer}>
-              <Ionicons name="heart" size={24} color="#2F7417" />
+          <View style={styles.sectionHead}>
+            <View style={styles.sectionIcon}>
+              <Ionicons name="heart" size={22} color={C.cream} />
             </View>
             <Text style={styles.sectionTitle}>Vos souvenirs</Text>
           </View>
-          
-          <View style={styles.cardContent}>
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Racontez votre expérience</Text>
+
+          <View style={styles.cardBody}>
+            <View style={styles.fieldWrap}>
+              <Text style={styles.fieldLabel}>Racontez votre expérience</Text>
               <TextInput
-                style={styles.memoryInput}
-                placeholder="Partagez vos meilleurs moments, anecdotes, conseils..."
+                style={styles.memoryArea}
+                placeholder="Partagez vos meilleurs moments, anecdotes, conseils…"
                 value={memoryText}
                 onChangeText={setMemoryText}
                 multiline
                 numberOfLines={6}
                 textAlignVertical="top"
-                placeholderTextColor="#999"
+                placeholderTextColor="rgba(255,255,255,0.28)"
               />
             </View>
           </View>
         </View>
 
-        {/* Bouton de sauvegarde amélioré */}
+        {/* SAUVEGARDER */}
         <View style={styles.saveSection}>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSaveMemory}>
-            <View style={styles.saveButtonContent}>
-              <Ionicons name="bookmark" size={22} color="#FFFFFF" />
-              <Text style={styles.saveButtonText}>Sauvegarder le souvenir</Text>
+          <TouchableOpacity style={styles.saveBtn} onPress={handleSaveMemory}>
+            <View style={styles.saveBtnContent}>
+              <Ionicons name="bookmark" size={20} color={C.bg} />
+              <Text style={styles.saveBtnText}>Sauvegarder le souvenir</Text>
             </View>
-            <View style={styles.saveButtonIcon}>
-              <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+            <View style={styles.saveBtnArrow}>
+              <Ionicons name="arrow-forward" size={18} color={C.bg} />
             </View>
           </TouchableOpacity>
         </View>
+
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
+  container: { flex: 1, backgroundColor: C.bg },
+
+  /* HEADER */
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E9ECEF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16,
+    borderBottomWidth: 1, borderBottomColor: C.border, backgroundColor: C.bg,
   },
   backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F0F9F0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#2F7417',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: C.creamFaint, justifyContent: 'center', alignItems: 'center',
   },
-  headerContent: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 2,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '400',
-  },
-  placeholder: {
-    width: 44,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 120,
-  },
+  headerContent: { flex: 1, alignItems: 'center' },
+  title:    { fontSize: 20, fontWeight: '200', letterSpacing: 1.2, color: C.white },
+  subtitle: { fontSize: 12, color: C.creamDim, fontWeight: '300', marginTop: 2 },
+
+  scroll:        { flex: 1 },
+  scrollContent: { padding: 20, paddingBottom: 120 },
+
+  /* SECTION CARD */
   sectionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#E9ECEF',
-    overflow: 'hidden',
+    backgroundColor: C.card, borderRadius: 16, marginBottom: 16,
+    borderWidth: 1, borderColor: C.border, overflow: 'hidden',
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F3F5',
+  sectionHead: {
+    flexDirection: 'row', alignItems: 'center',
+    padding: 18, paddingBottom: 14,
+    borderBottomWidth: 1, borderBottomColor: C.border,
   },
-  sectionIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F0F9F0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+  sectionIcon: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: C.creamFaint, justifyContent: 'center', alignItems: 'center', marginRight: 12,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1a1a1a',
+  sectionTitle: { fontSize: 16, fontWeight: '500', color: C.white },
+  cardBody:     { padding: 18, paddingTop: 14 },
+
+  /* FIELDS */
+  fieldWrap:  { marginBottom: 16 },
+  fieldLabel: { fontSize: 13, fontWeight: '500', color: 'rgba(255,255,255,0.50)', marginBottom: 8, letterSpacing: 0.4 },
+  fieldSub:   { fontSize: 12, color: C.creamDim, marginBottom: 10, fontStyle: 'italic' },
+  textArea: {
+    borderWidth: 1, borderColor: C.border, borderRadius: 12,
+    padding: 14, fontSize: 15, backgroundColor: 'rgba(122,184,245,0.06)',
+    minHeight: 80, color: C.white, lineHeight: 22,
   },
-  cardContent: {
-    padding: 20,
-    paddingTop: 16,
+  memoryArea: {
+    borderWidth: 1, borderColor: C.border, borderRadius: 12,
+    padding: 14, fontSize: 15, backgroundColor: 'rgba(122,184,245,0.06)',
+    minHeight: 140, color: C.white, lineHeight: 22,
   },
-  inputContainer: {
-    marginBottom: 16,
+
+  /* IMAGE PICKER */
+  imagePickerBtn: {
+    borderWidth: 1.5, borderColor: C.borderMid, borderStyle: 'dashed',
+    borderRadius: 16, padding: 28, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(122,184,245,0.04)', marginTop: 4,
   },
-  label: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 8,
+  imagePickerText: { fontSize: 15, fontWeight: '500', color: C.cream, marginTop: 8 },
+  imagePickerSub:  { fontSize: 12, color: C.creamDim, marginTop: 4 },
+  imagesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12 },
+  imageThumb: { width: '47%', borderRadius: 12, overflow: 'hidden', marginTop: 10, position: 'relative' },
+  thumbImg:   { width: '100%', height: 120, borderRadius: 12 },
+  thumbBadge: {
+    position: 'absolute', top: 8, left: 8,
+    backgroundColor: 'rgba(122,184,245,0.80)',
+    borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2,
   },
-  textAreaInput: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    backgroundColor: '#FAFAFA',
-    minHeight: 80,
-    color: '#1a1a1a',
-    lineHeight: 22,
+  thumbNum:   { fontSize: 11, fontWeight: '700', color: '#0D0D0D' },
+  thumbRemove: { position: 'absolute', top: 6, right: 6 },
+
+  /* SELECTION */
+  selectionGroup: { marginBottom: 20 },
+  selectionRow:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  ratingRow: { flexDirection: 'row', gap: 4, paddingVertical: 8 },
+  starBtn: {
+    padding: 8, borderRadius: 8,
+    backgroundColor: 'rgba(122,184,245,0.06)', borderWidth: 1, borderColor: C.border,
   },
-  memoryInput: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    backgroundColor: '#FAFAFA',
-    minHeight: 140,
-    color: '#1a1a1a',
-    lineHeight: 22,
+  starBtnSelected: { backgroundColor: 'rgba(255,215,0,0.10)', borderColor: 'rgba(255,215,0,0.40)' },
+
+  /* SAVE */
+  saveSection: { marginTop: 4, marginBottom: 16 },
+  saveBtn: {
+    backgroundColor: C.cream, flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'space-between', paddingVertical: 18, paddingHorizontal: 24,
+    borderRadius: 16, shadowColor: C.cream, shadowOpacity: 0.30, shadowRadius: 10, elevation: 6,
   },
-  selectionGroup: {
-    marginBottom: 24,
-  },
-  selectionContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    gap: 4,
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  starButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#F8F9FA',
-    borderWidth: 1,
-    borderColor: '#E9ECEF',
-  },
-  starButtonSelected: {
-    backgroundColor: '#FFF8E1',
-    borderColor: '#FFD700',
-  },
-  imagePreview: {
-    marginTop: 12,
-    borderRadius: 12,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  previewImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 12,
-  },
-  imageOverlay: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  saveSection: {
-    marginTop: 10,
-  },
-  saveButton: {
-    backgroundColor: '#2F7417',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 18,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    shadowColor: '#2F7417',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  saveButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  saveButtonText: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '600',
-    marginLeft: 12,
-  },
-  saveButtonIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  // Nouveaux styles pour la sélection d'image
-  sublabel: {
-    fontSize: 13,
-    color: '#666',
-    marginBottom: 12,
-    fontStyle: 'italic',
-  },
-  imagePickerButton: {
-    borderWidth: 2,
-    borderColor: '#2F7417',
-    borderStyle: 'dashed',
-    borderRadius: 16,
-    padding: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F8FFF8',
-    marginTop: 8,
-  },
-  imagePickerText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2F7417',
-    marginTop: 8,
-  },
-  imagePickerSubtext: {
-    fontSize: 13,
-    color: '#666',
-    marginTop: 4,
-  },
-  imageActions: {
-    position: 'absolute',
-    bottom: 12,
-    left: 12,
-    right: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  imageActionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  imageActionText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#2F7417',
-    marginLeft: 4,
-  },
-  // Nouveaux styles pour la galerie multiple
-  imagesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 12,
-  },
-  imageNumber: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#fff',
-    backgroundColor: 'rgba(47, 116, 23, 0.8)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  imageLabel: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#fff',
-    backgroundColor: 'rgba(47, 116, 23, 0.8)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  removeImageButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+  saveBtnContent: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  saveBtnText: { color: C.bg, fontSize: 16, fontWeight: '600', marginLeft: 12 },
+  saveBtnArrow: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: 'rgba(13,13,13,0.18)', justifyContent: 'center', alignItems: 'center',
   },
 });

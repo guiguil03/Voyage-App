@@ -2,27 +2,40 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    Image,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import PersonalInfoForm from '@/features/profile/components/PersonalInfoForm';
 import SettingsForm from '@/features/profile/components/SettingsForm';
 import TravelPreferencesForm from '@/features/profile/components/TravelPreferencesForm';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import {
-    getCurrentUserProfile,
-    getProfileById,
-    Profile,
-    ProfileUpdate,
-    updateNotificationSettings,
-    updateTravelPreferences,
-    upsertProfile,
+  getCurrentUserProfile,
+  getProfileById,
+  Profile,
+  ProfileUpdate,
+  updateNotificationSettings,
+  updateTravelPreferences,
+  upsertProfile,
 } from '@/features/profile/services/profiles';
+
+const C = {
+  bg:         '#0D0D0D',
+  card:       'rgba(13,13,13,0.92)',
+  border:     'rgba(122,184,245,0.14)',
+  cream:      '#7AB8F5',
+  creamDim:   'rgba(122,184,245,0.50)',
+  creamFaint: 'rgba(122,184,245,0.18)',
+  white:      '#FFFFFF',
+  whiteDim:   'rgba(255,255,255,0.40)',
+};
 
 type TabType = 'info' | 'preferences' | 'settings';
 
@@ -34,40 +47,31 @@ export default function ProfilScreen() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('info');
 
-  // Charger le profil au montage
-  useEffect(() => {
-    loadProfile();
-  }, [user, userIdParam]);
+  useEffect(() => { loadProfile(); }, [user, userIdParam]);
 
   const loadProfile = async () => {
     if (userIdParam) {
-      // Afficher le profil d'un autre utilisateur
       try {
         const { data, error } = await getProfileById(userIdParam);
         if (error) {
-          console.error('Erreur lors du chargement du profil:', error);
           Alert.alert('Erreur', 'Impossible de charger le profil');
         } else {
           setProfile(data);
         }
-      } catch (error) {
-        console.error('Erreur inattendue:', error);
+      } catch {
         Alert.alert('Erreur', 'Une erreur inattendue est survenue');
       } finally {
         setLoading(false);
       }
     } else if (user) {
-      // Afficher le profil connecté
       try {
         const { data, error } = await getCurrentUserProfile();
         if (error) {
-          console.error('Erreur lors du chargement du profil:', error);
           Alert.alert('Erreur', 'Impossible de charger le profil');
         } else {
           setProfile(data);
         }
-      } catch (error) {
-        console.error('Erreur inattendue:', error);
+      } catch {
         Alert.alert('Erreur', 'Une erreur inattendue est survenue');
       } finally {
         setLoading(false);
@@ -78,113 +82,70 @@ export default function ProfilScreen() {
   };
 
   const handleSaveProfile = async (data: ProfileUpdate) => {
-    try {
-      const { data: updatedProfile, error } = await upsertProfile(data);
-      if (error) {
-        throw new Error(error);
-      }
-      setProfile(updatedProfile);
-    } catch (error: any) {
-      throw new Error(error.message || 'Erreur lors de la sauvegarde');
-    }
+    const { data: updated, error } = await upsertProfile(data);
+    if (error) throw new Error(error);
+    setProfile(updated);
   };
 
-  const handleSaveTravelPreferences = async (preferences: Profile['travel_preferences']) => {
-    try {
-      const { error } = await updateTravelPreferences(preferences);
-      if (error) {
-        throw new Error(error);
-      }
-      // Recharger le profil pour avoir les données à jour
-      await loadProfile();
-    } catch (error: any) {
-      throw new Error(error.message || 'Erreur lors de la sauvegarde');
-    }
+  const handleSaveTravelPreferences = async (prefs: Profile['travel_preferences']) => {
+    const { error } = await updateTravelPreferences(prefs);
+    if (error) throw new Error(error);
+    await loadProfile();
   };
 
   const handleSaveNotificationSettings = async (settings: Profile['notification_settings']) => {
-    try {
-      const { error } = await updateNotificationSettings(settings);
-      if (error) {
-        throw new Error(error);
-      }
-      // Recharger le profil pour avoir les données à jour
-      await loadProfile();
-    } catch (error: any) {
-      throw new Error(error.message || 'Erreur lors de la sauvegarde');
-    }
+    const { error } = await updateNotificationSettings(settings);
+    if (error) throw new Error(error);
+    await loadProfile();
   };
 
   const handleSavePrivacySettings = async (level: Profile['privacy_level']) => {
-    try {
-      const { error } = await upsertProfile({ privacy_level: level });
-      if (error) {
-        throw new Error(error);
-      }
-      // Recharger le profil pour avoir les données à jour
-      await loadProfile();
-    } catch (error: any) {
-      throw new Error(error.message || 'Erreur lors de la sauvegarde');
-    }
+    const { error } = await upsertProfile({ privacy_level: level });
+    if (error) throw new Error(error);
+    await loadProfile();
   };
 
-  const tabs = [
-    {
-      id: 'info' as TabType,
-      title: 'Informations',
-      icon: 'person',
-    },
-    {
-      id: 'preferences' as TabType,
-      title: 'Préférences',
-      icon: 'heart',
-    },
-    {
-      id: 'settings' as TabType,
-      title: 'Paramètres',
-      icon: 'settings',
-    },
+  const isOwnProfile = !userIdParam || (user && userIdParam === user.id);
+
+  const tabs: { id: TabType; title: string; icon: string }[] = [
+    { id: 'info',        title: 'Profil',      icon: 'person-outline' },
+    { id: 'preferences', title: 'Préférences', icon: 'heart-outline' },
+    { id: 'settings',    title: 'Paramètres',  icon: 'settings-outline' },
   ];
 
   if (authLoading || loading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Chargement du profil...</Text>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={C.cream} />
+          <Text style={styles.loadingText}>Chargement du profil…</Text>
+        </View>
       </SafeAreaView>
     );
   }
 
   if (!user) {
     return (
-      <SafeAreaView style={styles.errorContainer}>
-        <Text style={styles.errorText}>Vous devez être connecté pour accéder au profil</Text>
-        <TouchableOpacity style={styles.loginButton} onPress={() => router.push('/login')}>
-          <Text style={styles.loginButtonText}>Se connecter</Text>
-        </TouchableOpacity>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centered}>
+          <Ionicons name="person-outline" size={48} color={C.creamFaint} />
+          <Text style={styles.loadingText}>Vous devez être connecté</Text>
+          <TouchableOpacity style={styles.loginBtn} onPress={() => router.push('/login')}>
+            <Text style={styles.loginBtnText}>Se connecter</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     );
   }
 
-  // Désactive la modification si ce n'est pas le profil connecté
-  const isOwnProfile = !userIdParam || (user && userIdParam === user.id);
+  const displayName = profile?.full_name || user.email?.split('@')[0] || 'Voyageur';
+
   const renderContent = () => {
     switch (activeTab) {
       case 'info':
-        return (
-          <PersonalInfoForm
-            profile={profile}
-            onSave={handleSaveProfile}
-            loading={loading}
-          />
-        );
+        return <PersonalInfoForm profile={profile} onSave={handleSaveProfile} loading={loading} />;
       case 'preferences':
-        return (
-          <TravelPreferencesForm
-            profile={profile}
-            onSave={handleSaveTravelPreferences}
-            loading={loading}
-          />
-        );
+        return <TravelPreferencesForm profile={profile} onSave={handleSaveTravelPreferences} loading={loading} />;
       case 'settings':
         return isOwnProfile ? (
           <SettingsForm
@@ -194,7 +155,10 @@ export default function ProfilScreen() {
             loading={loading}
           />
         ) : (
-          <Text style={{ textAlign: 'center', color: '#888', marginTop: 30 }}>Paramètres non accessibles pour ce profil.</Text>
+          <View style={styles.centered}>
+            <Ionicons name="lock-closed-outline" size={36} color={C.creamFaint} />
+            <Text style={styles.loadingText}>Paramètres non accessibles</Text>
+          </View>
         );
       default:
         return null;
@@ -203,174 +167,120 @@ export default function ProfilScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header avec profil */}
-      <View style={styles.header}>
+
+      {/* BACK + PROFILE HEADER */}
+      <View style={styles.profileHeader}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+          <Ionicons name="arrow-back" size={22} color={C.cream} />
         </TouchableOpacity>
-        
-        <View style={styles.profileHeader}>
-          <View style={styles.avatarContainer}>
-            {profile?.avatar_url ? (
-              <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Ionicons name="person" size={40} color="#2F7417" />
-              </View>
-            )}
-          </View>
-          <Text style={styles.profileName}>
-            {profile?.full_name || user.email?.split('@')[0] || 'Voyageur'}
-          </Text>
-          <Text style={styles.profileEmail}>{profile?.email || user.email}</Text>
+
+        {/* Avatar */}
+        <View style={styles.avatarRing}>
+          {profile?.avatar_url ? (
+            <Image source={{ uri: profile.avatar_url }} style={styles.avatarImg} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Ionicons name="person" size={40} color={C.cream} />
+            </View>
+          )}
         </View>
+
+        <Text style={styles.profileName}>{displayName}</Text>
+        <Text style={styles.profileEmail}>{profile?.email || user.email}</Text>
+
+        {!isOwnProfile && (
+          <View style={styles.viewingBadge}>
+            <Ionicons name="eye-outline" size={13} color={C.creamDim} />
+            <Text style={styles.viewingText}>Profil public</Text>
+          </View>
+        )}
       </View>
 
-      {/* Navigation par onglets */}
-      <View style={styles.tabContainer}>
-        {tabs.map(tab => (
-          <TouchableOpacity
-            key={tab.id}
-            style={[styles.tab, activeTab === tab.id && styles.tabActive]}
-            onPress={() => setActiveTab(tab.id)}
-          >
-            <Ionicons
-              name={tab.icon as any}
-              size={20}
-              color={activeTab === tab.id ? '#2F7417' : '#666'}
-            />
-            <Text style={[
-              styles.tabText,
-              activeTab === tab.id && styles.tabTextActive
-            ]}>
-              {tab.title}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      {/* TAB BAR */}
+      <View style={styles.tabBar}>
+        {tabs.map(tab => {
+          const active = activeTab === tab.id;
+          return (
+            <TouchableOpacity
+              key={tab.id}
+              style={[styles.tab, active && styles.tabActive]}
+              onPress={() => setActiveTab(tab.id)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name={tab.icon as any} size={17} color={active ? C.cream : C.creamDim} />
+              <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.title}</Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
-      {/* Contenu de l'onglet actif */}
-      <View style={styles.content}>
-        {renderContent()}
-      </View>
+      {/* CONTENT */}
+      <View style={styles.content}>{renderContent()}</View>
+
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
+  container: { flex: 1, backgroundColor: C.bg },
+
+  centered: {
+    flex: 1, justifyContent: 'center', alignItems: 'center',
+    gap: 16, paddingHorizontal: 40,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  loginButton: {
-    backgroundColor: '#2F7417',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  loginButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-  },
-  backButton: {
-    marginBottom: 20,
-  },
+  loadingText: { fontSize: 15, color: C.creamDim, fontWeight: '300', textAlign: 'center' },
+  loginBtn:     { backgroundColor: C.cream, borderRadius: 20, paddingHorizontal: 28, paddingVertical: 13 },
+  loginBtnText: { color: C.bg, fontSize: 15, fontWeight: '600', letterSpacing: 0.5 },
+
+  /* HEADER */
   profileHeader: {
     alignItems: 'center',
+    paddingHorizontal: 22, paddingTop: 16, paddingBottom: 24,
+    borderBottomWidth: 1, borderBottomColor: C.border,
   },
-  avatarContainer: {
-    marginBottom: 12,
+  backButton: {
+    alignSelf: 'flex-start',
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: C.creamFaint, justifyContent: 'center', alignItems: 'center',
+    marginBottom: 16,
   },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  avatarRing: {
+    width: 96, height: 96, borderRadius: 48,
+    borderWidth: 2, borderColor: C.cream,
+    padding: 3, marginBottom: 14,
   },
+  avatarImg:         { width: '100%', height: '100%', borderRadius: 44 },
   avatarPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#F0F9F0',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: '100%', height: '100%', borderRadius: 44,
+    backgroundColor: 'rgba(122,184,245,0.08)',
+    justifyContent: 'center', alignItems: 'center',
   },
-  profileName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 4,
+  profileName:  { fontSize: 24, fontWeight: '200', letterSpacing: 1.5, color: C.white, marginBottom: 4 },
+  profileEmail: { fontSize: 13, color: C.creamDim, fontWeight: '300' },
+  viewingBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 10,
+    borderWidth: 1, borderColor: 'rgba(122,184,245,0.20)',
+    borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5,
   },
-  profileEmail: {
-    fontSize: 14,
-    color: '#666',
-  },
-  tabContainer: {
+  viewingText: { fontSize: 12, color: C.creamDim, fontWeight: '300' },
+
+  /* TAB BAR */
+  tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#f8f9fa',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
+    marginHorizontal: 22, marginTop: 16, marginBottom: 4,
+    backgroundColor: 'rgba(122,184,245,0.04)',
+    borderRadius: 14, borderWidth: 1, borderColor: C.border, padding: 4,
   },
   tab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    marginHorizontal: 2,
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 5, paddingVertical: 10, borderRadius: 10,
   },
   tabActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: 'rgba(122,184,245,0.10)',
+    borderWidth: 1, borderColor: C.creamFaint,
   },
-  tabText: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
-    marginLeft: 4,
-  },
-  tabTextActive: {
-    color: '#2F7417',
-    fontWeight: '600',
-  },
-  content: {
-    flex: 1,
-  },
-}); 
+  tabText:       { fontSize: 12, color: C.creamDim, fontWeight: '400' },
+  tabTextActive: { color: C.cream, fontWeight: '500' },
+
+  content: { flex: 1 },
+});

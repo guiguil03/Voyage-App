@@ -18,6 +18,19 @@ import {
   View,
 } from 'react-native';
 
+const C = {
+  bg:         '#0D0D0D',
+  card:       'rgba(18,18,18,0.95)',
+  border:     'rgba(122,184,245,0.12)',
+  borderMid:  'rgba(122,184,245,0.22)',
+  cream:      '#7AB8F5',
+  creamDim:   'rgba(122,184,245,0.50)',
+  creamFaint: 'rgba(122,184,245,0.14)',
+  white:      '#FFFFFF',
+  whiteDim:   'rgba(255,255,255,0.45)',
+  danger:     '#EF4444',
+};
+
 export default function PlanTripScreen() {
   const params = useLocalSearchParams();
   const initialTrip = params.tripData ? JSON.parse(params.tripData as string) : null;
@@ -38,7 +51,6 @@ export default function PlanTripScreen() {
   const interestThemes = ['Culture', 'Gastronomy', 'Sport', 'Nature', 'Relaxation'];
   const activityLevels = ['Relax', 'Balanced', 'Intense'];
 
-  // Calcul du pourcentage de completion
   const getCompletionPercentage = () => {
     let completed = 0;
     if (destination.trim()) completed++;
@@ -62,14 +74,11 @@ export default function PlanTripScreen() {
       Alert.alert('Destination requise', 'Veuillez saisir une destination');
       return;
     }
-
     if (!user) {
       Alert.alert('Connexion requise', 'Veuillez vous connecter pour créer un voyage');
       return;
     }
-
     setIsLoading(true);
-
     try {
       const tripPlanData = {
         destination: destination.trim(),
@@ -79,64 +88,54 @@ export default function PlanTripScreen() {
         interests: selectedThemes,
         activityLevel: selectedActivityLevel as 'Relax' | 'Balanced' | 'Intense',
       };
-
-      // Enregistrer le voyage dans la base de données
       const { data: tripPlan, error: saveError } = await createTripPlan(tripPlanData);
       if (saveError || !tripPlan) {
         Alert.alert('Erreur', 'Impossible d\'enregistrer le voyage. Veuillez réessayer.');
         setIsLoading(false);
         return;
       }
-
-      // Appel OpenTripMap pour générer un planning personnalisé
+      const themeToKinds: Record<string, string[]> = {
+        culture:     ['cultural', 'museums', 'historic'],
+        gastronomy:  ['foods'],
+        sport:       ['sport', 'stadiums'],
+        nature:      ['natural', 'beaches', 'mountains'],
+        relaxation:  ['viewpoints', 'tourist_object', 'interesting_places'],
+      };
+      const allKinds = [...new Set(
+        selectedThemes.flatMap(t => themeToKinds[t.toLowerCase()] ?? ['interesting_places'])
+      )];
       const otm = getOpenTripMapService();
-      const otmResult = await otm.searchByCity(destination.trim(), {
-        kinds: selectedThemes.map(theme => theme.toLowerCase()),
-        limit: 200, // plus de lieux
+      const fsqResult = await otm.searchByCity(destination.trim(), {
+        kinds: allKinds,
+        limit: 200,
         radius: 15000,
-        minRate: 3
+        minRate: 3,
       });
-
-      let planningMessage = '';
-      if (otmResult.success && otmResult.data && otmResult.data.places.length > 0) {
-        // Aller vers la page planning avec le planning et les infos du voyage
+      if (fsqResult.success && fsqResult.data && fsqResult.data.places.length > 0) {
         router.push({
           pathname: '/planning',
           params: {
-            planning: JSON.stringify(otmResult.data.places),
+            planning: JSON.stringify(fsqResult.data!.places),
             trip: JSON.stringify({
               destination: destination.trim(),
               startDate: startDate ? startDate.toISOString() : '',
-              endDate: endDate ? endDate.toISOString() : ''
-            })
-          }
+              endDate: endDate ? endDate.toISOString() : '',
+            }),
+          },
         });
         return;
-      } else {
-        planningMessage = `Aucune activité trouvée pour ${destination} avec vos critères.`;
       }
-
       Alert.alert(
         'Itinéraire généré !',
-        planningMessage,
+        `Aucune activité trouvée pour ${destination} avec vos critères.`,
         [
-          {
-            text: 'Voir mes voyages',
-            onPress: () => router.push('/(tabs)/voyage')
-          },
-          {
-            text: 'Retour à l\'accueil',
-            onPress: () => router.push('/(tabs)/home')
-          }
+          { text: 'Voir mes voyages', onPress: () => router.push('/(tabs)/voyage') },
+          { text: 'Retour à l\'accueil', onPress: () => router.push('/(tabs)/home') },
         ]
       );
     } catch (error) {
       console.error('Erreur lors de la création du voyage:', error);
-      Alert.alert(
-        'Erreur',
-        'Une erreur est survenue lors de l\'enregistrement. Veuillez réessayer.',
-        [{ text: 'OK' }]
-      );
+      Alert.alert('Erreur', 'Une erreur est survenue lors de l\'enregistrement. Veuillez réessayer.', [{ text: 'OK' }]);
     } finally {
       setIsLoading(false);
     }
@@ -155,8 +154,6 @@ export default function PlanTripScreen() {
     const dates = [];
     const today = new Date();
     const startFromDate = datePickerType === 'end' && startDate ? startDate : today;
-    
-    // Générer les 60 prochains jours
     for (let i = 0; i < 60; i++) {
       const date = new Date(startFromDate);
       date.setDate(startFromDate.getDate() + i);
@@ -168,10 +165,7 @@ export default function PlanTripScreen() {
   const selectDate = (selectedDate: Date) => {
     if (datePickerType === 'start') {
       setStartDate(selectedDate);
-      // Si la date de fin est antérieure à la nouvelle date de début, la réinitialiser
-      if (endDate && selectedDate > endDate) {
-        setEndDate(null);
-      }
+      if (endDate && selectedDate > endDate) setEndDate(null);
     } else {
       setEndDate(selectedDate);
     }
@@ -182,7 +176,7 @@ export default function PlanTripScreen() {
     if (startDate && endDate) {
       return `Du ${startDate.toLocaleDateString('fr-FR')} au ${endDate.toLocaleDateString('fr-FR')}`;
     } else if (startDate) {
-      return `Départ: ${startDate.toLocaleDateString('fr-FR')} - Choisir date de retour`;
+      return `Départ: ${startDate.toLocaleDateString('fr-FR')} — choisir date de retour`;
     }
     return '';
   };
@@ -191,171 +185,146 @@ export default function PlanTripScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header amélioré avec progression */}
+
+      {/* HEADER */}
       <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => router.push('/(tabs)/create')}
-          >
-          <Ionicons name="arrow-back" size={24} color="#2F7417" />
-          </TouchableOpacity>
-        
+        <TouchableOpacity style={styles.backButton} onPress={() => router.push('/(tabs)/create')}>
+          <Ionicons name="arrow-back" size={22} color={C.cream} />
+        </TouchableOpacity>
+
         <View style={styles.headerContent}>
           <Text style={styles.title}>Planifier un voyage</Text>
           <Text style={styles.subtitle}>Créons votre aventure parfaite</Text>
         </View>
 
-        <View style={styles.progressContainer}>
+        <View style={styles.progressBadge}>
           <Text style={styles.progressText}>{completionPercentage}%</Text>
         </View>
       </View>
 
-      {/* Barre de progression */}
-      <View style={styles.progressBarContainer}>
-        <View style={styles.progressBarBackground}>
-          <View 
-            style={[
-              styles.progressBar, 
-              { width: `${completionPercentage}%` }
-            ]} 
-          />
+      {/* PROGRESS BAR */}
+      <View style={styles.progressBarWrap}>
+        <View style={styles.progressBarBg}>
+          <View style={[styles.progressBar, { width: `${completionPercentage}%` as any }]} />
         </View>
       </View>
 
-      <ScrollView 
-        style={styles.scrollView} 
-        showsVerticalScrollIndicator={false} 
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Section Destination */}
+      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+
+        {/* DESTINATION */}
         <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconContainer}>
-              <Ionicons name="location" size={24} color="#2F7417" />
+          <View style={styles.sectionHead}>
+            <View style={styles.sectionIcon}>
+              <Ionicons name="location" size={22} color={C.cream} />
             </View>
-            <View style={styles.sectionHeaderText}>
+            <View style={{ flex: 1 }}>
               <Text style={styles.sectionTitle}>Destination</Text>
-              <Text style={styles.sectionSubtitle}>Où souhaitez-vous aller ?</Text>
+              <Text style={styles.sectionSub}>Où souhaitez-vous aller ?</Text>
             </View>
             {destination.trim() && (
-              <View style={styles.completedIndicator}>
-                <Ionicons name="checkmark-circle" size={20} color="#2F7417" />
-              </View>
-            )}
-        </View>
-
-          <View style={styles.cardContent}>
-        <InputField
-          label="Destination"
-          placeholder="Ville ou Pays"
-          value={destination}
-          onChangeText={setDestination}
-          iconName="location"
-        />
-
-            <View style={styles.dateSection}>
-              <Text style={styles.dateLabel}>Dates de voyage</Text>
-              
-              <View style={styles.dateButtonsContainer}>
-                <TouchableOpacity 
-                  style={[styles.dateButton, startDate && styles.dateButtonSelected]}
-                  onPress={() => openDatePicker('start')}
-                >
-                  <Ionicons name="calendar" size={20} color={startDate ? "#2F7417" : "#666"} />
-                  <Text style={[styles.dateButtonText, startDate && styles.dateButtonTextSelected]}>
-                    {startDate ? startDate.toLocaleDateString('fr-FR') : 'Date de départ'}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                  style={[
-                    styles.dateButton, 
-                    endDate && styles.dateButtonSelected,
-                    !startDate && styles.dateButtonDisabled
-                  ]}
-                  onPress={() => openDatePicker('end')}
-                  disabled={!startDate}
-                >
-                  <Ionicons name="calendar" size={20} color={endDate ? "#2F7417" : "#666"} />
-                  <Text style={[styles.dateButtonText, endDate && styles.dateButtonTextSelected]}>
-                    {endDate ? endDate.toLocaleDateString('fr-FR') : 'Date de retour'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {formatDateRange() && (
-                <View style={styles.dateRangeDisplay}>
-                  <Text style={styles.dateRangeText}>{formatDateRange()}</Text>
-                </View>
-              )}
-            </View>
-          </View>
-        </View>
-
-        {/* Section Type de voyage */}
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconContainer}>
-              <Ionicons name="people" size={24} color="#2F7417" />
-            </View>
-            <View style={styles.sectionHeaderText}>
-          <Text style={styles.sectionTitle}>Type de voyage</Text>
-              <Text style={styles.sectionSubtitle}>Avec qui voyagez-vous ?</Text>
-            </View>
-            <View style={styles.completedIndicator}>
-              <Ionicons name="checkmark-circle" size={20} color="#2F7417" />
-            </View>
-          </View>
-
-          <View style={styles.cardContent}>
-            <View style={styles.selectionGrid}>
-            {travelTypes.map((type) => (
-              <SelectionButton
-                key={type}
-                title={type}
-                selected={selectedTravelType === type}
-                onPress={() => setSelectedTravelType(type)}
-                  style={styles.gridButton}
-              />
-            ))}
-            </View>
-          </View>
-        </View>
-
-        {/* Section Centres d'intérêt */}
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconContainer}>
-              <Ionicons name="heart" size={24} color="#2F7417" />
-            </View>
-            <View style={styles.sectionHeaderText}>
-          <Text style={styles.sectionTitle}>Centres d&apos;intérêt</Text>
-              <Text style={styles.sectionSubtitle}>Qu&apos;est-ce qui vous passionne ?</Text>
-            </View>
-            {selectedThemes.length > 0 && (
-              <View style={styles.completedIndicator}>
-                <Ionicons name="checkmark-circle" size={20} color="#2F7417" />
-              </View>
+              <Ionicons name="checkmark-circle" size={20} color={C.cream} />
             )}
           </View>
 
-          <View style={styles.cardContent}>
-          <View style={styles.themesContainer}>
-            {interestThemes.map((theme) => (
-              <SelectionButton
-                key={theme}
-                title={theme}
-                selected={selectedThemes.includes(theme)}
-                onPress={() => handleThemeToggle(theme)}
-                variant="theme"
-                  style={styles.themeButton}
-              />
-            ))}
+          <View style={styles.cardBody}>
+            <InputField
+              label="Destination"
+              placeholder="Ville ou Pays"
+              value={destination}
+              onChangeText={setDestination}
+              iconName="location"
+            />
+
+            <Text style={styles.dateLabel}>Dates de voyage</Text>
+            <View style={styles.dateRow}>
+              <TouchableOpacity
+                style={[styles.dateBtn, startDate && styles.dateBtnSelected]}
+                onPress={() => openDatePicker('start')}
+              >
+                <Ionicons name="calendar" size={18} color={startDate ? C.cream : C.whiteDim} />
+                <Text style={[styles.dateBtnText, startDate && styles.dateBtnTextSelected]}>
+                  {startDate ? startDate.toLocaleDateString('fr-FR') : 'Date de départ'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.dateBtn, endDate && styles.dateBtnSelected, !startDate && styles.dateBtnDisabled]}
+                onPress={() => openDatePicker('end')}
+                disabled={!startDate}
+              >
+                <Ionicons name="calendar" size={18} color={endDate ? C.cream : C.whiteDim} />
+                <Text style={[styles.dateBtnText, endDate && styles.dateBtnTextSelected]}>
+                  {endDate ? endDate.toLocaleDateString('fr-FR') : 'Date de retour'}
+                </Text>
+              </TouchableOpacity>
             </View>
-            
+
+            {!!formatDateRange() && (
+              <View style={styles.dateRange}>
+                <Text style={styles.dateRangeText}>{formatDateRange()}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* TYPE DE VOYAGE */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHead}>
+            <View style={styles.sectionIcon}>
+              <Ionicons name="people" size={22} color={C.cream} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sectionTitle}>Type de voyage</Text>
+              <Text style={styles.sectionSub}>Avec qui voyagez-vous ?</Text>
+            </View>
+            <Ionicons name="checkmark-circle" size={20} color={C.cream} />
+          </View>
+
+          <View style={styles.cardBody}>
+            <View style={styles.grid}>
+              {travelTypes.map((type) => (
+                <SelectionButton
+                  key={type}
+                  title={type}
+                  selected={selectedTravelType === type}
+                  onPress={() => setSelectedTravelType(type)}
+                  style={styles.gridBtn}
+                />
+              ))}
+            </View>
+          </View>
+        </View>
+
+        {/* CENTRES D'INTÉRÊT */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHead}>
+            <View style={styles.sectionIcon}>
+              <Ionicons name="heart" size={22} color={C.cream} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sectionTitle}>Centres d&apos;intérêt</Text>
+              <Text style={styles.sectionSub}>Qu&apos;est-ce qui vous passionne ?</Text>
+            </View>
             {selectedThemes.length > 0 && (
-              <View style={styles.selectedThemesInfo}>
-                <Text style={styles.selectedThemesText}>
+              <Ionicons name="checkmark-circle" size={20} color={C.cream} />
+            )}
+          </View>
+
+          <View style={styles.cardBody}>
+            <View style={styles.themesRow}>
+              {interestThemes.map((theme) => (
+                <SelectionButton
+                  key={theme}
+                  title={theme}
+                  selected={selectedThemes.includes(theme)}
+                  onPress={() => handleThemeToggle(theme)}
+                  variant="theme"
+                />
+              ))}
+            </View>
+            {selectedThemes.length > 0 && (
+              <View style={styles.themesInfo}>
+                <Text style={styles.themesInfoText}>
                   {selectedThemes.length} thème{selectedThemes.length > 1 ? 's' : ''} sélectionné{selectedThemes.length > 1 ? 's' : ''}
                 </Text>
               </View>
@@ -363,50 +332,39 @@ export default function PlanTripScreen() {
           </View>
         </View>
 
-        {/* Section Niveau d'activité */}
+        {/* NIVEAU D'ACTIVITÉ */}
         <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconContainer}>
-              <Ionicons name="fitness" size={24} color="#2F7417" />
+          <View style={styles.sectionHead}>
+            <View style={styles.sectionIcon}>
+              <Ionicons name="fitness" size={22} color={C.cream} />
             </View>
-            <View style={styles.sectionHeaderText}>
-          <Text style={styles.sectionTitle}>Niveau d&apos;activité</Text>
-              <Text style={styles.sectionSubtitle}>Quel rythme préférez-vous ?</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sectionTitle}>Niveau d&apos;activité</Text>
+              <Text style={styles.sectionSub}>Quel rythme préférez-vous ?</Text>
             </View>
-            <View style={styles.completedIndicator}>
-              <Ionicons name="checkmark-circle" size={20} color="#2F7417" />
-            </View>
+            <Ionicons name="checkmark-circle" size={20} color={C.cream} />
           </View>
 
-          <View style={styles.cardContent}>
-            <View style={styles.activityLevelContainer}>
+          <View style={styles.cardBody}>
+            <View style={styles.activityCol}>
               {activityLevels.map((level, index) => (
                 <TouchableOpacity
-                key={level}
-                  style={[
-                    styles.activityButton,
-                    selectedActivityLevel === level && styles.activityButtonSelected
-                  ]}
-                onPress={() => setSelectedActivityLevel(level)}
+                  key={level}
+                  style={[styles.activityBtn, selectedActivityLevel === level && styles.activityBtnSelected]}
+                  onPress={() => setSelectedActivityLevel(level)}
                 >
-                  <View style={styles.activityIconContainer}>
-                    <Ionicons 
-                      name={index === 0 ? "bed" : index === 1 ? "walk" : "bicycle"} 
-                      size={24} 
-                      color={selectedActivityLevel === level ? "#2F7417" : "#666"} 
+                  <View style={styles.activityIconWrap}>
+                    <Ionicons
+                      name={index === 0 ? 'bed' : index === 1 ? 'walk' : 'bicycle'}
+                      size={22}
+                      color={selectedActivityLevel === level ? C.cream : C.whiteDim}
                     />
                   </View>
-                  <Text style={[
-                    styles.activityButtonText,
-                    selectedActivityLevel === level && styles.activityButtonTextSelected
-                  ]}>
+                  <Text style={[styles.activityBtnText, selectedActivityLevel === level && styles.activityBtnTextSelected]}>
                     {level}
                   </Text>
-                  <Text style={[
-                    styles.activityButtonSubtext,
-                    selectedActivityLevel === level && styles.activityButtonSubtextSelected
-                  ]}>
-                    {index === 0 ? "Tranquille" : index === 1 ? "Équilibré" : "Dynamique"}
+                  <Text style={[styles.activityBtnSub, selectedActivityLevel === level && styles.activityBtnSubSelected]}>
+                    {index === 0 ? 'Tranquille' : index === 1 ? 'Équilibré' : 'Dynamique'}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -414,100 +372,73 @@ export default function PlanTripScreen() {
           </View>
         </View>
 
-        {/* Résumé et bouton de génération */}
+        {/* RÉSUMÉ */}
         <View style={styles.summaryCard}>
-          <View style={styles.summaryHeader}>
-            <Ionicons name="document-text" size={24} color="#2F7417" />
+          <View style={styles.summaryHead}>
+            <Ionicons name="document-text" size={22} color={C.cream} />
             <Text style={styles.summaryTitle}>Résumé de votre voyage</Text>
           </View>
-          
-          <View style={styles.summaryContent}>
+          <View style={styles.summaryBody}>
             {destination.trim() && (
-              <View style={styles.summaryItem}>
-                <Ionicons name="location" size={16} color="#666" />
-                <Text style={styles.summaryItemText}>Destination: {destination}</Text>
+              <View style={styles.summaryRow}>
+                <Ionicons name="location" size={15} color={C.creamDim} />
+                <Text style={styles.summaryText}>Destination : {destination}</Text>
               </View>
             )}
-            
             {startDate && endDate && (
-              <View style={styles.summaryItem}>
-                <Ionicons name="calendar" size={16} color="#666" />
-                <Text style={styles.summaryItemText}>
+              <View style={styles.summaryRow}>
+                <Ionicons name="calendar" size={15} color={C.creamDim} />
+                <Text style={styles.summaryText}>
                   Du {startDate.toLocaleDateString('fr-FR')} au {endDate.toLocaleDateString('fr-FR')}
                 </Text>
               </View>
             )}
-            
-            <View style={styles.summaryItem}>
-              <Ionicons name="people" size={16} color="#666" />
-              <Text style={styles.summaryItemText}>Type: {selectedTravelType}</Text>
+            <View style={styles.summaryRow}>
+              <Ionicons name="people" size={15} color={C.creamDim} />
+              <Text style={styles.summaryText}>Type : {selectedTravelType}</Text>
             </View>
-            
             {selectedThemes.length > 0 && (
-              <View style={styles.summaryItem}>
-                <Ionicons name="heart" size={16} color="#666" />
-                <Text style={styles.summaryItemText}>
-                  Intérêts: {selectedThemes.join(', ')}
-                </Text>
+              <View style={styles.summaryRow}>
+                <Ionicons name="heart" size={15} color={C.creamDim} />
+                <Text style={styles.summaryText}>Intérêts : {selectedThemes.join(', ')}</Text>
               </View>
             )}
-            
-            <View style={styles.summaryItem}>
-              <Ionicons name="fitness" size={16} color="#666" />
-              <Text style={styles.summaryItemText}>Rythme: {selectedActivityLevel}</Text>
+            <View style={styles.summaryRow}>
+              <Ionicons name="fitness" size={15} color={C.creamDim} />
+              <Text style={styles.summaryText}>Rythme : {selectedActivityLevel}</Text>
             </View>
           </View>
         </View>
 
-        {/* Bouton de génération amélioré */}
+        {/* GÉNÉRER */}
         <View style={styles.generateSection}>
-          <TouchableOpacity 
-            style={[
-              styles.generateButton,
-              (!destination.trim() || isLoading) && styles.generateButtonDisabled
-            ]} 
+          <TouchableOpacity
+            style={[styles.generateBtn, (!destination.trim() || isLoading) && styles.generateBtnDisabled]}
             onPress={handleGenerateItinerary}
             disabled={!destination.trim() || isLoading}
           >
-            <View style={styles.generateButtonContent}>
-              <Ionicons 
-                name={isLoading ? "hourglass" : "rocket"} 
-                size={22} 
-                color={(destination.trim() && !isLoading) ? "#FFFFFF" : "#999"} 
+            <View style={styles.generateBtnContent}>
+              <Ionicons
+                name={isLoading ? 'hourglass' : 'rocket'}
+                size={22}
+                color={(destination.trim() && !isLoading) ? C.bg : 'rgba(122,184,245,0.40)'}
               />
-              <Text style={[
-                styles.generateButtonText,
-                (!destination.trim() || isLoading) && styles.generateButtonTextDisabled
-              ]}>
-                {isLoading ? 'Enregistrement...' : 'Générer l\'itinéraire'}
+              <Text style={[styles.generateBtnText, (!destination.trim() || isLoading) && styles.generateBtnTextDisabled]}>
+                {isLoading ? 'Enregistrement...' : "Générer l'itinéraire"}
               </Text>
             </View>
-            <View style={[
-              styles.generateButtonIcon,
-              (!destination.trim() || isLoading) && styles.generateButtonIconDisabled
-            ]}>
-              <Ionicons 
-                name="arrow-forward" 
-                size={20} 
-                color={(destination.trim() && !isLoading) ? "#FFFFFF" : "#999"} 
+            <View style={[styles.generateBtnArrow, (!destination.trim() || isLoading) && styles.generateBtnArrowDisabled]}>
+              <Ionicons
+                name="arrow-forward"
+                size={18}
+                color={(destination.trim() && !isLoading) ? C.bg : 'rgba(122,184,245,0.40)'}
               />
             </View>
           </TouchableOpacity>
-          {/* Bouton de suppression si modification */}
+
           {initialTrip && (
             <TouchableOpacity
-              style={{
-                marginTop: 24,
-                backgroundColor: '#FF4757',
-                borderRadius: 16,
-                paddingVertical: 16,
-                alignItems: 'center',
-                shadowColor: '#FF4757',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.12,
-                shadowRadius: 8,
-                elevation: 2,
-              }}
+              style={styles.deleteBtn}
               onPress={() => {
                 Alert.alert(
                   'Supprimer le voyage',
@@ -521,61 +452,55 @@ export default function PlanTripScreen() {
                         try {
                           const result = await deleteTripPlan(initialTrip.id);
                           if (result.error) {
-                            Alert.alert('Erreur', 'Impossible de supprimer: ' + result.error);
+                            Alert.alert('Erreur', 'Impossible de supprimer : ' + result.error);
                           } else {
                             Alert.alert('Supprimé', 'Le voyage a été supprimé.', [
-                              { text: 'OK', onPress: () => router.push('/(tabs)/voyage') }
+                              { text: 'OK', onPress: () => router.push('/(tabs)/voyage') },
                             ]);
                           }
-                        } catch (error) {
+                        } catch {
                           Alert.alert('Erreur', 'Une erreur inattendue est survenue.');
                         }
-                      }
-                    }
+                      },
+                    },
                   ]
                 );
               }}
             >
-              <Ionicons name="trash" size={20} color="#fff" style={{ marginBottom: 4 }} />
-              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Supprimer ce voyage</Text>
+              <Ionicons name="trash-outline" size={18} color="#EF4444" />
+              <Text style={styles.deleteBtnText}>Supprimer ce voyage</Text>
             </TouchableOpacity>
           )}
         </View>
-        
+
         {!destination.trim() && !isLoading && (
-          <Text style={styles.generateHint}>
-            Veuillez renseigner une destination pour continuer
-          </Text>
+          <Text style={styles.hint}>Veuillez renseigner une destination pour continuer</Text>
         )}
-        
         {isLoading && (
-          <Text style={styles.generateHint}>
-            Enregistrement de votre demande en cours...
-          </Text>
+          <Text style={styles.hint}>Enregistrement de votre demande en cours…</Text>
         )}
+
       </ScrollView>
 
-      {/* Modal de sélection de date */}
+      {/* MODAL DATE PICKER */}
       <Modal
         visible={showDatePicker}
-        transparent={true}
+        transparent
         animationType="slide"
         onRequestClose={() => setShowDatePicker(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
                 {datePickerType === 'start' ? 'Date de départ' : 'Date de retour'}
               </Text>
-              <TouchableOpacity 
-                style={styles.closeButton}
-                onPress={() => setShowDatePicker(false)}
-              >
-                <Ionicons name="close" size={24} color="#666" />
+              <TouchableOpacity style={styles.modalClose} onPress={() => setShowDatePicker(false)}>
+                <Ionicons name="close" size={20} color={C.creamDim} />
               </TouchableOpacity>
             </View>
-            
+
             <ScrollView style={styles.dateList} showsVerticalScrollIndicator={false}>
               {generateDateOptions().map((date, index) => (
                 <TouchableOpacity
@@ -583,438 +508,196 @@ export default function PlanTripScreen() {
                   style={styles.dateOption}
                   onPress={() => selectDate(date)}
                 >
-                  <View style={styles.dateOptionContent}>
-                    <Text style={styles.dateOptionDay}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.dateDay}>
                       {date.toLocaleDateString('fr-FR', { weekday: 'long' })}
                     </Text>
-                    <Text style={styles.dateOptionDate}>
-                      {date.toLocaleDateString('fr-FR', { 
-                        day: 'numeric', 
-                        month: 'long', 
-                        year: 'numeric' 
-                      })}
+                    <Text style={styles.dateVal}>
+                      {date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color="#2F7417" />
+                  <Ionicons name="chevron-forward" size={18} color={C.cream} />
                 </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
         </View>
       </Modal>
+
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
+  container:   { flex: 1, backgroundColor: C.bg },
+
+  /* HEADER */
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E9ECEF',
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16,
+    borderBottomWidth: 1, borderBottomColor: C.border,
+    backgroundColor: C.bg,
   },
   backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F0F9F0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#2F7417',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: C.creamFaint, justifyContent: 'center', alignItems: 'center',
   },
-  headerContent: {
-    flex: 1,
-    alignItems: 'center',
+  headerContent: { flex: 1, alignItems: 'center' },
+  title:    { fontSize: 20, fontWeight: '200', letterSpacing: 1.2, color: C.white },
+  subtitle: { fontSize: 12, color: C.creamDim, fontWeight: '300', marginTop: 2 },
+  progressBadge: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: C.creamFaint, justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, borderColor: C.borderMid,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 2,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '400',
-  },
-  progressContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F0F9F0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  progressText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#2F7417',
-  },
-  progressBarContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    backgroundColor: '#FFFFFF',
-  },
-  progressBarBackground: {
-    height: 4,
-    backgroundColor: '#E9ECEF',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: '#2F7417',
-    borderRadius: 2,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingTop: 20,
-    paddingBottom: 120,
-  },
+  progressText: { fontSize: 11, fontWeight: '600', color: C.cream },
+
+  /* PROGRESS BAR */
+  progressBarWrap: { paddingHorizontal: 20, paddingVertical: 12, backgroundColor: C.bg },
+  progressBarBg:   { height: 3, backgroundColor: 'rgba(122,184,245,0.10)', borderRadius: 2, overflow: 'hidden' },
+  progressBar:     { height: '100%', backgroundColor: C.cream, borderRadius: 2 },
+
+  /* SCROLL */
+  scroll:       { flex: 1 },
+  scrollContent: { padding: 20, paddingBottom: 120 },
+
+  /* SECTION CARD */
   sectionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#E9ECEF',
-    overflow: 'hidden',
+    backgroundColor: C.card,
+    borderRadius: 16, marginBottom: 16,
+    borderWidth: 1, borderColor: C.border, overflow: 'hidden',
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F3F5',
+  sectionHead: {
+    flexDirection: 'row', alignItems: 'center',
+    padding: 18, paddingBottom: 14,
+    borderBottomWidth: 1, borderBottomColor: C.border,
   },
-  sectionIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F0F9F0',
-    justifyContent: 'center',
-    alignItems: 'center',
+  sectionIcon: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: C.creamFaint, justifyContent: 'center', alignItems: 'center',
     marginRight: 12,
   },
-  sectionHeaderText: {
-    flex: 1,
+  sectionTitle: { fontSize: 16, fontWeight: '500', color: C.white, marginBottom: 2 },
+  sectionSub:   { fontSize: 12, color: C.creamDim, fontWeight: '300' },
+  cardBody:     { padding: 18, paddingTop: 14 },
+
+  /* DATES */
+  dateLabel: { fontSize: 13, fontWeight: '500', color: 'rgba(255,255,255,0.50)', marginBottom: 10, letterSpacing: 0.3 },
+  dateRow:   { flexDirection: 'row', gap: 10 },
+  dateBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8,
+    padding: 14, borderRadius: 12,
+    borderWidth: 1, borderColor: C.border,
+    backgroundColor: 'rgba(122,184,245,0.04)',
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    marginBottom: 2,
+  dateBtnSelected:  { borderColor: C.borderMid, backgroundColor: 'rgba(122,184,245,0.10)' },
+  dateBtnDisabled:  { opacity: 0.4 },
+  dateBtnText:      { fontSize: 13, color: C.whiteDim, fontWeight: '400', flex: 1 },
+  dateBtnTextSelected: { color: C.cream, fontWeight: '500' },
+  dateRange: {
+    marginTop: 10, padding: 10,
+    backgroundColor: 'rgba(122,184,245,0.08)',
+    borderRadius: 8, alignItems: 'center',
   },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '400',
+  dateRangeText: { fontSize: 13, color: C.cream, fontWeight: '500' },
+
+  /* GRID (travel type) */
+  grid:    { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  gridBtn: { flex: 1, minWidth: '45%' },
+
+  /* THEMES */
+  themesRow:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
+  themesInfo:     { backgroundColor: 'rgba(122,184,245,0.08)', borderRadius: 8, padding: 10, alignItems: 'center' },
+  themesInfoText: { fontSize: 13, color: C.cream, fontWeight: '500' },
+
+  /* ACTIVITY */
+  activityCol: { gap: 10 },
+  activityBtn: {
+    flexDirection: 'row', alignItems: 'center',
+    padding: 14, borderRadius: 12,
+    borderWidth: 1, borderColor: C.border,
+    backgroundColor: 'rgba(122,184,245,0.04)',
   },
-  completedIndicator: {
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+  activityBtnSelected: { borderColor: C.borderMid, backgroundColor: 'rgba(122,184,245,0.10)' },
+  activityIconWrap: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: 'rgba(122,184,245,0.08)',
+    justifyContent: 'center', alignItems: 'center', marginRight: 14,
   },
-  cardContent: {
-    padding: 20,
-    paddingTop: 16,
-  },
-  dateSection: {
-    marginBottom: 16,
-  },
-  dateLabel: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 12,
-  },
-  dateButtonsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  dateButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    backgroundColor: '#FAFAFA',
-    gap: 8,
-  },
-  dateButtonSelected: {
-    borderColor: '#2F7417',
-    backgroundColor: '#F0F9F0',
-  },
-  dateButtonDisabled: {
-    opacity: 0.5,
-  },
-  dateButtonText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-  },
-  dateButtonTextSelected: {
-    color: '#2F7417',
-    fontWeight: '600',
-  },
-  dateRangeDisplay: {
-    marginTop: 12,
-    padding: 12,
-    backgroundColor: '#F0F9F0',
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  dateRangeText: {
-    fontSize: 14,
-    color: '#2F7417',
-    fontWeight: '600',
-  },
-  selectionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  gridButton: {
-    flex: 1,
-    minWidth: '45%',
-  },
-  themesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
-  },
-  themeButton: {
-    marginBottom: 8,
-  },
-  selectedThemesInfo: {
-    backgroundColor: '#F0F9F0',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  selectedThemesText: {
-    fontSize: 14,
-    color: '#2F7417',
-    fontWeight: '500',
-  },
-  activityLevelContainer: {
-    gap: 12,
-  },
-  activityButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E9ECEF',
-    backgroundColor: '#FAFAFA',
-  },
-  activityButtonSelected: {
-    borderColor: '#2F7417',
-    backgroundColor: '#F0F9F0',
-  },
-  activityIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  activityButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    flex: 1,
-  },
-  activityButtonTextSelected: {
-    color: '#2F7417',
-  },
-  activityButtonSubtext: {
-    fontSize: 14,
-    color: '#666',
-  },
-  activityButtonSubtextSelected: {
-    color: '#2F7417',
-  },
+  activityBtnText:         { fontSize: 15, fontWeight: '500', color: C.whiteDim, flex: 1 },
+  activityBtnTextSelected: { color: C.cream },
+  activityBtnSub:          { fontSize: 12, color: 'rgba(255,255,255,0.30)' },
+  activityBtnSubSelected:  { color: C.creamDim },
+
+  /* SUMMARY */
   summaryCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    marginBottom: 20,
-    padding: 20,
-    borderWidth: 2,
-    borderColor: '#2F7417',
-    shadowColor: '#2F7417',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: C.card, borderRadius: 16, marginBottom: 16, padding: 18,
+    borderWidth: 1.5, borderColor: C.borderMid,
+    shadowColor: C.cream, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4,
   },
-  summaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  summaryTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    marginLeft: 12,
-  },
-  summaryContent: {
-    gap: 12,
-  },
-  summaryItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  summaryItemText: {
-    fontSize: 15,
-    color: '#333',
-    flex: 1,
-  },
-  generateSection: {
-    marginTop: 10,
-  },
-  generateButton: {
-    backgroundColor: '#2F7417',
-    flexDirection: 'row',
-    alignItems: 'center',
+  summaryHead:  { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+  summaryTitle: { fontSize: 16, fontWeight: '500', color: C.white, marginLeft: 10 },
+  summaryBody:  { gap: 10 },
+  summaryRow:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  summaryText:  { fontSize: 14, color: C.whiteDim, flex: 1, fontWeight: '300' },
+
+  /* GENERATE */
+  generateSection: { marginTop: 4 },
+  generateBtn: {
+    backgroundColor: C.cream, flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 18,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    shadowColor: '#2F7417',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    paddingVertical: 18, paddingHorizontal: 24, borderRadius: 16,
+    shadowColor: C.cream, shadowOpacity: 0.30, shadowRadius: 10, elevation: 6,
   },
-  generateButtonDisabled: {
-    backgroundColor: '#E9ECEF',
-    shadowOpacity: 0,
-    elevation: 0,
+  generateBtnDisabled: { backgroundColor: 'rgba(122,184,245,0.15)', shadowOpacity: 0, elevation: 0 },
+  generateBtnContent:  { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  generateBtnText:     { color: C.bg, fontSize: 16, fontWeight: '600', marginLeft: 12 },
+  generateBtnTextDisabled: { color: 'rgba(122,184,245,0.50)' },
+  generateBtnArrow: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: 'rgba(13,13,13,0.18)', justifyContent: 'center', alignItems: 'center',
   },
-  generateButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
+  generateBtnArrowDisabled: { backgroundColor: 'rgba(122,184,245,0.10)' },
+
+  deleteBtn: {
+    marginTop: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, paddingVertical: 14, borderRadius: 14,
+    borderWidth: 1, borderColor: 'rgba(239,68,68,0.30)',
+    backgroundColor: 'rgba(239,68,68,0.06)',
   },
-  generateButtonText: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '600',
-    marginLeft: 12,
-  },
-  generateButtonTextDisabled: {
-    color: '#999',
-  },
-  generateButtonIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  generateButtonIconDisabled: {
-    backgroundColor: 'rgba(153, 153, 153, 0.2)',
-  },
-  generateHint: {
-    textAlign: 'center',
-    marginTop: 12,
-    fontSize: 14,
-    color: '#666',
-    fontStyle: 'italic',
-  },
-  // Styles pour le modal de sélection de date
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+  deleteBtnText: { color: C.danger, fontSize: 15, fontWeight: '500' },
+
+  hint: { textAlign: 'center', marginTop: 12, fontSize: 13, color: C.creamDim, fontStyle: 'italic' },
+
+  /* MODAL */
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.80)', justifyContent: 'flex-end' },
+  modalSheet: {
+    backgroundColor: 'rgba(18,18,18,0.98)',
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
     maxHeight: '80%',
     paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    borderTopWidth: 1, borderColor: C.borderMid,
+  },
+  modalHandle: {
+    width: 36, height: 4, borderRadius: 2,
+    backgroundColor: 'rgba(122,184,245,0.30)',
+    alignSelf: 'center', marginTop: 10, marginBottom: 4,
   },
   modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E9ECEF',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    padding: 20, borderBottomWidth: 1, borderBottomColor: C.border,
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1a1a1a',
+  modalTitle: { fontSize: 17, fontWeight: '400', color: C.white, letterSpacing: 0.5 },
+  modalClose: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: C.creamFaint, justifyContent: 'center', alignItems: 'center',
   },
-  closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F8F9FA',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  dateList: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
+  dateList:   { flex: 1, paddingHorizontal: 20 },
   dateOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F3F5',
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 16, paddingHorizontal: 4,
+    borderBottomWidth: 1, borderBottomColor: C.border,
   },
-  dateOptionContent: {
-    flex: 1,
-  },
-  dateOptionDay: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '400',
-    textTransform: 'capitalize',
-  },
-  dateOptionDate: {
-    fontSize: 16,
-    color: '#1a1a1a',
-    fontWeight: '500',
-    marginTop: 2,
-  },
-}); 
+  dateDay: { fontSize: 12, color: C.creamDim, fontWeight: '300', textTransform: 'capitalize' },
+  dateVal: { fontSize: 15, color: C.white, fontWeight: '400', marginTop: 2 },
+});

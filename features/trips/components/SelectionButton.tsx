@@ -9,39 +9,25 @@ interface SelectionButtonProps {
   style?: any;
 }
 
-export default function SelectionButton({ 
-  title, 
-  selected, 
-  onPress, 
+export default function SelectionButton({
+  title,
+  selected,
+  onPress,
   variant = 'default',
-  style 
+  style,
 }: SelectionButtonProps) {
   const getButtonStyle = () => {
     if (variant === 'theme') {
-      return [
-        styles.themeButton,
-        selected && styles.themeButtonSelected,
-        style
-      ];
+      return [styles.themeButton, selected && styles.themeButtonSelected, style];
     }
-    return [
-      styles.defaultButton,
-      selected && styles.defaultButtonSelected,
-      style
-    ];
+    return [styles.defaultButton, selected && styles.defaultButtonSelected, style];
   };
 
   const getTextStyle = () => {
     if (variant === 'theme') {
-      return [
-        styles.themeButtonText,
-        selected && styles.themeButtonTextSelected
-      ];
+      return [styles.themeButtonText, selected && styles.themeButtonTextSelected];
     }
-    return [
-      styles.defaultButtonText,
-      selected && styles.defaultButtonTextSelected
-    ];
+    return [styles.defaultButtonText, selected && styles.defaultButtonTextSelected];
   };
 
   return (
@@ -53,45 +39,47 @@ export default function SelectionButton({
 
 const styles = StyleSheet.create({
   defaultButton: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'rgba(122,184,245,0.06)',
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: 'rgba(122,184,245,0.18)',
     flex: 1,
   },
   defaultButtonSelected: {
-    backgroundColor: '#2F7417',
-    borderColor: '#2F7417',
+    backgroundColor: '#7AB8F5',
+    borderColor: '#7AB8F5',
   },
   defaultButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#666',
+    color: 'rgba(255,255,255,0.55)',
   },
   defaultButtonTextSelected: {
-    color: '#FFFFFF',
+    color: '#0D0D0D',
+    fontWeight: '600',
   },
   themeButton: {
-    backgroundColor: '#F0F9F0',
+    backgroundColor: 'rgba(122,184,245,0.06)',
     borderRadius: 12,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: 'rgba(47, 116, 23, 0.3)',
+    borderColor: 'rgba(122,184,245,0.18)',
   },
   themeButtonSelected: {
-    backgroundColor: '#2F7417',
-    borderColor: '#2F7417',
+    backgroundColor: '#7AB8F5',
+    borderColor: '#7AB8F5',
   },
   themeButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#2F7417',
+    color: 'rgba(122,184,245,0.70)',
   },
   themeButtonTextSelected: {
-    color: '#FFFFFF',
+    color: '#0D0D0D',
+    fontWeight: '600',
   },
-}); 
+});

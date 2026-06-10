@@ -45,7 +45,7 @@ function DestRow({ text, dur, y, rev, op }: { text: string; dur: number; y: numb
   }, []);
   return (
     <Animated.View style={{ position: 'absolute', top: y, width: W * 12, transform: [{ translateX: x }] }}>
-      <Text style={{ fontSize: 12, fontWeight: '200', letterSpacing: 4, color: `rgba(245,237,214,${op})` }} numberOfLines={1}>
+      <Text style={{ fontSize: 12, fontWeight: '200', letterSpacing: 4, color: `rgba(122,184,245,${op})` }} numberOfLines={1}>
         {text.repeat(4)}
       </Text>
     </Animated.View>
@@ -55,10 +55,10 @@ function DestRow({ text, dur, y, rev, op }: { text: string; dur: number; y: numb
 const C = {
   bg:         '#0D0D0D',
   cardBg:     'rgba(13,13,13,0.72)',
-  cardBorder: 'rgba(245,237,214,0.18)',
-  cream:      '#F5EDD6',
-  creamDim:   'rgba(245,237,214,0.55)',
-  creamFocus: 'rgba(245,237,214,0.60)',
+  cardBorder: 'rgba(122,184,245,0.18)',
+  cream:      '#7AB8F5',
+  creamDim:   'rgba(122,184,245,0.55)',
+  creamFocus: 'rgba(122,184,245,0.60)',
   inputBg:    'rgba(255,255,255,0.06)',
   white:      '#FFFFFF',
   whiteDim:   'rgba(255,255,255,0.35)',
@@ -128,7 +128,7 @@ export default function RegisterScreen() {
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
           {ROWS.map((row, i) => <DestRow key={i} {...row} />)}
           <LinearGradient
-            colors={['rgba(245,237,214,0.06)', 'rgba(245,237,214,0.02)', 'transparent']}
+            colors={['rgba(122,184,245,0.06)', 'rgba(122,184,245,0.02)', 'transparent']}
             style={{ position: 'absolute', top: 0, left: 0, right: 0, height: H * 0.45 }}
           />
           <View style={styles.glowCircle} />
@@ -250,8 +250,8 @@ const styles = StyleSheet.create({
     width: 260,
     height: 260,
     borderRadius: 130,
-    backgroundColor: 'rgba(245,237,214,0.025)',
-    shadowColor: '#F5EDD6',
+    backgroundColor: 'rgba(122,184,245,0.025)',
+    shadowColor: '#7AB8F5',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 80,
@@ -268,22 +268,22 @@ const styles = StyleSheet.create({
     fontSize: 42,
     fontWeight: '200',
     letterSpacing: 10,
-    color: '#F5EDD6',
+    color: '#7AB8F5',
     marginBottom: 10,
   },
   appSubtitle: {
     fontSize: 12,
     letterSpacing: 5,
-    color: 'rgba(245,237,214,0.55)',
+    color: 'rgba(122,184,245,0.55)',
     fontWeight: '300',
   },
   card: {
     backgroundColor: 'rgba(13,13,13,0.72)',
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(245,237,214,0.18)',
+    borderColor: 'rgba(122,184,245,0.18)',
     padding: 28,
-    shadowColor: '#F5EDD6',
+    shadowColor: '#7AB8F5',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.08,
     shadowRadius: 30,
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 11,
     letterSpacing: 2,
-    color: 'rgba(245,237,214,0.60)',
+    color: 'rgba(122,184,245,0.60)',
     fontWeight: '400',
     marginBottom: 8,
     marginTop: 16,
@@ -310,15 +310,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(245,237,214,0.20)',
+    borderColor: 'rgba(122,184,245,0.20)',
     paddingHorizontal: 14,
     paddingVertical: 14,
   },
-  inputFocused: { borderColor: 'rgba(245,237,214,0.60)' },
+  inputFocused: { borderColor: 'rgba(122,184,245,0.60)' },
   icon: { marginRight: 10 },
   input: { flex: 1, fontSize: 15, color: '#FFFFFF', fontWeight: '300' },
   primaryBtn: {
-    backgroundColor: '#F5EDD6',
+    backgroundColor: '#7AB8F5',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -334,13 +334,13 @@ const styles = StyleSheet.create({
   },
   secondaryBtn: {
     borderWidth: 1,
-    borderColor: 'rgba(245,237,214,0.40)',
+    borderColor: 'rgba(122,184,245,0.40)',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
   },
   secondaryBtnText: {
-    color: '#F5EDD6',
+    color: '#7AB8F5',
     fontSize: 14,
     fontWeight: '300',
     letterSpacing: 0.5,

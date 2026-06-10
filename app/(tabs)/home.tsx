@@ -9,7 +9,6 @@ import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -33,25 +32,45 @@ interface TripPlan {
 const C = {
   bg:         '#0D0D0D',
   card:       'rgba(18,18,18,0.95)',
-  cardLight:  'rgba(245,237,214,0.05)',
-  border:     'rgba(245,237,214,0.12)',
-  borderMid:  'rgba(245,237,214,0.22)',
-  cream:      '#F5EDD6',
-  creamDim:   'rgba(245,237,214,0.50)',
-  creamFaint: 'rgba(245,237,214,0.15)',
+  cardLight:  'rgba(122,184,245,0.05)',
+  border:     'rgba(122,184,245,0.12)',
+  borderMid:  'rgba(122,184,245,0.22)',
+  cream:      '#7AB8F5',
+  creamDim:   'rgba(122,184,245,0.52)',
+  creamFaint: 'rgba(122,184,245,0.15)',
   white:      '#FFFFFF',
   whiteDim:   'rgba(255,255,255,0.45)',
   danger:     '#EF4444',
 };
 
+function SectionHead({ title, link, onLink }: { title: string; link?: string; onLink?: () => void }) {
+  return (
+    <View style={sh.row}>
+      <View style={sh.accent} />
+      <Text style={sh.title}>{title}</Text>
+      {link && onLink && (
+        <TouchableOpacity onPress={onLink}>
+          <Text style={sh.link}>{link} →</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+const sh = StyleSheet.create({
+  row:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22, paddingBottom: 14, paddingTop: 28 },
+  accent: { width: 3, height: 16, backgroundColor: C.cream, borderRadius: 2, marginRight: 12 },
+  title:  { fontSize: 11, letterSpacing: 3, color: C.creamDim, fontWeight: '400', flex: 1 },
+  link:   { fontSize: 12, color: C.cream, fontWeight: '300', letterSpacing: 0.5 },
+});
+
 export default function HomeScreen() {
   const { user, isAuthenticated, loading } = useAuth();
-  const [userVoyages, setUserVoyages]             = useState<any[]>([]);
-  const [loadingVoyages, setLoadingVoyages]       = useState(true);
-  const [nextTrip, setNextTrip]                   = useState<TripPlan | null>(null);
-  const [loadingNextTrip, setLoadingNextTrip]     = useState(true);
-  const [friends, setFriends]                     = useState<any[]>([]);
-  const [friendsVoyages, setFriendsVoyages]       = useState<any[]>([]);
+  const [userVoyages, setUserVoyages]         = useState<any[]>([]);
+  const [loadingVoyages, setLoadingVoyages]   = useState(true);
+  const [nextTrip, setNextTrip]               = useState<TripPlan | null>(null);
+  const [loadingNextTrip, setLoadingNextTrip] = useState(true);
+  const [friends, setFriends]                 = useState<any[]>([]);
+  const [friendsVoyages, setFriendsVoyages]   = useState<any[]>([]);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) router.replace('/login');
@@ -115,122 +134,71 @@ export default function HomeScreen() {
     acc[f.id] = friendsVoyages.filter(v => v.user_id === f.id);
     return acc;
   }, {});
-
   const statusLabel: Record<string, string> = {
     pending: 'En attente', processing: 'En cours',
     completed: 'Terminé', failed: 'Échoué',
   };
+  const todayStr = new Date()
+    .toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+    .toUpperCase();
 
   return (
     <View style={styles.bg}>
       <SafeAreaView style={{ flex: 1 }}>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scroll}
-        >
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
-          {/* ━━━ HERO ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+          {/* ── HERO ──────────────────────────────── */}
           <View style={styles.hero}>
             <View style={styles.heroTop}>
-              <View>
-                <Text style={styles.heroLabel}>BONJOUR</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.heroDate}>{todayStr}</Text>
+                <Text style={styles.heroGreeting}>Bonjour,</Text>
                 <Text style={styles.heroName}>{username}</Text>
               </View>
-              <TouchableOpacity
-                style={styles.avatarBtn}
-                onPress={() => router.push('/(tabs)/account')}
-              >
-                <Ionicons name="person-circle-outline" size={40} color={C.cream} />
+              <TouchableOpacity onPress={() => router.push('/(tabs)/account')}>
+                <View style={styles.avatarCircle}>
+                  <Ionicons name="person" size={20} color={C.cream} />
+                </View>
               </TouchableOpacity>
             </View>
 
-            {/* Stats row */}
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <Text style={styles.statNum}>{loadingVoyages ? '—' : userVoyages.length}</Text>
-                <Text style={styles.statLabel}>VOYAGES</Text>
+                <Text style={styles.statLabel}>voyages</Text>
               </View>
-              <View style={styles.statDivider} />
+              <View style={styles.statDot} />
               <View style={styles.statItem}>
                 <Text style={styles.statNum}>{friends.length}</Text>
-                <Text style={styles.statLabel}>AMIS</Text>
+                <Text style={styles.statLabel}>amis</Text>
               </View>
-              <View style={styles.statDivider} />
+              <View style={styles.statDot} />
               <View style={styles.statItem}>
                 <Text style={styles.statNum}>{city.city.length}+</Text>
-                <Text style={styles.statLabel}>DESTINATIONS</Text>
+                <Text style={styles.statLabel}>destinations</Text>
               </View>
             </View>
           </View>
 
-          {/* ━━━ ACTIONS RAPIDES ━━━━━━━━━━━━━━━━━━━ */}
-          <View style={styles.actions}>
-            <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/Memory')}>
-              <View style={styles.actionIcon}>
-                <Ionicons name="camera-outline" size={22} color={C.cream} />
-              </View>
+          {/* ── ACTIONS ───────────────────────────── */}
+          <View style={styles.actionsRow}>
+            <TouchableOpacity style={styles.actionPill} onPress={() => router.push('/Memory')}>
+              <Ionicons name="camera-outline" size={15} color={C.cream} />
               <Text style={styles.actionLabel}>Souvenir</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.actionBtn, styles.actionBtnPrimary]} onPress={() => router.push('/plan-trip')}>
-              <View style={[styles.actionIcon, styles.actionIconPrimary]}>
-                <Ionicons name="airplane-outline" size={22} color={C.bg} />
-              </View>
+            <TouchableOpacity style={[styles.actionPill, styles.actionPillPrimary]} onPress={() => router.push('/plan-trip')}>
+              <Ionicons name="airplane-outline" size={15} color={C.bg} />
               <Text style={[styles.actionLabel, styles.actionLabelPrimary]}>Planifier</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/(tabs)/explore')}>
-              <View style={styles.actionIcon}>
-                <Ionicons name="compass-outline" size={22} color={C.cream} />
-              </View>
+            <TouchableOpacity style={styles.actionPill} onPress={() => router.push('/(tabs)/explore')}>
+              <Ionicons name="compass-outline" size={15} color={C.cream} />
               <Text style={styles.actionLabel}>Explorer</Text>
             </TouchableOpacity>
           </View>
 
-          {/* ━━━ DERNIER VOYAGE ━━━━━━━━━━━━━━━━━━━━ */}
-          <View style={styles.section}>
-            <View style={styles.sectionHead}>
-              <Text style={styles.sectionTitle}>DERNIER VOYAGE</Text>
-              <TouchableOpacity onPress={() => router.push('/(tabs)/voyage')}>
-                <Text style={styles.sectionLink}>Voir tout →</Text>
-              </TouchableOpacity>
-            </View>
-
-            {loadingVoyages ? (
-              <View style={[styles.card, styles.cardCenter]}>
-                <ActivityIndicator color={C.cream} />
-              </View>
-            ) : userVoyages.length > 0 ? (
-              <View style={styles.tripCardWrap}>
-                <TripCard
-                  date={new Date(userVoyages[0].created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  country={userVoyages[0].destination}
-                  flagEmoji={userVoyages[0].flag_emoji || '🌍'}
-                  image={userVoyages[0].image_url ? { uri: userVoyages[0].image_url } : require('@/assets/images/mountain-background.jpg')}
-                  onPress={handleLastVoyage}
-                />
-              </View>
-            ) : (
-              <View style={[styles.card, styles.emptyCard]}>
-                <Ionicons name="map-outline" size={32} color={C.creamDim} />
-                <Text style={styles.emptyTitle}>Pas encore de voyage</Text>
-                <Text style={styles.emptyDesc}>Ajoute ton premier souvenir</Text>
-                <TouchableOpacity style={styles.creamBtn} onPress={() => router.push('/Memory')}>
-                  <Text style={styles.creamBtnText}>Commencer</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-
-          {/* ━━━ PROCHAIN DÉPART ━━━━━━━━━━━━━━━━━━━ */}
-          <View style={styles.section}>
-            <View style={styles.sectionHead}>
-              <Text style={styles.sectionTitle}>PROCHAIN DÉPART</Text>
-              <TouchableOpacity onPress={() => router.push('/(tabs)/voyage')}>
-                <Text style={styles.sectionLink}>Voir tout →</Text>
-              </TouchableOpacity>
-            </View>
-
+          {/* ── PROCHAIN DÉPART ───────────────────── */}
+          <SectionHead title="PROCHAIN DÉPART" link="Voir tout" onLink={() => router.push('/(tabs)/voyage')} />
+          <View style={styles.body}>
             {loadingNextTrip ? (
               <View style={[styles.card, styles.cardCenter]}>
                 <ActivityIndicator color={C.cream} />
@@ -241,44 +209,40 @@ export default function HomeScreen() {
                 onPress={() => router.push({ pathname: '/travel/detailMemory', params: { tripData: JSON.stringify({ ...nextTrip, type: 'trip_plan' }) } })}
                 activeOpacity={0.8}
               >
-                <View style={styles.nextTripRow}>
-                  <View style={styles.nextTripIcon}>
+                <View style={styles.nextRow}>
+                  <View style={styles.nextIcon}>
                     <Ionicons name="airplane-outline" size={20} color={C.cream} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.nextTripDest}>{nextTrip.destination}</Text>
-                    <Text style={styles.nextTripMeta}>
+                    <Text style={styles.nextDest}>{nextTrip.destination}</Text>
+                    <Text style={styles.nextMeta}>
                       {nextTrip.travel_type}
                       {nextTrip.start_date ? `  ·  ${formatDate(nextTrip.start_date)}` : ''}
                     </Text>
                   </View>
-                  <View style={styles.statusPill}>
-                    <Text style={styles.statusText}>{statusLabel[nextTrip.status] ?? nextTrip.status}</Text>
+                  <View style={styles.pill}>
+                    <Text style={styles.pillText}>{statusLabel[nextTrip.status] ?? nextTrip.status}</Text>
                   </View>
                 </View>
-
                 {nextTrip.interests?.length ? (
                   <View style={styles.tagRow}>
                     {nextTrip.interests.slice(0, 3).map((tag: string, i: number) => (
-                      <View key={i} style={styles.tag}>
-                        <Text style={styles.tagText}>{tag}</Text>
-                      </View>
+                      <View key={i} style={styles.tag}><Text style={styles.tagText}>{tag}</Text></View>
                     ))}
                   </View>
                 ) : null}
-
                 <View style={styles.cardFooter}>
-                  <Text style={styles.cardFooterLink}>Voir les détails  →</Text>
+                  <Text style={styles.footerLink}>Voir les détails  →</Text>
                   {nextTrip.status === 'pending' && (
                     <TouchableOpacity onPress={() => router.push('/plan-trip')}>
-                      <Text style={styles.cardFooterGhost}>Modifier</Text>
+                      <Text style={styles.footerGhost}>Modifier</Text>
                     </TouchableOpacity>
                   )}
                 </View>
               </TouchableOpacity>
             ) : (
               <View style={[styles.card, styles.emptyCard]}>
-                <Ionicons name="calendar-outline" size={32} color={C.creamDim} />
+                <Ionicons name="calendar-outline" size={32} color={C.creamFaint} />
                 <Text style={styles.emptyTitle}>Aucun voyage planifié</Text>
                 <Text style={styles.emptyDesc}>Laisse l'IA construire ton itinéraire</Text>
                 <TouchableOpacity style={styles.creamBtn} onPress={() => router.push('/plan-trip')}>
@@ -288,83 +252,79 @@ export default function HomeScreen() {
             )}
           </View>
 
-          {/* ━━━ DESTINATIONS ━━━━━━━━━━━━━━━━━━━━━━ */}
-          <View style={styles.section}>
-            <View style={styles.sectionHead}>
-              <Text style={styles.sectionTitle}>DESTINATIONS</Text>
-              <TouchableOpacity onPress={() => router.push('/(tabs)/explore')}>
-                <Text style={styles.sectionLink}>Explorer →</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 20, paddingRight: 8 }}>
-              {city.city.slice(0, 8).map((c: { name: string; country: string }, i: number) => (
-                <TouchableOpacity
-                  key={i}
-                  style={styles.cityPill}
-                  onPress={() => Alert.alert(c.name, c.country)}
-                >
-                  <Ionicons name="location-outline" size={14} color={C.creamDim} />
-                  <Text style={styles.cityName}>{c.name}</Text>
+          {/* ── DERNIER VOYAGE ────────────────────── */}
+          <SectionHead title="DERNIER VOYAGE" link="Voir tout" onLink={() => router.push('/(tabs)/voyage')} />
+          <View style={styles.body}>
+            {loadingVoyages ? (
+              <View style={[styles.card, styles.cardCenter]}>
+                <ActivityIndicator color={C.cream} />
+              </View>
+            ) : userVoyages.length > 0 ? (
+              <View style={styles.tripWrap}>
+                <TripCard
+                  date={new Date(userVoyages[0].created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  country={userVoyages[0].destination}
+                  flagEmoji={userVoyages[0].flag_emoji || '🌍'}
+                  image={userVoyages[0].image_url ? { uri: userVoyages[0].image_url } : require('@/assets/images/mountain-background.jpg')}
+                  onPress={handleLastVoyage}
+                />
+              </View>
+            ) : (
+              <View style={[styles.card, styles.emptyCard]}>
+                <Ionicons name="map-outline" size={32} color={C.creamFaint} />
+                <Text style={styles.emptyTitle}>Pas encore de voyage</Text>
+                <Text style={styles.emptyDesc}>Ajoute ton premier souvenir</Text>
+                <TouchableOpacity style={styles.creamBtn} onPress={() => router.push('/Memory')}>
+                  <Text style={styles.creamBtnText}>Commencer</Text>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
+              </View>
+            )}
           </View>
 
-          {/* ━━━ AMIS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-          <View style={styles.section}>
-            <View style={styles.sectionHead}>
-              <Text style={styles.sectionTitle}>AMIS</Text>
-              <TouchableOpacity onPress={() => router.push('/(tabs)/amis')}>
-                <Text style={styles.sectionLink}>Voir tout →</Text>
-              </TouchableOpacity>
-            </View>
-
+          {/* ── AMIS ──────────────────────────────── */}
+          <SectionHead title="AMIS" link="Voir tout" onLink={() => router.push('/(tabs)/amis')} />
+          <View style={{ paddingBottom: 8 }}>
             {friends.length === 0 ? (
-              <View style={[styles.card, styles.emptyCard]}>
-                <Ionicons name="people-outline" size={32} color={C.creamDim} />
+              <View style={[styles.card, styles.emptyCard, { marginHorizontal: 22 }]}>
+                <Ionicons name="people-outline" size={32} color={C.creamFaint} />
                 <Text style={styles.emptyTitle}>Aucun ami pour l'instant</Text>
                 <TouchableOpacity style={styles.creamBtn} onPress={() => router.push('/(tabs)/amis')}>
                   <Text style={styles.creamBtnText}>Trouver des amis</Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              <View style={styles.card}>
-                {friends.slice(0, 4).map((friend, idx) => {
-                  const fvoyages = voyagesByFriend[friend.id] ?? [];
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.friendScroll}
+              >
+                {friends.slice(0, 8).map(friend => {
+                  const fv = voyagesByFriend[friend.id] ?? [];
                   return (
-                    <View key={friend.id}>
-                      {idx > 0 && <View style={styles.friendDivider} />}
-                      <View style={styles.friendRow}>
-                        <View style={styles.friendAvatar}>
-                          <Ionicons name="person-outline" size={16} color={C.cream} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.friendName}>
-                            {friend.full_name || friend.username || friend.email?.split('@')[0]}
-                          </Text>
-                          <Text style={styles.friendMeta}>
-                            {fvoyages.length} voyage{fvoyages.length !== 1 ? 's' : ''}
-                          </Text>
-                        </View>
-                        {fvoyages[0] && (
-                          <TouchableOpacity
-                            style={styles.friendVoyageChip}
-                            onPress={() => handleFriendVoyage(fvoyages[0])}
-                          >
-                            <Text style={styles.friendVoyageFlag}>{fvoyages[0].flag_emoji || '🌍'}</Text>
-                            <Text style={styles.friendVoyageName}>{fvoyages[0].destination}</Text>
-                          </TouchableOpacity>
-                        )}
+                    <View key={friend.id} style={styles.friendCard}>
+                      <View style={styles.friendAvatar}>
+                        <Ionicons name="person-outline" size={18} color={C.cream} />
                       </View>
+                      <Text style={styles.friendName} numberOfLines={1}>
+                        {friend.full_name || friend.username || friend.email?.split('@')[0]}
+                      </Text>
+                      <Text style={styles.friendMeta}>{fv.length} voyage{fv.length !== 1 ? 's' : ''}</Text>
+                      {fv[0] && (
+                        <TouchableOpacity onPress={() => handleFriendVoyage(fv[0])}>
+                          <Text style={{ fontSize: 18, marginTop: 2 }}>{fv[0].flag_emoji || '🌍'}</Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   );
                 })}
-                {friends.length > 4 && (
-                  <TouchableOpacity style={styles.seeMoreBtn} onPress={() => router.push('/(tabs)/amis')}>
-                    <Text style={styles.seeMoreText}>+{friends.length - 4} autres amis</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+                <TouchableOpacity
+                  style={[styles.friendCard, styles.friendCardMore]}
+                  onPress={() => router.push('/(tabs)/amis')}
+                >
+                  <Ionicons name="people-outline" size={20} color={C.cream} />
+                  <Text style={styles.friendMoreText}>Tous les{'\n'}amis</Text>
+                </TouchableOpacity>
+              </ScrollView>
             )}
           </View>
 
@@ -379,185 +339,149 @@ const styles = StyleSheet.create({
   loading: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.bg },
   scroll:  { paddingBottom: 120 },
 
-  /* ── HERO ── */
+  /* HERO */
   hero: {
     paddingHorizontal: 22,
-    paddingTop: 18,
-    paddingBottom: 24,
+    paddingTop: 22,
+    paddingBottom: 28,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
   },
   heroTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 28,
+    marginBottom: 24,
   },
-  heroLabel: {
-    fontSize: 11,
-    letterSpacing: 4,
+  heroDate: {
+    fontSize: 10,
+    letterSpacing: 2,
     color: C.creamDim,
     fontWeight: '300',
-    marginBottom: 4,
+    marginBottom: 10,
+  },
+  heroGreeting: {
+    fontSize: 16,
+    color: C.creamDim,
+    fontWeight: '300',
+    letterSpacing: 0.5,
+    marginBottom: 2,
   },
   heroName: {
-    fontSize: 30,
+    fontSize: 38,
     fontWeight: '200',
-    letterSpacing: 2,
-    color: C.cream,
+    letterSpacing: 1.5,
+    color: C.white,
+    textTransform: 'capitalize',
   },
-  avatarBtn: { marginTop: 2 },
-
-  /* Stats */
+  avatarCircle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 1.5,
+    borderColor: C.borderMid,
+    backgroundColor: C.cardLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
+  },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: C.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: C.border,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    gap: 18,
   },
-  statItem: { flex: 1, alignItems: 'center' },
-  statNum:  { fontSize: 22, fontWeight: '200', color: C.cream, letterSpacing: 1 },
-  statLabel:{ fontSize: 9, letterSpacing: 2, color: C.creamDim, marginTop: 3, fontWeight: '300' },
-  statDivider: { width: 1, height: 30, backgroundColor: C.border },
+  statItem: { alignItems: 'flex-start' },
+  statNum:  { fontSize: 26, fontWeight: '200', color: C.cream, letterSpacing: 0.5 },
+  statLabel:{ fontSize: 11, color: C.creamDim, fontWeight: '300', marginTop: 1 },
+  statDot:  { width: 4, height: 4, borderRadius: 2, backgroundColor: C.border, marginBottom: 8 },
 
-  /* ── ACTIONS ── */
-  actions: {
+  /* ACTIONS */
+  actionsRow: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 10,
-    marginBottom: 10,
-  },
-  actionBtn: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderRadius: 16,
-    backgroundColor: C.card,
-    borderWidth: 1,
-    borderColor: C.border,
-    gap: 8,
-  },
-  actionBtnPrimary: {
-    backgroundColor: C.cream,
-    borderColor: C.cream,
-  },
-  actionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: C.creamFaint,
-    backgroundColor: 'rgba(245,237,214,0.06)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  actionIconPrimary: {
-    backgroundColor: 'rgba(13,13,13,0.15)',
-    borderColor: 'rgba(13,13,13,0.2)',
-  },
-  actionLabel: { fontSize: 11, color: C.cream, fontWeight: '300', letterSpacing: 0.5 },
-  actionLabelPrimary: { color: C.bg, fontWeight: '500' },
-
-  /* ── SECTIONS ── */
-  section:     { marginBottom: 8 },
-  sectionHead: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 22,
     paddingTop: 20,
-    paddingBottom: 12,
+    paddingBottom: 4,
+    gap: 10,
   },
-  sectionTitle: { fontSize: 11, letterSpacing: 3, color: C.creamDim, fontWeight: '300' },
-  sectionLink:  { fontSize: 11, letterSpacing: 1, color: C.cream,    fontWeight: '300' },
+  actionPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 13,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: C.border,
+    backgroundColor: C.card,
+  },
+  actionPillPrimary: { backgroundColor: C.cream, borderColor: C.cream },
+  actionLabel:       { fontSize: 12, color: C.cream, fontWeight: '300' },
+  actionLabelPrimary:{ color: C.bg, fontWeight: '600' },
 
-  /* ── CARD ── */
+  /* BODY */
+  body: { paddingHorizontal: 22, paddingBottom: 4 },
+
+  /* CARD */
   card: {
-    marginHorizontal: 20,
     backgroundColor: C.card,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: C.border,
     overflow: 'hidden',
-    shadowColor: C.cream,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.04,
-    shadowRadius: 20,
-    elevation: 4,
   },
-  cardCenter:  { padding: 32, alignItems: 'center', justifyContent: 'center' },
-  tripCardWrap:{ borderRadius: 20, overflow: 'hidden' },
+  cardCenter: { padding: 32, alignItems: 'center', justifyContent: 'center' },
+  tripWrap:   { borderRadius: 20, overflow: 'hidden' },
 
   /* Empty */
   emptyCard:  { padding: 32, alignItems: 'center', gap: 8 },
-  emptyTitle: { fontSize: 15, color: C.cream, fontWeight: '300', letterSpacing: 0.5 },
+  emptyTitle: { fontSize: 15, color: C.white, fontWeight: '300', letterSpacing: 0.5 },
   emptyDesc:  { fontSize: 12, color: C.creamDim, marginBottom: 8 },
+  creamBtn:     { backgroundColor: C.cream, borderRadius: 20, paddingHorizontal: 22, paddingVertical: 10, marginTop: 4 },
+  creamBtnText: { color: C.bg, fontSize: 13, fontWeight: '600', letterSpacing: 0.5 },
 
-  /* Buttons */
-  creamBtn:     { backgroundColor: C.cream, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10, marginTop: 4 },
-  creamBtnText: { color: C.bg, fontSize: 13, fontWeight: '500', letterSpacing: 0.5 },
-
-  /* Next trip */
-  nextTripRow:  { flexDirection: 'row', alignItems: 'center', padding: 18, gap: 14 },
-  nextTripIcon: {
-    width: 42, height: 42, borderRadius: 21,
-    backgroundColor: 'rgba(245,237,214,0.06)',
+  /* Next trip card */
+  nextRow:  { flexDirection: 'row', alignItems: 'center', padding: 18, gap: 14 },
+  nextIcon: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: C.cardLight,
     borderWidth: 1, borderColor: C.creamFaint,
     justifyContent: 'center', alignItems: 'center',
   },
-  nextTripDest: { fontSize: 17, fontWeight: '300', color: C.white, letterSpacing: 0.5, marginBottom: 3 },
-  nextTripMeta: { fontSize: 12, color: C.creamDim },
-  statusPill: {
-    borderWidth: 1, borderColor: C.creamFaint, borderRadius: 8,
-    paddingHorizontal: 10, paddingVertical: 4,
-    backgroundColor: 'rgba(245,237,214,0.05)',
-  },
-  statusText: { fontSize: 10, color: C.cream, letterSpacing: 1 },
-  tagRow:     { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 18, paddingBottom: 14 },
-  tag: {
-    borderWidth: 1, borderColor: C.border, borderRadius: 6,
-    paddingHorizontal: 8, paddingVertical: 3,
-  },
-  tagText: { fontSize: 11, color: C.creamDim },
+  nextDest: { fontSize: 18, fontWeight: '300', color: C.white, letterSpacing: 0.5, marginBottom: 3 },
+  nextMeta: { fontSize: 12, color: C.creamDim },
+  pill:     { borderWidth: 1, borderColor: C.creamFaint, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: C.cardLight },
+  pillText: { fontSize: 10, color: C.cream, letterSpacing: 1 },
+  tagRow:   { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 18, paddingBottom: 14 },
+  tag:      { borderWidth: 1, borderColor: C.border, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  tagText:  { fontSize: 11, color: C.creamDim },
   cardFooter: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 18, paddingBottom: 16, paddingTop: 4,
+    paddingHorizontal: 18, paddingBottom: 16, paddingTop: 12,
     borderTopWidth: 1, borderTopColor: C.border,
-    marginTop: 4,
   },
-  cardFooterLink:  { fontSize: 12, color: C.cream, fontWeight: '300', letterSpacing: 0.5 },
-  cardFooterGhost: { fontSize: 12, color: C.creamDim },
-
-  /* Cities */
-  cityPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    borderWidth: 1, borderColor: C.border, borderRadius: 20,
-    paddingHorizontal: 14, paddingVertical: 8, marginRight: 8,
-    backgroundColor: C.card,
-  },
-  cityName: { fontSize: 12, color: C.cream, fontWeight: '300' },
+  footerLink:  { fontSize: 12, color: C.cream, fontWeight: '300', letterSpacing: 0.5 },
+  footerGhost: { fontSize: 12, color: C.creamDim },
 
   /* Friends */
-  friendRow:    { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
-  friendDivider:{ height: 1, backgroundColor: C.border, marginHorizontal: 16 },
+  friendScroll: { paddingHorizontal: 22, gap: 12, paddingBottom: 4 },
+  friendCard: {
+    width: 96,
+    backgroundColor: C.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 14,
+    alignItems: 'center',
+    gap: 6,
+  },
   friendAvatar: {
-    width: 36, height: 36, borderRadius: 18,
+    width: 40, height: 40, borderRadius: 20,
     borderWidth: 1, borderColor: C.creamFaint,
-    backgroundColor: 'rgba(245,237,214,0.05)',
+    backgroundColor: C.cardLight,
     justifyContent: 'center', alignItems: 'center',
   },
-  friendName:    { fontSize: 14, fontWeight: '300', color: C.white, letterSpacing: 0.3 },
-  friendMeta:    { fontSize: 11, color: C.creamDim, marginTop: 1 },
-  friendVoyageChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    borderWidth: 1, borderColor: C.border, borderRadius: 10,
-    paddingHorizontal: 10, paddingVertical: 5,
-    backgroundColor: 'rgba(245,237,214,0.04)',
-  },
-  friendVoyageFlag: { fontSize: 14 },
-  friendVoyageName: { fontSize: 11, color: C.creamDim, maxWidth: 70 },
-  seeMoreBtn:   { padding: 14, alignItems: 'center', borderTopWidth: 1, borderTopColor: C.border },
-  seeMoreText:  { fontSize: 12, color: C.creamDim, letterSpacing: 1 },
+  friendName:     { fontSize: 11, color: C.white, fontWeight: '300', textAlign: 'center' },
+  friendMeta:     { fontSize: 10, color: C.creamDim, textAlign: 'center' },
+  friendCardMore: { justifyContent: 'center', backgroundColor: C.cardLight, borderStyle: 'dashed' },
+  friendMoreText: { fontSize: 11, color: C.cream, fontWeight: '300', textAlign: 'center', marginTop: 6 },
 });

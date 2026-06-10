@@ -184,49 +184,18 @@ export const OPENTRIPMAP_CATEGORIES = {
   ]
 };
 
-// Kinds valides pour OpenTripMap (conservateur)
+// Catégories top-level valides pour l'API OpenTripMap (radius & bbox)
 const VALID_KINDS = [
-  'historic',
-  'monuments_and_memorials', 
-  'archaeology',
-  'architecture',
-  'fortifications',
-  'palaces',
-  'castles',
-  'cultural',
-  'museums',
-  'theatres_and_entertainments',
-  'galleries',
-  'libraries',
-  'cinemas',
-  'natural',
-  'beaches',
-  'mountains',
-  'islands',
-  'caves',
-  'volcanoes',
-  'forests',
-  'amusements',
-  'zoos',
-  'aquariums',
-  'theme_parks',
-  'water_parks',
-  'sport',
-  'stadiums',
-  'tourist_facilities',
-  'tourist_object',
-  'viewpoints',
   'interesting_places',
-  'religion',
-  'churches',
-  'mosques',
-  'temples',
-  'monasteries',
+  'cultural',
+  'historic',
+  'natural',
+  'amusements',
+  'sport',
   'foods',
   'shops',
-  'accomodations',
-  'banks',
-  'transport'
+  'religion',
+  'tourist_facilities',
 ];
 
 class OpenTripMapAPI {
@@ -248,11 +217,7 @@ class OpenTripMapAPI {
       return [];
     }
 
-    // Filtrer seulement les kinds valides
-    const validKinds = kinds.filter(kind => VALID_KINDS.includes(kind));
-    
-    // Limiter à 5 kinds maximum pour éviter les erreurs
-    return validKinds.slice(0, 5);
+    return kinds.filter(kind => VALID_KINDS.includes(kind));
   }
 
   /**
@@ -272,17 +237,14 @@ class OpenTripMapAPI {
         searchParams.append('limit', Math.min(params.limit, 500).toString());
       }
 
-      // Valider et filtrer les kinds
-      const validKinds = this.validateKinds(params.kinds);
-      if (validKinds.length > 0) {
-        searchParams.append('kinds', validKinds.join(','));
-      }
-
       if (params.minRate) {
         searchParams.append('rate', params.minRate.toString());
       }
 
-      const url = `${this.config.baseUrl}/${this.config.language}/places/radius?${searchParams}`;
+      // kinds doit rester avec des virgules littérales (non encodées %2C)
+      const validKinds = this.validateKinds(params.kinds);
+      const kindsQuery = validKinds.length > 0 ? `&kinds=${validKinds.join(',')}` : '';
+      const url = `${this.config.baseUrl}/${this.config.language}/places/radius?${searchParams}${kindsQuery}`;
       console.log('🔍 Recherche OpenTripMap:', url);
 
       const response = await fetch(url, {
@@ -333,17 +295,13 @@ class OpenTripMapAPI {
         apikey: this.config.apiKey,
       });
 
-      // Valider et filtrer les kinds
-      const validKinds = this.validateKinds(params.kinds);
-      if (validKinds.length > 0) {
-        searchParams.append('kinds', validKinds.join(','));
-      }
-
       if (params.minRate) {
         searchParams.append('rate', params.minRate.toString());
       }
 
-      const url = `${this.config.baseUrl}/${this.config.language}/places/bbox?${searchParams}`;
+      const validKinds = this.validateKinds(params.kinds);
+      const kindsQuery = validKinds.length > 0 ? `&kinds=${validKinds.join(',')}` : '';
+      const url = `${this.config.baseUrl}/${this.config.language}/places/bbox?${searchParams}${kindsQuery}`;
       
       const response = await fetch(url, {
         headers: {

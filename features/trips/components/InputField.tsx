@@ -12,26 +12,26 @@ interface InputFieldProps {
   editable?: boolean;
 }
 
-export default function InputField({ 
-  label, 
-  placeholder, 
-  value, 
+export default function InputField({
+  label,
+  placeholder,
+  value,
   onChangeText,
   onPress,
   iconName,
-  editable = true
+  editable = true,
 }: InputFieldProps) {
   const InputComponent = editable ? (
     <TextInput
       style={styles.textInput}
       placeholder={placeholder}
-      placeholderTextColor="#999"
+      placeholderTextColor="rgba(255,255,255,0.28)"
       value={value}
       onChangeText={onChangeText}
       editable={editable}
     />
   ) : (
-    <Text style={[styles.textInput, { color: value ? '#1a1a1a' : '#999' }]}>
+    <Text style={[styles.textInput, { color: value ? '#FFFFFF' : 'rgba(255,255,255,0.28)' }]}>
       {value || placeholder}
     </Text>
   );
@@ -42,7 +42,7 @@ export default function InputField({
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{label}</Text>
       <Container style={styles.inputContainer} onPress={onPress}>
-        <Ionicons name={iconName} size={20} color="#2F7417" style={styles.inputIcon} />
+        <Ionicons name={iconName} size={20} color="#7AB8F5" style={styles.inputIcon} />
         {InputComponent}
       </Container>
     </View>
@@ -51,24 +51,24 @@ export default function InputField({
 
 const styles = StyleSheet.create({
   section: {
-    paddingHorizontal: 20,
-    marginBottom: 30,
+    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 16,
+    fontSize: 13,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.50)',
+    marginBottom: 8,
+    letterSpacing: 0.4,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'rgba(122,184,245,0.06)',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: 'rgba(122,184,245,0.18)',
   },
   inputIcon: {
     marginRight: 12,
@@ -76,6 +76,6 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     fontSize: 16,
-    color: '#1a1a1a',
+    color: '#FFFFFF',
   },
-}); 
+});

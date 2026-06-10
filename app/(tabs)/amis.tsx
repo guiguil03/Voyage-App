@@ -7,10 +7,10 @@ import { ActivityIndicator, FlatList, Image, SafeAreaView, ScrollView, StyleShee
 const C = {
   bg:         '#0D0D0D',
   card:       'rgba(13,13,13,0.82)',
-  border:     'rgba(245,237,214,0.14)',
-  cream:      '#F5EDD6',
-  creamDim:   'rgba(245,237,214,0.50)',
-  creamFaint: 'rgba(245,237,214,0.18)',
+  border:     'rgba(122,184,245,0.14)',
+  cream:      '#7AB8F5',
+  creamDim:   'rgba(122,184,245,0.50)',
+  creamFaint: 'rgba(122,184,245,0.18)',
   white:      '#FFFFFF',
   whiteDim:   'rgba(255,255,255,0.40)',
 };
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   friendBadge: {
     borderWidth: 1,
     borderColor: C.creamFaint,
-    backgroundColor: 'rgba(245,237,214,0.06)',
+    backgroundColor: 'rgba(122,184,245,0.06)',
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 8,

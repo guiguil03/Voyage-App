@@ -1,5 +1,6 @@
-import { getOpenTripMapService } from '@/features/explore/services/opentripmap';
+import { searchWikipediaPlaces } from '@/features/explore/services/wikipedia';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -17,620 +18,386 @@ import {
 
 const C = {
   bg:         '#0D0D0D',
-  card:       'rgba(13,13,13,0.82)',
-  border:     'rgba(245,237,214,0.14)',
-  cream:      '#F5EDD6',
-  creamDim:   'rgba(245,237,214,0.50)',
-  creamFaint: 'rgba(245,237,214,0.18)',
+  card:       'rgba(13,13,13,0.92)',
+  border:     'rgba(122,184,245,0.14)',
+  cream:      '#7AB8F5',
+  creamDim:   'rgba(122,184,245,0.50)',
+  creamFaint: 'rgba(122,184,245,0.18)',
   white:      '#FFFFFF',
   whiteDim:   'rgba(255,255,255,0.40)',
 };
 
 const categories = [
-  { id: 1, name: 'Aventure', icon: 'trail-sign' },
-  { id: 2, name: 'Plage', icon: 'sunny' },
-  { id: 3, name: 'Ville', icon: 'business' },
-  { id: 4, name: 'Culture', icon: 'library' },
-  { id: 5, name: 'Nature', icon: 'leaf' },
-  { id: 6, name: 'Gastronomie', icon: 'restaurant' },
+  { id: 1, name: 'Aventure',    icon: 'trail-sign-outline' },
+  { id: 2, name: 'Plage',       icon: 'sunny-outline' },
+  { id: 3, name: 'Ville',       icon: 'business-outline' },
+  { id: 4, name: 'Culture',     icon: 'library-outline' },
+  { id: 5, name: 'Nature',      icon: 'leaf-outline' },
+  { id: 6, name: 'Gastronomie', icon: 'restaurant-outline' },
 ];
 
 const popularDestinations = [
-  {
-    name: 'Paris',
-    country: 'France',
-    image: require('@/assets/images/temple-bali-sunset.jpg'),
-  },
-  {
-    name: 'Rome',
-    country: 'Italie',
-    image: require('@/assets/images/temple-water-sunset.jpg'),
-  },
-  {
-    name: 'Tokyo',
-    country: 'Japon',
-    image: require('@/assets/images/mountain-background.jpg'),
-  },
-  {
-    name: 'New York',
-    country: 'États-Unis',
-    image: require('@/assets/images/temple-bali-sunset.jpg'),
-  },
-  {
-    name: 'Bali',
-    country: 'Indonésie',
-    image: require('@/assets/images/temple-bali-sunset.jpg'),
-  },
-  {
-    name: 'Le Cap',
-    country: 'Afrique du Sud',
-    image: require('@/assets/images/temple-water-sunset.jpg'),
-  },
+  { name: 'Paris',    country: 'France',        image: require('@/assets/images/temple-bali-sunset.jpg') },
+  { name: 'Rome',     country: 'Italie',         image: require('@/assets/images/temple-water-sunset.jpg') },
+  { name: 'Tokyo',    country: 'Japon',          image: require('@/assets/images/mountain-background.jpg') },
+  { name: 'New York', country: 'États-Unis',     image: require('@/assets/images/temple-bali-sunset.jpg') },
+  { name: 'Bali',     country: 'Indonésie',      image: require('@/assets/images/temple-bali-sunset.jpg') },
+  { name: 'Le Cap',   country: 'Afrique du Sud', image: require('@/assets/images/temple-water-sunset.jpg') },
 ];
 
-function getFallbackImageForKind(kind: string) {
-  if (!kind) return require('@/assets/images/mountain-background.jpg');
-  const k = kind.toLowerCase();
-  if (k.includes('museum')) return require('@/assets/images/temple-bali-sunset.jpg');
-  if (k.includes('historic') || k.includes('monument')) return require('@/assets/images/temple-water-sunset.jpg');
-  if (k.includes('nature') || k.includes('park') || k.includes('forest')) return require('@/assets/images/mountain-background.jpg');
-  if (k.includes('beach')) return require('@/assets/images/temple-bali-sunset.jpg');
-  if (k.includes('square')) return require('@/assets/images/temple-water-sunset.jpg');
-  if (k.includes('church') || k.includes('religion')) return require('@/assets/images/temple-bali-sunset.jpg');
-  return require('@/assets/images/mountain-background.jpg');
+function SectionHead({ title }: { title: string }) {
+  return (
+    <View style={sh.row}>
+      <View style={sh.accent} />
+      <Text style={sh.title}>{title}</Text>
+    </View>
+  );
 }
+const sh = StyleSheet.create({
+  row:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22, paddingBottom: 14, paddingTop: 28 },
+  accent: { width: 3, height: 16, backgroundColor: C.cream, borderRadius: 2, marginRight: 12 },
+  title:  { fontSize: 11, letterSpacing: 3, color: C.creamDim, fontWeight: '400' },
+});
 
 export default function ExploreScreen() {
-  const [searchText, setSearchText] = useState('');
+  const [searchText, setSearchText]         = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedCity, setSelectedCity] = useState<any | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [destinations, setDestinations] = useState<any[]>([]);
+  const [selectedCity, setSelectedCity]     = useState<any | null>(null);
+  const [loading, setLoading]               = useState(false);
+  const [destinations, setDestinations]     = useState<any[]>([]);
+  const [searchFocused, setSearchFocused]   = useState(false);
 
-  // Charger les lieux d'une ville sélectionnée
   useEffect(() => {
     if (!selectedCity) return;
-    const fetchDestinations = async () => {
+    const fetch = async () => {
       setLoading(true);
       try {
-        const otm = getOpenTripMapService();
-        const result = await otm.searchByCity(selectedCity.name, {
-          kinds: selectedCategory ? [selectedCategory.toLowerCase()] : undefined,
-          limit: 12,
-          radius: 15000,
-          minRate: 3
+        const places = await searchWikipediaPlaces(selectedCity.name, {
+          limit: 50,
+          radius: 10000,
         });
-        if (result.success && result.data && result.data.places) {
-          setDestinations(result.data.places);
-        } else {
-          setDestinations([]);
-        }
-      } catch (e) {
-        setDestinations([]);
-      } finally {
-        setLoading(false);
-      }
+        setDestinations(places);
+      } catch { setDestinations([]); }
+      finally { setLoading(false); }
     };
-    fetchDestinations();
+    fetch();
   }, [selectedCity, selectedCategory]);
 
-  // Filtrer les villes selon la recherche
-  const filteredCities = popularDestinations.filter(city =>
-    city.name.toLowerCase().includes(searchText.toLowerCase()) ||
-    city.country.toLowerCase().includes(searchText.toLowerCase())
+  const filteredCities = popularDestinations.filter(c =>
+    c.name.toLowerCase().includes(searchText.toLowerCase()) ||
+    c.country.toLowerCase().includes(searchText.toLowerCase())
   );
 
   const handleDestinationPress = (destination: any) => {
-    Alert.alert(destination.name, `Découvrir ${destination.name} pour ${destination.price}`);
-  };
-
-  const handleCategoryPress = (categoryName: string) => {
-    setSelectedCategory(selectedCategory === categoryName ? null : categoryName);
-  };
-
-  const handleSeeAllPress = () => {
-    Alert.alert('Voir tout', 'Afficher toutes les destinations disponibles');
-  };
-
-  const handleAdvancedSearch = () => {
-    router.push('/search-advanced');
-  };
-
-  const handlePlannerPress = () => {
-    Alert.alert('Planificateur IA', 'Fonctionnalité de planification automatique à venir !');
+    Alert.alert(destination.name, `Découvrir ${destination.name}`);
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Header */}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+
+        {/* HEADER */}
         <View style={styles.header}>
           <Text style={styles.title}>EXPLORER</Text>
-          <Text style={styles.subtitle}>Découvrez votre prochaine destination</Text>
+          <Text style={styles.subtitle}>Trouvez votre prochaine aventure</Text>
         </View>
 
-        {/* Barre de recherche */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color={C.cream} style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Rechercher une destination..."
-            placeholderTextColor={C.whiteDim}
-            value={searchText}
-            onChangeText={setSearchText}
-          />
-        </View>
-
-        {/* Catégories */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>CATÉGORIES</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
-            {categories.map((category) => (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.categoryCard,
-                  selectedCategory === category.name && styles.selectedCategoryCard
-                ]}
-                onPress={() => setSelectedCategory(selectedCategory === category.name ? null : category.name)}
-              >
-                <View style={[
-                  styles.categoryIconContainer,
-                  selectedCategory === category.name && styles.selectedCategoryIcon
-                ]}>
-                  <Ionicons
-                    name={category.icon as any}
-                    size={22}
-                    color={selectedCategory === category.name ? C.bg : C.cream}
-                  />
-                </View>
-                <Text style={[
-                  styles.categoryText,
-                  selectedCategory === category.name && styles.selectedCategoryText
-                ]}>
-                  {category.name}
-                </Text>
+        {/* SEARCH */}
+        <View style={styles.searchWrap}>
+          <View style={[styles.searchBar, searchFocused && styles.searchBarFocused]}>
+            <Ionicons name="search-outline" size={18} color={searchFocused ? C.cream : C.creamDim} style={{ marginRight: 10 }} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Rechercher une destination…"
+              placeholderTextColor={C.whiteDim}
+              value={searchText}
+              onChangeText={setSearchText}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+            />
+            {searchText.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchText('')}>
+                <Ionicons name="close-circle" size={18} color={C.creamDim} />
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Destinations populaires (villes) */}
-        {!selectedCity && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>DESTINATIONS POPULAIRES</Text>
-            </View>
-            {filteredCities.length > 0 ? (
-              filteredCities.map((city, idx) => (
-                <TouchableOpacity key={city.name + idx} style={styles.destinationCard} onPress={() => setSelectedCity(city)}>
-                  <Image source={city.image} style={styles.destinationImage} />
-                  <View style={styles.destinationInfo}>
-                    <View style={styles.destinationHeader}>
-                      <Text style={styles.destinationName}>{city.name}</Text>
-                      <Text style={styles.destinationPrice}>{city.country}</Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <Text style={styles.emptyInlineText}>Aucune destination trouvée</Text>
             )}
           </View>
+        </View>
+
+        {/* CATEGORIES */}
+        <SectionHead title="CATÉGORIES" />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catScroll}>
+          {categories.map(cat => {
+            const active = selectedCategory === cat.name;
+            return (
+              <TouchableOpacity
+                key={cat.id}
+                style={[styles.catPill, active && styles.catPillActive]}
+                onPress={() => setSelectedCategory(active ? null : cat.name)}
+              >
+                <Ionicons name={cat.icon as any} size={16} color={active ? C.bg : C.cream} />
+                <Text style={[styles.catLabel, active && styles.catLabelActive]}>{cat.name}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* DESTINATIONS POPULAIRES — grid 2 colonnes */}
+        {!selectedCity && (
+          <>
+            <SectionHead title="DESTINATIONS POPULAIRES" />
+            {filteredCities.length > 0 ? (
+              <View style={styles.grid}>
+                {filteredCities.map((c, idx) => (
+                  <TouchableOpacity key={c.name + idx} style={styles.gridCard} onPress={() => setSelectedCity(c)}>
+                    <Image source={c.image} style={styles.gridImage} />
+                    <LinearGradient
+                      colors={['transparent', 'rgba(0,0,0,0.78)']}
+                      style={styles.gridOverlay}
+                    >
+                      <Text style={styles.gridName}>{c.name}</Text>
+                      <Text style={styles.gridCountry}>{c.country}</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyInline}>
+                <Text style={styles.emptyText}>Aucune destination trouvée</Text>
+                <TouchableOpacity onPress={() => setSearchText('')}>
+                  <Text style={styles.resetText}>Réinitialiser</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </>
         )}
 
-        {/* Lieux de la ville sélectionnée */}
+        {/* LIEUX D'UNE VILLE */}
         {selectedCity && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <TouchableOpacity onPress={() => setSelectedCity(null)}>
-                <Ionicons name="arrow-back" size={22} color={C.cream} />
+          <>
+            <View style={styles.cityHeader}>
+              <TouchableOpacity style={styles.backBtn} onPress={() => setSelectedCity(null)}>
+                <Ionicons name="arrow-back" size={20} color={C.cream} />
               </TouchableOpacity>
-              <Text style={[styles.sectionTitle, { marginBottom: 0, paddingHorizontal: 12 }]}>
-                À {selectedCity.name}
-              </Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cityTitle}>{selectedCity.name}</Text>
+                <Text style={styles.cityCountry}>{selectedCity.country}</Text>
+              </View>
             </View>
+
             {loading ? (
-              <View style={{ alignItems: 'center', marginVertical: 32 }}>
+              <View style={styles.loadingWrap}>
                 <ActivityIndicator color={C.cream} />
               </View>
             ) : destinations.length > 0 ? (
-              destinations.map((destination) => {
-                const hasImage = !!(destination.preview?.source || destination.image);
-                return hasImage ? (
-                  <TouchableOpacity
-                    key={destination.xid || destination.id}
-                    style={styles.destinationCard}
-                    onPress={() => handleDestinationPress(destination)}
-                  >
-                    <Image source={{ uri: destination.preview?.source || destination.image }} style={styles.destinationImage} />
-                    <View style={styles.destinationInfo}>
-                      <View style={styles.destinationHeader}>
-                        <Text style={styles.destinationName}>{destination.name}</Text>
-                        {destination.rate && <Text style={styles.destinationPrice}>★ {destination.rate}</Text>}
-                      </View>
-                      <View style={styles.destinationDetails}>
-                        <View style={styles.ratingContainer}>
-                          {destination.kinds && <Text style={styles.categoryTagText}>{destination.kinds.split(',')[0]}</Text>}
+              <View style={styles.placesList}>
+                {destinations.map(dest => {
+                  const hasImg = !!(dest.preview?.source || dest.image);
+                  return hasImg ? (
+                    <TouchableOpacity
+                      key={dest.xid || dest.id}
+                      style={styles.placeCard}
+                      onPress={() => handleDestinationPress(dest)}
+                    >
+                      <Image source={{ uri: dest.preview?.source || dest.image }} style={styles.placeImage} />
+                      <LinearGradient colors={['transparent', 'rgba(0,0,0,0.72)']} style={styles.placeOverlay}>
+                        <Text style={styles.placeName}>{dest.name}</Text>
+                        {dest.kinds && <Text style={styles.placeKind}>{dest.kinds.split(',')[0]}</Text>}
+                      </LinearGradient>
+                      {!!dest.rate && (
+                        <View style={styles.rateBadge}>
+                          <Ionicons name="star" size={11} color={C.cream} />
+                          <Text style={styles.rateText}>{dest.rate}</Text>
                         </View>
-                        {destination.address?.country && (
-                          <View style={styles.categoryTag}>
-                            <Text style={styles.categoryTagText}>{destination.address.country}</Text>
-                          </View>
-                        )}
+                      )}
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      key={dest.xid || dest.id}
+                      style={styles.placeCardSimple}
+                      onPress={() => handleDestinationPress(dest)}
+                    >
+                      <View style={styles.placeSimpleIcon}>
+                        <Ionicons name="location-outline" size={18} color={C.cream} />
                       </View>
-                    </View>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    key={destination.xid || destination.id}
-                    style={styles.placeCardSimple}
-                    onPress={() => handleDestinationPress(destination)}
-                  >
-                    <Text style={styles.placeCardName}>{destination.name}</Text>
-                    {destination.kinds && (
-                      <Text style={styles.placeCardKind}>{destination.kinds.split(',')[0]}</Text>
-                    )}
-                    {destination.address?.country && (
-                      <Text style={styles.placeCardCountry}>{destination.address.country}</Text>
-                    )}
-                    {destination.rate && (
-                      <Text style={styles.placeCardRate}>★ {destination.rate}</Text>
-                    )}
-                  </TouchableOpacity>
-                );
-              })
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.placeSimpleName}>{dest.name}</Text>
+                        {dest.kinds && <Text style={styles.placeSimpleKind}>{dest.kinds.split(',')[0]}</Text>}
+                      </View>
+                      {!!dest.rate && <Text style={styles.placeSimpleRate}>★ {dest.rate}</Text>}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             ) : (
-              <Text style={styles.emptyInlineText}>Aucun lieu trouvé</Text>
+              <View style={styles.emptyInline}>
+                <Text style={styles.emptyText}>Aucun lieu trouvé</Text>
+              </View>
             )}
-          </View>
+          </>
         )}
 
-        {/* Section planificateur */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>BESOIN D&apos;AIDE ?</Text>
-          <TouchableOpacity style={styles.plannerCard} onPress={() => router.push('/plan-trip')}>
-            <View style={styles.plannerContent}>
-              <View style={styles.plannerIconContainer}>
-                <Ionicons name="bulb-outline" size={28} color={C.cream} />
-              </View>
-              <View style={styles.plannerText}>
-                <Text style={styles.plannerTitle}>Planificateur IA</Text>
-                <Text style={styles.plannerSubtitle}>
-                  Laissez notre IA créer votre voyage parfait selon vos préférences
-                </Text>
-              </View>
+        {/* PLANIFICATEUR IA */}
+        <SectionHead title="BESOIN D'AIDE ?" />
+        <TouchableOpacity style={styles.plannerCard} onPress={() => router.push('/plan-trip')}>
+          <View style={styles.plannerLeft}>
+            <View style={styles.plannerIcon}>
+              <Ionicons name="bulb-outline" size={26} color={C.cream} />
             </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* États vides */}
-        {filteredCities.length === 0 && (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyIconCircle}>
-              <Ionicons name="search" size={34} color={C.cream} />
-            </View>
-            <Text style={styles.emptyTitle}>Aucune destination trouvée</Text>
-            <Text style={styles.emptySubtitle}>
-              Essayez de modifier vos critères de recherche
-            </Text>
-            <TouchableOpacity
-              style={styles.resetButton}
-              onPress={() => {
-                setSearchText('');
-                setSelectedCategory(null);
-              }}
-            >
-              <Text style={styles.resetButtonText}>Réinitialiser</Text>
-            </TouchableOpacity>
           </View>
-        )}
+          <View style={{ flex: 1 }}>
+            <Text style={styles.plannerTitle}>Planificateur IA</Text>
+            <Text style={styles.plannerSub}>Laissez notre IA créer votre voyage parfait</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={C.creamDim} />
+        </TouchableOpacity>
+
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: C.bg,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 120,
-  },
-  header: {
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 24,
-  },
+  container: { flex: 1, backgroundColor: C.bg },
+  scroll:    { paddingBottom: 120 },
+
+  header: { paddingHorizontal: 22, paddingTop: 56, paddingBottom: 20 },
   title: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: '200',
     letterSpacing: 6,
     color: C.cream,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: C.creamDim,
-    fontWeight: '300',
-    letterSpacing: 1,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: C.card,
-    borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    marginHorizontal: 20,
-    marginBottom: 32,
-    borderWidth: 1,
-    borderColor: C.border,
-  },
-  searchIcon: {
-    marginRight: 12,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: C.white,
-    fontWeight: '300',
-  },
-  section: {
-    marginBottom: 32,
-  },
-  sectionTitle: {
-    fontSize: 11,
-    letterSpacing: 3,
-    color: C.creamDim,
-    marginBottom: 16,
-    paddingHorizontal: 24,
-    fontWeight: '400',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 24,
-  },
-  categoriesScroll: {
-    paddingLeft: 20,
-  },
-  categoryCard: {
-    alignItems: 'center',
-    marginRight: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    backgroundColor: C.card,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: C.border,
-    minWidth: 80,
-  },
-  selectedCategoryCard: {
-    backgroundColor: C.cream,
-    borderColor: C.cream,
-  },
-  categoryIconContainer: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: 'rgba(245,237,214,0.06)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: C.creamFaint,
-  },
-  selectedCategoryIcon: {
-    backgroundColor: 'rgba(13,13,13,0.18)',
-    borderColor: 'rgba(13,13,13,0.20)',
-  },
-  categoryText: {
-    fontSize: 12,
-    fontWeight: '300',
-    color: C.creamDim,
-    textAlign: 'center',
-    letterSpacing: 0.5,
-  },
-  selectedCategoryText: {
-    color: C.bg,
-    fontWeight: '500',
-  },
-  destinationCard: {
-    backgroundColor: C.card,
-    borderRadius: 20,
-    marginBottom: 16,
-    marginHorizontal: 20,
-    borderWidth: 1,
-    borderColor: C.border,
-    overflow: 'hidden',
-  },
-  destinationImage: {
-    width: '100%',
-    height: 160,
-  },
-  destinationInfo: {
-    padding: 16,
-  },
-  destinationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  destinationName: {
-    fontSize: 17,
-    fontWeight: '300',
-    color: C.cream,
-    flex: 1,
-    letterSpacing: 0.5,
-  },
-  destinationPrice: {
-    fontSize: 13,
-    fontWeight: '300',
-    color: C.creamDim,
-    letterSpacing: 0.5,
-  },
-  destinationDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ratingText: {
-    fontSize: 13,
-    color: C.creamDim,
-    marginLeft: 4,
-  },
-  reviewsText: {
-    fontSize: 13,
-    color: C.whiteDim,
-    marginLeft: 4,
-  },
-  categoryTag: {
-    backgroundColor: C.creamFaint,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: C.border,
-  },
-  categoryTagText: {
-    fontSize: 11,
-    color: C.creamDim,
-    letterSpacing: 0.5,
-  },
-  placeCardSimple: {
-    backgroundColor: C.card,
-    borderRadius: 20,
-    marginBottom: 12,
-    marginHorizontal: 20,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: C.border,
-  },
-  placeCardName: {
-    fontSize: 16,
-    fontWeight: '300',
-    color: C.cream,
-    marginBottom: 4,
-    letterSpacing: 0.5,
-  },
-  placeCardKind: {
-    fontSize: 12,
-    color: C.creamDim,
-    marginBottom: 2,
-    letterSpacing: 0.5,
-  },
-  placeCardCountry: {
-    fontSize: 12,
-    color: C.whiteDim,
-  },
-  placeCardRate: {
-    fontSize: 12,
-    color: C.cream,
-    marginTop: 4,
-    letterSpacing: 0.5,
-  },
-  plannerCard: {
-    backgroundColor: C.card,
-    borderRadius: 20,
-    padding: 24,
-    marginHorizontal: 20,
-    borderWidth: 1,
-    borderColor: C.border,
-  },
-  plannerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  plannerIconContainer: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: 'rgba(245,237,214,0.06)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-    borderWidth: 1,
-    borderColor: C.creamFaint,
-  },
-  plannerText: {
-    flex: 1,
-  },
-  plannerTitle: {
-    fontSize: 17,
-    fontWeight: '300',
-    color: C.cream,
     marginBottom: 6,
-    letterSpacing: 0.5,
   },
-  plannerSubtitle: {
-    fontSize: 13,
-    color: C.creamDim,
-    lineHeight: 20,
-    fontWeight: '300',
-  },
-  emptyInlineText: {
-    textAlign: 'center',
-    color: C.creamDim,
-    marginVertical: 20,
-    fontSize: 13,
-    letterSpacing: 1,
-  },
-  emptyState: {
+  subtitle: { fontSize: 13, color: C.creamDim, fontWeight: '300', letterSpacing: 0.5 },
+
+  searchWrap: { paddingHorizontal: 22, marginBottom: 4 },
+  searchBar: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 40,
-  },
-  emptyIconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: 'rgba(245,237,214,0.06)',
+    backgroundColor: C.card,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderWidth: 1,
-    borderColor: C.creamFaint,
-    justifyContent: 'center',
+    borderColor: C.border,
+  },
+  searchBarFocused: { borderColor: C.cream },
+  searchInput: { flex: 1, fontSize: 14, color: C.white, fontWeight: '300' },
+
+  catScroll: { paddingHorizontal: 22, paddingBottom: 4, gap: 10 },
+  catPill: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: C.border,
+    backgroundColor: C.card,
   },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '300',
-    color: C.cream,
-    marginBottom: 8,
-    letterSpacing: 1,
+  catPillActive: { backgroundColor: C.cream, borderColor: C.cream },
+  catLabel:       { fontSize: 13, color: C.cream, fontWeight: '300' },
+  catLabelActive: { color: C.bg, fontWeight: '500' },
+
+  /* 2-col grid */
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 22,
+    gap: 12,
   },
-  emptySubtitle: {
-    fontSize: 13,
-    color: C.creamDim,
-    textAlign: 'center',
-    marginBottom: 28,
-    lineHeight: 20,
-    fontWeight: '300',
+  gridCard: {
+    width: '47%',
+    height: 155,
+    borderRadius: 18,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: C.border,
   },
-  resetButton: {
-    backgroundColor: C.cream,
-    paddingHorizontal: 28,
-    paddingVertical: 13,
-    borderRadius: 12,
+  gridImage:   { width: '100%', height: '100%', resizeMode: 'cover' },
+  gridOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 12 },
+  gridName:    { fontSize: 16, fontWeight: '500', color: C.white, letterSpacing: 0.3 },
+  gridCountry: { fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 1 },
+
+  emptyInline: { alignItems: 'center', paddingVertical: 32, gap: 10 },
+  emptyText:   { fontSize: 14, color: C.creamDim, fontWeight: '300' },
+  resetText:   { fontSize: 13, color: C.cream, fontWeight: '400', letterSpacing: 0.5 },
+
+  /* City header */
+  cityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 22,
+    paddingTop: 28,
+    paddingBottom: 14,
+    gap: 14,
   },
-  resetButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: C.bg,
-    letterSpacing: 1,
+  backBtn:     { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: C.border, backgroundColor: C.card, justifyContent: 'center', alignItems: 'center' },
+  cityTitle:   { fontSize: 22, fontWeight: '200', color: C.white, letterSpacing: 1 },
+  cityCountry: { fontSize: 12, color: C.creamDim, marginTop: 2 },
+
+  loadingWrap: { alignItems: 'center', paddingVertical: 40 },
+
+  placesList: { paddingHorizontal: 22, gap: 12 },
+  placeCard: {
+    height: 160,
+    borderRadius: 18,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: C.border,
   },
+  placeImage:   { width: '100%', height: '100%', resizeMode: 'cover' },
+  placeOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 14 },
+  placeName:    { fontSize: 17, fontWeight: '500', color: C.white },
+  placeKind:    { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+  rateBadge: {
+    position: 'absolute', top: 12, right: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingHorizontal: 8, paddingVertical: 4,
+    borderRadius: 8,
+  },
+  rateText: { fontSize: 11, color: C.cream, fontWeight: '500' },
+
+  placeCardSimple: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: C.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 16,
+    gap: 12,
+  },
+  placeSimpleIcon: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: 'rgba(122,184,245,0.08)',
+    borderWidth: 1, borderColor: C.border,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  placeSimpleName:  { fontSize: 15, color: C.white, fontWeight: '300', marginBottom: 2 },
+  placeSimpleKind:  { fontSize: 11, color: C.creamDim },
+  placeSimpleRate:  { fontSize: 13, color: C.cream },
+
+  plannerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: C.card,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: C.border,
+    marginHorizontal: 22,
+    padding: 20,
+    gap: 14,
+  },
+  plannerLeft: {},
+  plannerIcon: {
+    width: 52, height: 52, borderRadius: 26,
+    backgroundColor: 'rgba(122,184,245,0.07)',
+    borderWidth: 1, borderColor: C.creamFaint,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  plannerTitle: { fontSize: 16, fontWeight: '300', color: C.white, marginBottom: 4 },
+  plannerSub:   { fontSize: 12, color: C.creamDim, lineHeight: 18, fontWeight: '300' },
 });

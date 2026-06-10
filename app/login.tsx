@@ -25,10 +25,10 @@ const { width: W, height: H } = Dimensions.get('window');
 const C = {
   bg:         '#0D0D0D',
   cardBg:     'rgba(13,13,13,0.82)',
-  cardBorder: 'rgba(245,237,214,0.18)',
-  cream:      '#F5EDD6',
-  creamDim:   'rgba(245,237,214,0.55)',
-  creamFocus: 'rgba(245,237,214,0.60)',
+  cardBorder: 'rgba(122,184,245,0.18)',
+  cream:      '#7AB8F5',
+  creamDim:   'rgba(122,184,245,0.55)',
+  creamFocus: 'rgba(122,184,245,0.60)',
   white:      '#FFFFFF',
   whiteDim:   'rgba(255,255,255,0.35)',
 };
@@ -59,7 +59,7 @@ function DestRow({ text, dur, y, rev, op }: { text: string; dur: number; y: numb
   return (
     <Animated.View style={{ position: 'absolute', top: y, width: W * 12, transform: [{ translateX: x }] }}>
       <Text
-        style={{ fontSize: 12, fontWeight: '200', letterSpacing: 4, color: `rgba(245,237,214,${op})` }}
+        style={{ fontSize: 12, fontWeight: '200', letterSpacing: 4, color: `rgba(122,184,245,${op})` }}
         numberOfLines={1}
       >
         {text.repeat(4)}
@@ -132,7 +132,7 @@ export default function LoginScreen() {
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
           {ROWS.map((row, i) => <DestRow key={i} {...row} />)}
           <LinearGradient
-            colors={['rgba(245,237,214,0.06)', 'rgba(245,237,214,0.02)', 'transparent']}
+            colors={['rgba(122,184,245,0.06)', 'rgba(122,184,245,0.02)', 'transparent']}
             style={{ position: 'absolute', top: 0, left: 0, right: 0, height: H * 0.50 }}
           />
           <View style={styles.glowCircle} />
@@ -148,7 +148,7 @@ export default function LoginScreen() {
             {/* Header */}
             <View style={styles.header}>
               <View style={styles.iconWrap}>
-                <Ionicons name="compass-outline" size={26} color="rgba(245,237,214,0.65)" />
+                <Ionicons name="compass-outline" size={26} color="rgba(122,184,245,0.65)" />
               </View>
               <Text style={styles.title}>CityTrip</Text>
               <Text style={styles.subtitle}>
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
     borderRadius: 140,
-    backgroundColor: 'rgba(245,237,214,0.025)',
+    backgroundColor: 'rgba(122,184,245,0.025)',
     shadowColor: C.cream,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
@@ -258,8 +258,8 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 26,
     borderWidth: 1,
-    borderColor: 'rgba(245,237,214,0.22)',
-    backgroundColor: 'rgba(245,237,214,0.06)',
+    borderColor: 'rgba(122,184,245,0.22)',
+    backgroundColor: 'rgba(122,184,245,0.06)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 18,
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   },
   tagline: {
     fontSize: 13,
-    color: 'rgba(245,237,214,0.28)',
+    color: 'rgba(122,184,245,0.28)',
     fontWeight: '300',
     fontStyle: 'italic',
     letterSpacing: 1,
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(245,237,214,0.20)',
+    borderColor: 'rgba(122,184,245,0.20)',
     paddingHorizontal: 14,
     paddingVertical: 14,
   },
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   primaryBtnText: { color: C.bg, fontSize: 15, fontWeight: '500', letterSpacing: 1 },
   secondaryBtn: {
     borderWidth: 1,
-    borderColor: 'rgba(245,237,214,0.40)',
+    borderColor: 'rgba(122,184,245,0.40)',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
