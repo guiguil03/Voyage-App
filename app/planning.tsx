@@ -1,97 +1,175 @@
+import { ItineraryActivity, ItineraryDay } from '@/features/trips/types/itinerary';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { Image, Linking, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
-function groupActivitiesByDay(activities: any[], startDate: string, endDate: string) {
-  if (!startDate || !endDate) return { 'Jour 1': activities.slice(0, 5) };
-  const days: string[] = [];
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const nbDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
-  for (let i = 0; i < nbDays; i++) {
-    days.push(`Jour ${i + 1}`);
-  }
-  const MAX_PER_DAY = 5;
-  const planning: Record<string, any[]> = {};
-  let idx = 0;
-  days.forEach((day) => {
-    planning[day] = activities.slice(idx, idx + MAX_PER_DAY);
-    idx += MAX_PER_DAY;
-  });
-  return planning;
+const C = {
+  bg:         '#0D0D0D',
+  card:       'rgba(18,18,18,0.95)',
+  border:     'rgba(122,184,245,0.12)',
+  borderMid:  'rgba(122,184,245,0.22)',
+  cream:      '#7AB8F5',
+  creamDim:   'rgba(122,184,245,0.50)',
+  creamFaint: 'rgba(122,184,245,0.14)',
+  white:      '#FFFFFF',
+  whiteDim:   'rgba(255,255,255,0.55)',
+};
+
+function ActivityCard({ activity }: { activity: ItineraryActivity }) {
+  return (
+    <View style={styles.activityCard}>
+      <View style={styles.activityTimeRow}>
+        <Ionicons name="time-outline" size={13} color={C.creamDim} />
+        <Text style={styles.activityTime}>{activity.time}</Text>
+        <View style={styles.categoryBadge}>
+          <Text style={styles.categoryText}>{activity.category}</Text>
+        </View>
+      </View>
+      <Text style={styles.activityName}>{activity.name}</Text>
+      <Text style={styles.activityDesc}>{activity.description}</Text>
+      {!!activity.tips && (
+        <View style={styles.tipsRow}>
+          <Ionicons name="bulb-outline" size={13} color={C.cream} />
+          <Text style={styles.tipsText}>{activity.tips}</Text>
+        </View>
+      )}
+    </View>
+  );
 }
 
 export default function PlanningScreen() {
   const params = useLocalSearchParams();
-  const planning: any[] = params.planning ? JSON.parse(params.planning as string) : [];
-  const trip: any = params.trip ? JSON.parse(params.trip as string) : {};
-  const grouped = groupActivitiesByDay(planning, trip.startDate, trip.endDate);
+  const days: ItineraryDay[] = params.itinerary
+    ? JSON.parse(params.itinerary as string)
+    : [];
+  const trip: { destination?: string } = params.trip
+    ? JSON.parse(params.trip as string)
+    : {};
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/home')} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color="#2F7417" />
+        <TouchableOpacity
+          onPress={() => router.push('/(tabs)/home')}
+          style={styles.backBtn}
+        >
+          <Ionicons name="arrow-back" size={22} color={C.cream} />
         </TouchableOpacity>
-        <Text style={styles.title}>Mon planning à {trip.destination}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Mon voyage</Text>
+          {!!trip.destination && (
+            <Text style={styles.headerSub}>{trip.destination}</Text>
+          )}
+        </View>
       </View>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {Object.entries(grouped).map(([day, acts], i) => (
-          <View key={day} style={[styles.daySection, i % 2 === 0 ? styles.daySectionAlt : null]}>
-            <Text style={styles.dayTitle}>{day}</Text>
-            {(acts as any[]).length === 0 ? (
-              <Text style={styles.emptyText}>Pas d&apos;activité ce jour-là, profitez pour flâner ou découvrir par vous-même !</Text>
-            ) : (
-              (acts as any[]).map((act, idx) => (
-                <TouchableOpacity key={act.xid || idx} style={styles.activityCardGlass} activeOpacity={0.88}>
-                  <Image source={act.image ? { uri: act.image } : require('@/assets/images/temple-bali-sunset.jpg')} style={styles.activityImgBig} />
-                  <View style={styles.activityInfo}>
-                    <Text style={styles.activityName}>{act.name}</Text>
-                    <Text style={styles.activityType}>{act.kinds?.split(',')[0]}</Text>
-                    {act.address && (
-                      <Text style={styles.activityAddress}>{act.address.road || ''} {act.address.city || ''}</Text>
-                    )}
-                    {act.wikipedia && (
-                      <TouchableOpacity style={styles.wikiBtn} onPress={() => Linking.openURL(act.wikipedia)}>
-                        <Ionicons name="book" size={14} color="#1976D2" />
-                        <Text style={styles.activityLink}>Wikipedia</Text>
-                      </TouchableOpacity>
-                    )}
-                    {act.description && (
-                      <Text style={styles.activityDesc}>{act.description}</Text>
-                    )}
-                    {act.distance && <Text style={styles.activityDistance}>{Math.round(act.distance)} m</Text>}
-                  </View>
-                </TouchableOpacity>
-              ))
+
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+        {days.map((day) => (
+          <View key={day.day} style={styles.daySection}>
+            <View style={styles.dayHeader}>
+              <View style={styles.dayBadge}>
+                <Text style={styles.dayBadgeText}>{day.day}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.dayTheme}>{day.theme}</Text>
+                <Text style={styles.dayDate}>{day.date}</Text>
+              </View>
+            </View>
+            {!!day.intro && (
+              <Text style={styles.dayIntro}>{day.intro}</Text>
             )}
+            <View style={styles.activitiesList}>
+              {day.activities.map((act, idx) => (
+                <ActivityCard key={idx} activity={act} />
+              ))}
+            </View>
           </View>
         ))}
+
+        {days.length === 0 && (
+          <View style={styles.empty}>
+            <Ionicons name="map-outline" size={48} color={C.creamDim} />
+            <Text style={styles.emptyText}>Aucun itinéraire disponible</Text>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f9fa' },
-  header: { flexDirection: 'row', alignItems: 'center', padding: 18, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e9ecef' },
-  backBtn: { marginRight: 12, backgroundColor: '#e0ffe0', borderRadius: 20, padding: 6 },
-  title: { fontSize: 20, fontWeight: 'bold', color: '#2F7417' },
-  scrollContent: { padding: 18, paddingBottom: 60 },
-  daySection: { marginBottom: 32, padding: 10, borderRadius: 18 },
-  daySectionAlt: { backgroundColor: '#f6f8f7' },
-  dayTitle: { fontSize: 22, fontWeight: 'bold', color: '#2F7417', marginBottom: 14, letterSpacing: 0.2 },
-  emptyText: { color: '#888', fontStyle: 'italic', marginBottom: 10, fontSize: 15 },
-  activityCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 14, marginBottom: 16, padding: 12, shadowColor: '#2F7417', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2 },
-  activityCardGlass: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 18, marginBottom: 18, padding: 14, shadowColor: '#2F7417', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 3, borderWidth: 1, borderColor: '#e9ecef' },
-  activityImgBig: { width: 90, height: 90, borderRadius: 14, marginRight: 16, backgroundColor: '#eee' },
-  activityInfo: { flex: 1 },
-  activityName: { fontSize: 17, fontWeight: 'bold', color: '#1a1a1a' },
-  activityType: { fontSize: 13, color: '#2F7417', marginTop: 2 },
-  activityAddress: { fontSize: 12, color: '#888', marginTop: 2 },
-  activityLink: { fontSize: 13, color: '#1976D2', marginLeft: 4, textDecorationLine: 'underline' },
-  activityDesc: { fontSize: 12, color: '#555', marginTop: 4, fontStyle: 'italic' },
-  activityDistance: { fontSize: 12, color: '#888', marginTop: 2 },
-  wikiBtn: { flexDirection: 'row', alignItems: 'center', marginTop: 2, marginBottom: 2 },
-}); 
+  container: { flex: 1, backgroundColor: C.bg },
+
+  header: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16,
+    borderBottomWidth: 1, borderBottomColor: C.border,
+  },
+  backBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: C.creamFaint, justifyContent: 'center', alignItems: 'center',
+  },
+  headerTitle: { fontSize: 20, fontWeight: '200', color: C.white, letterSpacing: 1 },
+  headerSub:   { fontSize: 12, color: C.creamDim, marginTop: 2 },
+
+  scroll: { padding: 20, paddingBottom: 80 },
+
+  daySection: {
+    backgroundColor: C.card,
+    borderRadius: 18, borderWidth: 1, borderColor: C.border,
+    padding: 18, marginBottom: 16,
+  },
+  dayHeader: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 14, marginBottom: 12,
+  },
+  dayBadge: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: C.creamFaint, borderWidth: 1, borderColor: C.borderMid,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  dayBadgeText: { fontSize: 16, fontWeight: '600', color: C.cream },
+  dayTheme:     { fontSize: 16, fontWeight: '400', color: C.white, lineHeight: 22 },
+  dayDate:      { fontSize: 12, color: C.creamDim, marginTop: 2 },
+  dayIntro: {
+    fontSize: 13, color: C.whiteDim, fontStyle: 'italic', lineHeight: 20,
+    marginBottom: 16, paddingLeft: 4,
+  },
+
+  activitiesList: { gap: 10 },
+  activityCard: {
+    backgroundColor: 'rgba(122,184,245,0.04)',
+    borderRadius: 12, borderWidth: 1, borderColor: C.border,
+    padding: 14,
+  },
+  activityTimeRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6,
+  },
+  activityTime: { fontSize: 12, color: C.creamDim, flex: 1 },
+  categoryBadge: {
+    backgroundColor: 'rgba(122,184,245,0.12)',
+    borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2,
+  },
+  categoryText: { fontSize: 10, color: C.cream, fontWeight: '500' },
+  activityName: { fontSize: 15, fontWeight: '500', color: C.white, marginBottom: 6 },
+  activityDesc: { fontSize: 13, color: C.whiteDim, lineHeight: 19, marginBottom: 8 },
+  tipsRow: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 6,
+    backgroundColor: 'rgba(122,184,245,0.06)',
+    borderRadius: 8, padding: 8,
+  },
+  tipsText: { fontSize: 12, color: C.cream, flex: 1, lineHeight: 17 },
+
+  empty: { alignItems: 'center', paddingTop: 80, gap: 16 },
+  emptyText: { fontSize: 14, color: C.creamDim, fontWeight: '300' },
+});
