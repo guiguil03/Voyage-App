@@ -20,6 +20,8 @@ export function streamItinerary(
   preferences: TripPreferences,
   callbacks: StreamCallbacks
 ): () => void {
+  let closed = false;
+
   const es = new EventSource(EDGE_FUNCTION_URL, {
     headers: {
       Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
@@ -29,9 +31,10 @@ export function streamItinerary(
     method: 'POST',
     body: JSON.stringify(preferences),
     pollingInterval: 0,
-  } as any);
+  } as any); // react-native-sse supports POST at runtime but types don't expose it
 
   es.addEventListener('message', (event: any) => {
+    if (closed) return;
     const data = event.data as string;
     if (data === '[DONE]') {
       callbacks.onDone();
@@ -46,10 +49,14 @@ export function streamItinerary(
     }
   });
 
-  es.addEventListener('error', () => {
+  es.addEventListener('error', (event: any) => {
+    if (closed) return;
     callbacks.onError('Erreur de connexion. Vérifiez votre connexion internet.');
     es.close();
   });
 
-  return () => es.close();
+  return () => {
+    closed = true;
+    es.close();
+  };
 }
