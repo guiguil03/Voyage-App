@@ -47,12 +47,14 @@ function ActivityCard({ activity }: { activity: ItineraryActivity }) {
 
 export default function PlanningScreen() {
   const params = useLocalSearchParams();
-  const days: ItineraryDay[] = params.itinerary
-    ? JSON.parse(params.itinerary as string)
-    : [];
-  const trip: { destination?: string } = params.trip
-    ? JSON.parse(params.trip as string)
-    : {};
+  const days: ItineraryDay[] = (() => {
+    try { return params.itinerary ? JSON.parse(params.itinerary as string) : []; }
+    catch { return []; }
+  })();
+  const trip: { destination?: string; startDate?: string; endDate?: string } = (() => {
+    try { return params.trip ? JSON.parse(params.trip as string) : {}; }
+    catch { return {}; }
+  })();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -76,7 +78,7 @@ export default function PlanningScreen() {
         showsVerticalScrollIndicator={false}
       >
         {days.map((day) => (
-          <View key={day.day} style={styles.daySection}>
+          <View key={`day-${day.day}-${day.date}`} style={styles.daySection}>
             <View style={styles.dayHeader}>
               <View style={styles.dayBadge}>
                 <Text style={styles.dayBadgeText}>{day.day}</Text>
@@ -90,8 +92,8 @@ export default function PlanningScreen() {
               <Text style={styles.dayIntro}>{day.intro}</Text>
             )}
             <View style={styles.activitiesList}>
-              {day.activities.map((act, idx) => (
-                <ActivityCard key={idx} activity={act} />
+              {(day.activities || []).map((act, idx) => (
+                <ActivityCard key={`${day.day}-${idx}`} activity={act} />
               ))}
             </View>
           </View>
